@@ -1,0 +1,106 @@
+# =============================================
+# Root .gitignore for Go + React Monorepo
+# =============================================
+
+# --- Environment Variables ---
+# Ignore ALL environment variable files
+*.env
+# EXCEPT for sample/example files. We want to keep and push these.
+!.env.example
+!.env.sample
+
+# --- OS & Editor Generated Files ---
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Go (Server) Specific ---
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/server/bin/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+/server/vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# --- React (Client) Specific ---
+# Dependencies
+/client/node_modules/
+/client/.pnpm-store/
+/client/.npm
+/client/.yarn/
+/client/.yarn/cache/
+/client/.yarn/unplugged/
+/client/.yarn/build-state.yml
+/client/.yarn/install-state.gz
+/client/.pnp.*
+
+# Build output
+/client/dist/
+/client/build/
+
+# Runtime data
+/client/.parcel-cache/
+/client/.cache/
+
+# Logs
+/client/npm-debug.log*
+/client/yarn-debug.log*
+/client/yarn-error.log*
+/client/lerna-debug.log*
+/client/.eslintcache
+
+# Optional npm cache directory
+/client/.npm
+
+# Optional REPL history
+/client/.node_repl_history
+
+# Vite specific
+/client/.env
+/client/.env.*
+# Keep your Vite env example files if you have them
+!/client/.env.*.example
+
+# --- General ---
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Temporary folders
+tmp/
+temp/
