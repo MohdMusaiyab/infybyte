@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-
+	"github.com/gin-contrib/cors"
 	"github.com/MohdMusaiyab/infybyte/server/config"
 	"github.com/MohdMusaiyab/infybyte/server/internal/utils"
 	"github.com/MohdMusaiyab/infybyte/server/routes"
@@ -29,12 +29,19 @@ func main() {
 
 	// Initialize Gin
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:5173"}, // React dev server
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
 
+	routes.InitRoutes(router, db)
 	// Health check route
 	router.GET("/health", func(c *gin.Context) {
 		utils.RespondSuccess(c, 200, "Server is running", nil)
 	})
-	routes.InitRoutes(router, db)
 	// TODO: Register routes (e.g., routes.InitRoutes(router))
 
 	// Start server
