@@ -6,6 +6,8 @@ import {
   type LoginResponse,
   type ApiResponse,
   type User,
+  type RegisterCredentials,
+  type RegisterResponse,
 } from "../types/auth";
 
 export const authService = {
@@ -27,6 +29,50 @@ export const authService = {
       useAuthStore.getState().setAuth(user, true);
     } catch (error: unknown) {
       useAuthStore.getState().setLoading(false);
+      
+      // Check for axios error with response data
+      if (
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object"
+      ) {
+        const axiosError = error.response as { data?: { message?: string; error?: string }; status?: number; statusText?: string };
+        
+        // Try to get detailed error message from different response formats
+        if (axiosError.data?.message) {
+          throw new Error(axiosError.data.message);
+        } else if (axiosError.data?.error) {
+          throw new Error(axiosError.data.error);
+        } else if (typeof axiosError.data === 'string') {
+          throw new Error(axiosError.data);
+        } else if (axiosError.statusText) {
+          throw new Error(`${axiosError.status}: ${axiosError.statusText}`);
+        }
+      }
+      
+      // Fallback error message
+      throw new Error("Login failed. Please check your credentials and try again.");
+    } finally {
+      useAuthStore.getState().setLoading(false);
+    }
+  },
+
+  async register(
+    credentials: RegisterCredentials
+  ): Promise<RegisterResponse["user"]> {
+    try {
+      useAuthStore.getState().setLoading(true);
+
+      const response = await api.post<ApiResponse<RegisterResponse>>(
+        "/api/v1/auth/register",
+        credentials
+      );
+
+      return response.data.data.user;
+    } catch (error: unknown) {
+      useAuthStore.getState().setLoading(false);
       if (
         error &&
         typeof error === "object" &&
@@ -40,16 +86,14 @@ export const authService = {
       ) {
         throw new Error(
           (error.response as { data: { message?: string } }).data.message ||
-            "Login failed"
+            "Registration failed"
         );
       }
-      throw new Error("Login failed");
+      throw new Error("Registration failed");
     } finally {
       useAuthStore.getState().setLoading(false);
     }
   },
-  
-
   async logout(): Promise<void> {
     try {
       // Call logout API to invalidate tokens on server

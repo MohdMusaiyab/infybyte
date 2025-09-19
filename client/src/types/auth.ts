@@ -29,5 +29,10 @@ export interface RegisterCredentials {
 }
 
 export interface RegisterResponse {
-  user: User;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
 }

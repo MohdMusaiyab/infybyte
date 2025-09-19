@@ -60,14 +60,20 @@ api.interceptors.response.use(
           tokenManager.clearTokens();
           useAuthStore.getState().logout();
           
-          // Redirect to login
-          window.location.href = '/login';
+          // Redirect to login only if we're not already on the login page
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = '/login';
+          }
           return Promise.reject(refreshError);
         }
       } else {
         // No refresh token - logout
         useAuthStore.getState().logout();
-        window.location.href = '/login';
+        
+        // Only redirect if we're not already on the login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
 

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios"; // Using our configured axios instance
+import { authService } from "../services/authService"; // Import authService instead of api
+import { useAuthStore } from "../store/authStore"; // Import auth store to get loading state
 
 interface RegisterForm {
   name: string;
@@ -10,23 +11,9 @@ interface RegisterForm {
   role: string;
 }
 
-interface RegisterResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message: string;
-}
-
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const loading = useAuthStore((state) => state.isLoading); // Get loading state from store
   const [form, setForm] = useState<RegisterForm>({
     name: "",
     email: "",
@@ -34,7 +21,6 @@ const Register: React.FC = () => {
     role: "vendor",
   });
   const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -45,15 +31,11 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
     
     try {
-      const response = await api.post<ApiResponse<RegisterResponse>>(
-        "/api/v1/auth/register",
-        form
-      );
+      const user = await authService.register(form);
       
-      console.log("Registration successful:", response.data);
+      console.log("Registration successful:", user);
       
       // Show success message or redirect immediately
       navigate("/login", { 
@@ -63,10 +45,8 @@ const Register: React.FC = () => {
     } catch (err) {
       if (err instanceof Error) {
         console.error("Registration error:", err);
-        setError("Registration failed. Please try again.");
+        setError(err.message || "Registration failed. Please try again.");
       }
-    } finally {
-      setLoading(false);
     }
   };
 
