@@ -11,13 +11,12 @@ const LoginForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoading } = useAuthStore();
-  const [, setIsSubmitting] = useState(false); // ✅ Local loading state
+  const [, setIsSubmitting] = useState(false);
 
   React.useEffect(() => {
-    // Show registration success message if redirected from register
     if (location.state && location.state.message) {
       setSuccess(location.state.message);
-      window.history.replaceState({}, document.title); // Clear state after showing
+      window.history.replaceState({}, document.title);
     }
   }, [location.state]);
 
@@ -25,26 +24,25 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    setIsSubmitting(true); // ✅ Set local loading
+    setIsSubmitting(true);
 
     try {
       if (!email.trim()) {
         throw new Error("Email is required");
       }
-      
+
       if (!password) {
         throw new Error("Password is required");
       }
-      
+
       await authService.login({ email, password });
       setSuccess("Login successful! Redirecting...");
       setTimeout(() => {
-        navigate("/");
+        navigate("/dashboard");
       }, 1000);
     } catch (err) {
       console.error("Login error:", err);
-      
-      // Extract the most descriptive error message possible
+
       if (err instanceof Error) {
         setError(err.message);
       } else if (typeof err === "object" && err !== null && "message" in err) {
@@ -54,21 +52,19 @@ const LoginForm = () => {
       } else {
         setError("An unknown error occurred. Please try again later.");
       }
-      
-      // Make the error stay visible for at least 5 seconds
+
       const errorTimeout = setTimeout(() => {
-        // Only clear if it's still the same error
-        setError((currentError) => 
-          currentError === (err instanceof Error ? err.message : "An unknown error occurred.") 
-            ? "" 
+        setError((currentError) =>
+          currentError ===
+          (err instanceof Error ? err.message : "An unknown error occurred.")
+            ? ""
             : currentError
         );
       }, 5000);
-      
-      // Clean up timeout if component unmounts
+
       return () => clearTimeout(errorTimeout);
     } finally {
-      setIsSubmitting(false); // ✅ Reset local loading
+      setIsSubmitting(false);
     }
   };
   return (
@@ -79,8 +75,18 @@ const LoginForm = () => {
         {success && (
           <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-md mb-4 relative">
             <div className="flex items-center">
-              <svg className="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              <svg
+                className="h-6 w-6 text-green-500 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               <span className="font-medium">Success:</span>
             </div>
@@ -90,8 +96,18 @@ const LoginForm = () => {
         {error && (
           <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md mb-4 relative">
             <div className="flex items-center">
-              <svg className="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="h-6 w-6 text-red-500 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
               <span className="font-medium">Login Error:</span>
             </div>

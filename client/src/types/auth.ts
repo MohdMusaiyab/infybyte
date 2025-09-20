@@ -12,7 +12,6 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
   access_token: string;
-  refresh_token: string;
   user: User;
 }
 
@@ -25,7 +24,6 @@ export interface RegisterCredentials {
   name: string;
   email: string;
   password: string;
-  role: string;
 }
 
 export interface RegisterResponse {

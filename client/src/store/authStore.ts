@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
-import type { User } from "../types/auth";  
+import type { User } from "../types/auth";
 
 interface AuthState {
   user: User | null;
@@ -41,7 +41,6 @@ export const useAuthStore = create<AuthState>()(
       }),
       {
         name: "auth-storage",
-        // Only persist non-sensitive user data
         partialize: (state) => ({
           user: state.user,
           isAuthenticated: state.isAuthenticated,
@@ -49,7 +48,7 @@ export const useAuthStore = create<AuthState>()(
       }
     ),
     {
-      name: "auth-store", // DevTools name
+      name: "auth-store",
     }
   )
 );

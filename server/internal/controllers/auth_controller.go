@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/MohdMusaiyab/infybyte/server/internal/models"
@@ -21,21 +21,20 @@ func Register(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, 400, "Invalid request body")
 		return
 	}
-
+	user.Role = "user"
 	if err := utils.Validate.Struct(user); err != nil {
-	validationErrors := err.(validator.ValidationErrors)
-	for _, fieldErr := range validationErrors {
-		// Build key in format Field.Tag
-		key := fieldErr.StructField() + "." + fieldErr.Tag()
+		validationErrors := err.(validator.ValidationErrors)
+		for _, fieldErr := range validationErrors {
+			// Build key in format Field.Tag
+			key := fieldErr.StructField() + "." + fieldErr.Tag()
 
-		// Look up friendly message in the model
-		if msg, ok := models.UserValidationMessages[key]; ok {
-			utils.RespondError(c, 400, msg)
-			return
+			// Look up friendly message in the model
+			if msg, ok := models.UserValidationMessages[key]; ok {
+				utils.RespondError(c, 400, msg)
+				return
+			}
 		}
 	}
-}
-
 
 	// Check if email already exists
 	collection := db.Collection("users")
@@ -76,6 +75,54 @@ func Register(c *gin.Context, db *mongo.Database) {
 }
 
 // Login handles user login
+// func Login(c *gin.Context, db *mongo.Database) {
+// 	var creds struct {
+// 		Email    string `json:"email" binding:"required,email"`
+// 		Password string `json:"password" binding:"required,min=6"`
+// 	}
+
+// 	if err := c.ShouldBindJSON(&creds); err != nil {
+// 		utils.RespondError(c, 400, "Invalid input")
+// 		return
+// 	}
+
+// 	// Find user by email
+// 	collection := db.Collection("users")
+// 	var user models.User
+// 	if err := collection.FindOne(context.TODO(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
+// 		utils.RespondError(c, 401, "Invalid email or password")
+// 		return
+// 	}
+// 	fmt.Println("User Found")
+// 	// Check password
+// 	if !utils.CheckPassword(user.Password, creds.Password) {
+// 		utils.RespondError(c, 401, "Invalid email or password")
+// 		return
+// 	}
+
+// 	// Generate tokens
+// 	access, err := utils.GenerateAccessToken(user.ID.Hex(), user.Role)
+// 	if err != nil {
+// 		utils.RespondError(c, 500, "Failed to generate access token")
+// 		return
+// 	}
+// 	refresh, err := utils.GenerateRefreshToken(user.ID.Hex(), user.Role)
+// 	if err != nil {
+// 		utils.RespondError(c, 500, "Failed to generate refresh token")
+// 		return
+// 	}
+
+//		utils.RespondSuccess(c, 200, "Login successful", gin.H{
+//			"access_token":  access,
+//			"refresh_token": refresh,
+//			"user": gin.H{
+//				"id":    user.ID.Hex(),
+//				"name":  user.Name,
+//				"email": user.Email,
+//				"role":  user.Role,
+//			},
+//		})
+//	}
 func Login(c *gin.Context, db *mongo.Database) {
 	var creds struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -87,35 +134,45 @@ func Login(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Find user by email
 	collection := db.Collection("users")
 	var user models.User
 	if err := collection.FindOne(context.TODO(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
 		utils.RespondError(c, 401, "Invalid email or password")
 		return
 	}
-	fmt.Println("User Found")
-	// Check password
+
 	if !utils.CheckPassword(user.Password, creds.Password) {
 		utils.RespondError(c, 401, "Invalid email or password")
 		return
 	}
 
-	// Generate tokens
-	access, err := utils.GenerateAccessToken(user.ID.Hex(), user.Role)
+	accessToken, err := utils.GenerateAccessToken(user.ID.Hex(), user.Role)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to generate access token")
 		return
 	}
-	refresh, err := utils.GenerateRefreshToken(user.ID.Hex(), user.Role)
+
+	refreshToken, err := utils.GenerateRefreshToken(user.ID.Hex(), user.Role)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to generate refresh token")
 		return
 	}
 
+	c.SetCookie(
+		"refresh_token",
+		refreshToken,
+		60*60*24*7, // 7 days
+		"/",
+		"", // domain (empty = current)
+		true,
+		true,
+	)
+	// Optionally: SameSite=None/Lax/Strict depending on your setup
+	// For Gin, use the cookie header directly if you need SameSite attribute:
+	// c.Header("Set-Cookie", fmt.Sprintf("refresh_token=%s; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=%d", refreshToken, 60*60*24*7))
+
 	utils.RespondSuccess(c, 200, "Login successful", gin.H{
-		"access_token":  access,
-		"refresh_token": refresh,
+		"access_token": accessToken,
 		"user": gin.H{
 			"id":    user.ID.Hex(),
 			"name":  user.Name,
@@ -125,42 +182,55 @@ func Login(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// Refresh token
 func Refresh(c *gin.Context, db *mongo.Database) {
-	var req struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, 400, "Invalid request body")
-		return
-	}
-
-	claims, err := utils.ValidateToken(req.RefreshToken, true)
+	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
-		utils.RespondError(c, 401, "Invalid refresh token")
+		utils.RespondError(c, http.StatusUnauthorized, "Refresh token missing")
 		return
 	}
 
-	// Generate new tokens
-	access, err := utils.GenerateAccessToken(claims.UserID, claims.Role)
+	claims, err := utils.ValidateToken(refreshToken, true)
 	if err != nil {
-		utils.RespondError(c, 500, "Failed to generate access token")
-		return
-	}
-	refresh, err := utils.GenerateRefreshToken(claims.UserID, claims.Role)
-	if err != nil {
-		utils.RespondError(c, 500, "Failed to generate refresh token")
+		utils.RespondError(c, http.StatusUnauthorized, "Invalid or expired refresh token")
 		return
 	}
 
-	utils.RespondSuccess(c, 200, "Token refreshed successfully", gin.H{
-		"access_token":  access,
-		"refresh_token": refresh,
+	accessToken, err := utils.GenerateAccessToken(claims.UserID, claims.Role)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to generate access token")
+		return
+	}
+
+	newRefreshToken, err := utils.GenerateRefreshToken(claims.UserID, claims.Role)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to generate refresh token")
+		return
+	}
+
+	c.SetCookie(
+		"refresh_token",
+		newRefreshToken,
+		int((7 * 24 * time.Hour).Seconds()), // 7 days
+		"/",
+		"",
+		true,
+		true,
+	)
+
+	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
+		"access_token": accessToken,
 	})
 }
 
-// Logout (stateless, client should discard tokens)
 func Logout(c *gin.Context, db *mongo.Database) {
+	c.SetCookie(
+		"refresh_token",
+		"",
+		-1, 
+		"/",
+		"",
+		true,
+		true,
+	)
 	utils.RespondSuccess(c, 200, "Logged out successfully", nil)
 }

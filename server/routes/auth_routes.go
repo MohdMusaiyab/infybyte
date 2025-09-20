@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// AuthRoutes registers authentication routes
 func AuthRoutes(router *gin.RouterGroup, db *mongo.Database) {
 	auth := router.Group("/auth")
 	{
@@ -14,5 +13,6 @@ func AuthRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		auth.POST("/login", func(c *gin.Context) { controllers.Login(c, db) })
 		auth.POST("/refresh", func(c *gin.Context) { controllers.Refresh(c, db) })
 		auth.POST("/logout", func(c *gin.Context) { controllers.Logout(c, db) })
+
 	}
 }

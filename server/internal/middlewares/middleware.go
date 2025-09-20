@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware ensures the user is logged in
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -19,21 +18,18 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
-		claims, err := utils.ValidateToken(token, false) // false = access token
+		claims, err := utils.ValidateToken(token, false) 
 		if err != nil {
 			utils.RespondError(c, http.StatusUnauthorized, "Invalid or expired token")
 			c.Abort()
 			return
 		}
-
-		// Store user info in context
 		c.Set("userID", claims.UserID)
 		c.Set("role", claims.Role)
 		c.Next()
 	}
 }
 
-// VendorMiddleware ensures the user is a vendor
 func VendorMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")
@@ -46,7 +42,6 @@ func VendorMiddleware() gin.HandlerFunc {
 	}
 }
 
-// AdminMiddleware ensures the user is an admin (optional)
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, exists := c.Get("role")

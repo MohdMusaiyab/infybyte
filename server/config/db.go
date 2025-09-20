@@ -30,8 +30,6 @@ func ConnectDB() *mongo.Client {
 	if err != nil {
 		log.Fatal("Error connecting to MongoDB:", err)
 	}
-
-	// Ping the database
 	err = client.Ping(ctx, nil)
 	if err != nil {
 		log.Fatal("Could not ping MongoDB:", err)
@@ -42,7 +40,6 @@ func ConnectDB() *mongo.Client {
 	return client
 }
 
-// Helper to get a collection
 func GetCollection(databaseName, collectionName string) *mongo.Collection {
 	return MongoClient.Database(databaseName).Collection(collectionName)
 }

@@ -1,4 +1,3 @@
-// utils/validator.go
 package utils
 
 import (

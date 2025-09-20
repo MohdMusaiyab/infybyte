@@ -10,7 +10,6 @@ type ApiResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// Success response
 func RespondSuccess(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, ApiResponse{
 		Success: true,
@@ -19,7 +18,6 @@ func RespondSuccess(c *gin.Context, statusCode int, message string, data interfa
 	})
 }
 
-// Error response (no data field)
 func RespondError(c *gin.Context, statusCode int, message string) {
 	c.JSON(statusCode, ApiResponse{
 		Success: false,
