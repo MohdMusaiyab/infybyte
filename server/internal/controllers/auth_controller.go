@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -74,55 +75,6 @@ func Register(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// Login handles user login
-// func Login(c *gin.Context, db *mongo.Database) {
-// 	var creds struct {
-// 		Email    string `json:"email" binding:"required,email"`
-// 		Password string `json:"password" binding:"required,min=6"`
-// 	}
-
-// 	if err := c.ShouldBindJSON(&creds); err != nil {
-// 		utils.RespondError(c, 400, "Invalid input")
-// 		return
-// 	}
-
-// 	// Find user by email
-// 	collection := db.Collection("users")
-// 	var user models.User
-// 	if err := collection.FindOne(context.TODO(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
-// 		utils.RespondError(c, 401, "Invalid email or password")
-// 		return
-// 	}
-// 	fmt.Println("User Found")
-// 	// Check password
-// 	if !utils.CheckPassword(user.Password, creds.Password) {
-// 		utils.RespondError(c, 401, "Invalid email or password")
-// 		return
-// 	}
-
-// 	// Generate tokens
-// 	access, err := utils.GenerateAccessToken(user.ID.Hex(), user.Role)
-// 	if err != nil {
-// 		utils.RespondError(c, 500, "Failed to generate access token")
-// 		return
-// 	}
-// 	refresh, err := utils.GenerateRefreshToken(user.ID.Hex(), user.Role)
-// 	if err != nil {
-// 		utils.RespondError(c, 500, "Failed to generate refresh token")
-// 		return
-// 	}
-
-//		utils.RespondSuccess(c, 200, "Login successful", gin.H{
-//			"access_token":  access,
-//			"refresh_token": refresh,
-//			"user": gin.H{
-//				"id":    user.ID.Hex(),
-//				"name":  user.Name,
-//				"email": user.Email,
-//				"role":  user.Role,
-//			},
-//		})
-//	}
 func Login(c *gin.Context, db *mongo.Database) {
 	var creds struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -137,12 +89,12 @@ func Login(c *gin.Context, db *mongo.Database) {
 	collection := db.Collection("users")
 	var user models.User
 	if err := collection.FindOne(context.TODO(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
-		utils.RespondError(c, 401, "Invalid email or password")
+		utils.RespondError(c, 400, "Invalid email or password")
 		return
 	}
 
 	if !utils.CheckPassword(user.Password, creds.Password) {
-		utils.RespondError(c, 401, "Invalid email or password")
+		utils.RespondError(c, 400, "Invalid email or password")
 		return
 	}
 
@@ -158,15 +110,21 @@ func Login(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	c.SetCookie(
-		"refresh_token",
+	// c.SetCookie(
+	// 	"refresh_token",
+	// 	refreshToken,
+	// 	60*60*24*7, // 7 days
+	// 	"/",
+	// 	"", // domain (empty = current)
+	// 	true,
+	// 	true,
+	// )
+	c.Header("Set-Cookie", fmt.Sprintf(
+		"refresh_token=%s; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=%d",
 		refreshToken,
 		60*60*24*7, // 7 days
-		"/",
-		"", // domain (empty = current)
-		true,
-		true,
-	)
+	))
+
 	// Optionally: SameSite=None/Lax/Strict depending on your setup
 	// For Gin, use the cookie header directly if you need SameSite attribute:
 	// c.Header("Set-Cookie", fmt.Sprintf("refresh_token=%s; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=%d", refreshToken, 60*60*24*7))
@@ -207,15 +165,20 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	c.SetCookie(
-		"refresh_token",
+	// c.SetCookie(
+	// 	"refresh_token",
+	// 	newRefreshToken,
+	// 	int((7 * 24 * time.Hour).Seconds()), // 7 days
+	// 	"/",
+	// 	"",
+	// 	true,
+	// 	true,
+	// )
+	c.Header("Set-Cookie", fmt.Sprintf(
+		"refresh_token=%s; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=%d",
 		newRefreshToken,
-		int((7 * 24 * time.Hour).Seconds()), // 7 days
-		"/",
-		"",
-		true,
-		true,
-	)
+		60*60*24*7, // 7 days
+	))
 
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
 		"access_token": accessToken,
@@ -226,7 +189,7 @@ func Logout(c *gin.Context, db *mongo.Database) {
 	c.SetCookie(
 		"refresh_token",
 		"",
-		-1, 
+		-1,
 		"/",
 		"",
 		true,

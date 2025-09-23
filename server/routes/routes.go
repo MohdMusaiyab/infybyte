@@ -13,6 +13,8 @@ func InitRoutes(router *gin.Engine, db *mongo.Database) {
 	{
 		// Auth routes
 		AuthRoutes(v1, db)
+		//Admin Routes
+		AdminRoutes(v1, db)
 		v1.GET("/test", middlewares.AuthMiddleware(), func(c *gin.Context) {
 			userID, _ := c.Get("userID")
 			role, _ := c.Get("role")

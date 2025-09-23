@@ -2,23 +2,18 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
-interface ProtectedRouteProps {
+interface PrivateRouteProps {
   children: React.ReactNode;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+  const { user } = useAuth();
 
-  if (isLoading) {
-    
-    return <div>Loading...</div>;
-  }
-
-  if (!isAuthenticated) {
+  if (!user) {
+    // Not logged in → redirect to login
     return <Navigate to="/login" replace />;
   }
 
+  // Logged in → show content
   return <>{children}</>;
 };
-
-export default ProtectedRoute;

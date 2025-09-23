@@ -1,65 +1,77 @@
-// import { useEffect } from 'react';
-// import { useAuthStore } from '../store/authStore';
-// import { authService } from '../services/authService';
-
-// export const useAuth = () => {
-//   const { user, isAuthenticated, isLoading, setLoading } = useAuthStore();
-
-//   // Initialize auth on app start
-//   useEffect(() => {
-//     const initAuth = async () => {
-//       if (!isAuthenticated) {
-//         setLoading(true);
-//         const success = await authService.refreshAuth();
-//         if (!success) {
-//           setLoading(false);
-//         }
-//       }
-//     };
-
-//     initAuth();
-//   }, [isAuthenticated, setLoading]);
-
-//   return {
-//     user,
-//     isAuthenticated,
-//     isLoading,
-//     login: authService.login,
-//     logout: authService.logout,
-//     refreshAuth: authService.refreshAuth,
-//   };
-// };
-import { useEffect } from "react";
-import { authService } from "../services/authService";
+import { useCallback } from "react";
 import { useAuthStore } from "../store/authStore";
+import axiosInstance from "../utils/axiosInstance";
+import type {
+  LoginCredentials,
+  RegisterCredentials,
+  User,
+} from "../types/auth";
 
 export const useAuth = () => {
-  const { user, isAuthenticated, isLoading, setLoading } = useAuthStore();
+  const {
+    user,
+    accessToken,
+    isAuthenticated,
+    isLoading,
+    setUser,
+    logout,
+    setLoading,
+  } = useAuthStore();
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (!isAuthenticated) {
-        setLoading(true);
-
-        const success = await authService.refreshAuth(); 
-
+  const login = useCallback(
+    async (credentials: LoginCredentials) => {
+      setLoading(true);
+      try {
+        const res = await axiosInstance.post("/auth/login", credentials);
+        console.log(res.data);
+        const { access_token, user: loggedUser } = res.data.data;
+        setUser(loggedUser, access_token);
         setLoading(false);
-
-        if (!success) {
-          // 
-        }
+        return loggedUser;
+      } catch (error) {
+        setLoading(false);
+        throw error;
       }
-    };
+    },
+    [setUser, setLoading]
+  );
 
-    initAuth();
-  }, [isAuthenticated, setLoading]);
+  const register = useCallback(
+    async (credentials: RegisterCredentials) => {
+      setLoading(true);
+      try {
+        const res = await axiosInstance.post("/auth/register", credentials);
+        const registeredUser: User = res.data.data;
+        console.log(registeredUser);
+        setLoading(false);
+        return registeredUser;
+      } catch (error) {
+        setLoading(false);
+        throw error;
+      }
+    },
+    [setLoading]
+  );
+
+  const logoutUser = useCallback(async () => {
+    setLoading(true);
+    try {
+      await axiosInstance.post("/logout");
+      logout();
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      throw error;
+    }
+  }, [logout, setLoading]);
 
   return {
     user,
+    accessToken,
     isAuthenticated,
     isLoading,
-    login: authService.login,
-    logout: authService.logout,
-    refreshAuth: authService.refreshAuth,
+    login,
+    register,
+    logout: logoutUser,
   };
 };

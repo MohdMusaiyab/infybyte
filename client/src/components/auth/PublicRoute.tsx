@@ -4,25 +4,16 @@ import { useAuth } from "../../hooks/useAuth";
 
 interface PublicRouteProps {
   children: React.ReactNode;
-  redirectTo?: string; // Optional prop to customize redirect
 }
 
-const PublicRoute: React.FC<PublicRouteProps> = ({
-  children,
-  redirectTo = "/",
-}) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
+  const { user } = useAuth();
 
-  if (isLoading) {
-    
-    return <div>Loading...</div>;
+  if (user) {
+    // Already logged in → redirect to dashboard
+    return <Navigate to="/dashboard" replace />;
   }
 
-  if (isAuthenticated) {
-    return <Navigate to={redirectTo} replace />;
-  }
-
+  // Not logged in → show content
   return <>{children}</>;
 };
-
-export default PublicRoute;

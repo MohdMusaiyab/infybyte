@@ -1,48 +1,30 @@
+import React from "react";
+import { useAuth } from "../../hooks/useAuth";
 
-import { useEffect, useState } from "react";
-import api from "../../api/axios";
+const Dashboard: React.FC = () => {
+  const { user } = useAuth();
 
-interface TestResponse {
-  message: string;
-  userID: string;
-  role: string;
-}
-
-const Dashboard = () => {
-  const [data, setData] = useState<TestResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchTest = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get<{ message: string; userID: string; role: string }>("/test");
-        setData(response.data);
-      } catch (err: unknown) {
-        setError("Failed to fetch data");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTest();
-  }, []);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (!user) {
+    return <div className="text-center mt-20 text-lg">Loading user info...</div>;
+  }
 
   return (
-    <div>
-      <h1>Dashboard</h1>
-      {data && (
-        <>
-          <p>Message: {data.message}</p>
-          <p>UserID: {data.userID}</p>
-          <p>Role: {data.role}</p>
-        </>
-      )}
+    <div className="max-w-2xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-4">Welcome, {user.name}!</h1>
+      <div className="space-y-2">
+        <p>
+          <span className="font-semibold">Name:</span> {user.name}
+        </p>
+        <p>
+          <span className="font-semibold">Email:</span> {user.email}
+        </p>
+        <p>
+          <span className="font-semibold">Role:</span> {user.role}
+        </p>
+        <p>
+          <span className="font-semibold">User ID:</span> {user.id}
+        </p>
+      </div>
     </div>
   );
 };
