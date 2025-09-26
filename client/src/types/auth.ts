@@ -34,3 +34,19 @@ export interface RegisterResponse {
     role: string;
   };
 }
+
+export interface FoodCourt {
+  id: string;
+  name: string;
+  location: string;
+  isOpen: boolean;
+}
+
+export interface AdminProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  foodcourts?: FoodCourt[];
+}

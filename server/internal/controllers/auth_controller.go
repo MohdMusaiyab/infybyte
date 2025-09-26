@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -15,21 +14,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Register handles user registration
+// Helper to set refresh cookie
+func setRefreshCookie(c *gin.Context, token string, maxAge int) {
+	secure := false
+	c.SetCookie(
+		"refresh_token",
+		token,
+		maxAge,
+		"/",
+		"localhost", // use your domain in prod
+		secure,
+		true, // HttpOnly
+	)
+}
+
+// --------------------------- REGISTER ---------------------------
 func Register(c *gin.Context, db *mongo.Database) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
 		utils.RespondError(c, 400, "Invalid request body")
 		return
 	}
+
 	user.Role = "user"
 	if err := utils.Validate.Struct(user); err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		for _, fieldErr := range validationErrors {
-			// Build key in format Field.Tag
 			key := fieldErr.StructField() + "." + fieldErr.Tag()
-
-			// Look up friendly message in the model
 			if msg, ok := models.UserValidationMessages[key]; ok {
 				utils.RespondError(c, 400, msg)
 				return
@@ -37,7 +48,6 @@ func Register(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Check if email already exists
 	collection := db.Collection("users")
 	count, err := collection.CountDocuments(context.TODO(), bson.M{"email": user.Email})
 	if err != nil {
@@ -49,18 +59,17 @@ func Register(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Hash password
 	hashed, err := utils.HashPassword(user.Password)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to hash password")
 		return
 	}
+
 	user.Password = hashed
 	user.ID = primitive.NewObjectID()
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	// Insert into DB
 	res, err := collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to create user")
@@ -75,6 +84,7 @@ func Register(c *gin.Context, db *mongo.Database) {
 	})
 }
 
+// --------------------------- LOGIN ---------------------------
 func Login(c *gin.Context, db *mongo.Database) {
 	var creds struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -110,24 +120,8 @@ func Login(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// c.SetCookie(
-	// 	"refresh_token",
-	// 	refreshToken,
-	// 	60*60*24*7, // 7 days
-	// 	"/",
-	// 	"", // domain (empty = current)
-	// 	true,
-	// 	true,
-	// )
-	c.Header("Set-Cookie", fmt.Sprintf(
-		"refresh_token=%s; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=%d",
-		refreshToken,
-		60*60*24*7, // 7 days
-	))
-
-	// Optionally: SameSite=None/Lax/Strict depending on your setup
-	// For Gin, use the cookie header directly if you need SameSite attribute:
-	// c.Header("Set-Cookie", fmt.Sprintf("refresh_token=%s; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=%d", refreshToken, 60*60*24*7))
+	// Set refresh cookie properly
+	setRefreshCookie(c, refreshToken, 7*24*60*60) // 7 days
 
 	utils.RespondSuccess(c, 200, "Login successful", gin.H{
 		"access_token": accessToken,
@@ -140,6 +134,7 @@ func Login(c *gin.Context, db *mongo.Database) {
 	})
 }
 
+// --------------------------- REFRESH ---------------------------
 func Refresh(c *gin.Context, db *mongo.Database) {
 	refreshToken, err := c.Cookie("refresh_token")
 	if err != nil {
@@ -165,35 +160,15 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// c.SetCookie(
-	// 	"refresh_token",
-	// 	newRefreshToken,
-	// 	int((7 * 24 * time.Hour).Seconds()), // 7 days
-	// 	"/",
-	// 	"",
-	// 	true,
-	// 	true,
-	// )
-	c.Header("Set-Cookie", fmt.Sprintf(
-		"refresh_token=%s; HttpOnly; Secure; SameSite=None; Path=/; Max-Age=%d",
-		newRefreshToken,
-		60*60*24*7, // 7 days
-	))
-
+	setRefreshCookie(c, newRefreshToken, 7*24*60*60) // 7 days
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
 		"access_token": accessToken,
 	})
 }
 
+// --------------------------- LOGOUT ---------------------------
 func Logout(c *gin.Context, db *mongo.Database) {
-	c.SetCookie(
-		"refresh_token",
-		"",
-		-1,
-		"/",
-		"",
-		true,
-		true,
-	)
+	// Clear cookie
+	setRefreshCookie(c, "", -1)
 	utils.RespondSuccess(c, 200, "Logged out successfully", nil)
 }

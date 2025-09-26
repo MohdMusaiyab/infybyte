@@ -1,3 +1,4 @@
+// store/authStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "../types/auth";
@@ -39,7 +40,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
-      partialize: (state) => ({ user: state.user }), // persist only user info
+      partialize: (state) => ({ user: state.user, accessToken: state.accessToken }), // persist both
     }
   )
 );
