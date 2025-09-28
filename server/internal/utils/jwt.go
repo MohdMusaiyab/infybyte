@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	accessSecret  = []byte(os.Getenv("ACCESS_SECRET"))  
-	refreshSecret = []byte(os.Getenv("REFRESH_SECRET")) 
+	accessSecret  = []byte(os.Getenv("ACCESS_SECRET"))
+	refreshSecret = []byte(os.Getenv("REFRESH_SECRET"))
 )
 
 type JWTClaims struct {
@@ -23,7 +23,7 @@ func GenerateAccessToken(userID, role string) (string, error) {
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), 
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -37,7 +37,7 @@ func GenerateRefreshToken(userID, role string) (string, error) {
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), 
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -56,6 +56,22 @@ func ValidateToken(tokenStr string, isRefresh bool) (*JWTClaims, error) {
 
 	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := token.Claims.(*JWTClaims)
+	if !ok || !token.Valid {
+		return nil, err
+	}
+
+	return claims, nil
+}
+
+func ValidateRefreshToken(tokenStr string) (*JWTClaims, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return refreshSecret, nil
 	})
 	if err != nil {
 		return nil, err

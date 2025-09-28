@@ -1,62 +1,45 @@
-// utils/axiosInstance.ts
-import axios, { AxiosError } from "axios";
-import type { AxiosResponse, AxiosRequestConfig } from "axios";
+// src/utils/axiosInstance.ts
+import axios from "axios";
 import { useAuthStore } from "../store/authStore";
-import type { LoginResponse, ApiResponse } from "../types/auth";
-
-const BASE_URL = "http://localhost:8080/api/v1";
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true, // send HttpOnly cookie automatically
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true, // important for cookies
 });
 
-// Attach access token
-axiosInstance.interceptors.request.use(
-  (config) => {
-    const { accessToken } = useAuthStore.getState();
-    if (accessToken && config.headers) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Request interceptor → add Authorization
+axiosInstance.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().accessToken;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-// Response interceptor → refresh token if 401
+// Response interceptor → handle 401 and refresh
 axiosInstance.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
-    const store = useAuthStore.getState();
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
+    // Prevent infinite loop
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-
       try {
-        const res = await axios.post<ApiResponse<LoginResponse>>(
-          `${BASE_URL}/auth/refresh`,
+        const res = await axios.post(
+          "http://localhost:8080/api/v1/auth/refresh",
           {},
-          { withCredentials: true } // send refresh token cookie
+          { withCredentials: true }
         );
 
-        const { access_token } = res.data.data ?? {};
+        const { access_token, user } = res.data.data;
+        useAuthStore.getState().setAuth(user, access_token);
 
-        if (!access_token ) {
-          store.logout();
-          return Promise.reject(error);
-        }
-        const { user } = store;
-        store.setUser(user!, access_token);
-
-        if (originalRequest.headers) {
-          originalRequest.headers["Authorization"] = `Bearer ${access_token}`;
-        }
-
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        store.logout();
-        return Promise.reject(refreshError);
+      } catch (err) {
+        useAuthStore.getState().logout();
+        return Promise.reject(err);
       }
     }
 

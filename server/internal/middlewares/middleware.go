@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -12,8 +11,6 @@ import (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		fmt.Print("Header: ")
-		fmt.Print(authHeader)
 		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
 			utils.RespondError(c, http.StatusUnauthorized, "Missing or invalid Authorization header")
 			c.Abort()
@@ -47,7 +44,6 @@ func VendorMiddleware() gin.HandlerFunc {
 
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Print("Reaching Admin Controller")
 		role, exists := c.Get("role")
 		if !exists || role != "admin" {
 			utils.RespondError(c, http.StatusForbidden, "Access restricted to admins only")
