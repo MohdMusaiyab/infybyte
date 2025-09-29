@@ -53,18 +53,19 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { User } from "../types/auth";
+// import type { User } from "../types/auth";
+import type { AuthState } from "../types/auth";
 
-interface AuthState {
-  user: User | null;
-  accessToken: string | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  setAuth: (user: User, token: string) => void;
-  setUser: (user: User, token: string) => void;
-  setLoading: (loading: boolean) => void;
-  logout: () => void;
-}
+// interface AuthState {
+//   user: User | null;
+//   accessToken: string | null;
+//   isAuthenticated: boolean;
+//   isLoading: boolean;
+//   setAuth: (user: User, token: string) => void;
+//   setUser: (user: User, token: string) => void;
+//   setLoading: (loading: boolean) => void;
+//   logout: () => void;
+// }
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -102,7 +103,6 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         isLoading: state.isLoading,
-        // omit user and accessToken from persistence
       }),
     }
   )

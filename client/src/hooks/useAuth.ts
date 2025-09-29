@@ -1,4 +1,3 @@
-// hooks/useAuth.ts
 import { useCallback } from "react";
 import { useAuthStore } from "../store/authStore";
 import axiosInstance from "../utils/axiosInstance";

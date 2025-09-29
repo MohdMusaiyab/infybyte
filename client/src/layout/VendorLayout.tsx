@@ -6,7 +6,6 @@ const VendorLayout: React.FC = () => {
     <div>
       <header>
         <h1>Vendor Panel</h1>
-        {/* Vendor specific nav/sidebar */}
       </header>
       <main>
         <Outlet />

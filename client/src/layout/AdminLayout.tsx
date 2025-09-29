@@ -6,7 +6,6 @@ const AdminLayout: React.FC = () => {
     <div>
       <header>
         <h1>Admin Dashboard</h1>
-        {/* Admin navbar/sidebar */}
       </header>
       <main>
         <Outlet />

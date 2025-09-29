@@ -7,7 +7,7 @@ const VendorRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["vendor"]} />}>
     <Route element={<VendorLayout />}>
       <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-      {/* add other vendor pages here */}
+      {/* Other vendor pages here */}
     </Route>
   </Route>
 );

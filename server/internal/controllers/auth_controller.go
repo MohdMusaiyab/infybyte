@@ -15,7 +15,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// Helper to set refresh cookie
 func setRefreshCookie(c *gin.Context, token string, maxAge int) {
 	secure := false
 	c.SetCookie(
@@ -23,7 +22,7 @@ func setRefreshCookie(c *gin.Context, token string, maxAge int) {
 		token,
 		maxAge,
 		"/",
-		"localhost", // use your domain in prod
+		"localhost",
 		secure,
 		true, // HttpOnly
 	)
@@ -120,8 +119,6 @@ func Login(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, 500, "Failed to generate refresh token")
 		return
 	}
-
-	// Set refresh cookie properly
 	setRefreshCookie(c, refreshToken, 7*24*60*60) // 7 days
 
 	utils.RespondSuccess(c, 200, "Login successful", gin.H{
@@ -143,7 +140,6 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get refresh token from cookie
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "Missing refresh token")
@@ -164,15 +160,6 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Return both token + user
-
-	// utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
-	// 	"access_token": accessToken,
-	// 	"user": gin.H{
-	// 		"id":   claims.UserID,
-	// 		"role": claims.Role,
-	// 	},
-	// })
 	var user models.User
 	oid, err := primitive.ObjectIDFromHex(claims.UserID)
 	if err != nil {
@@ -185,8 +172,6 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		fmt.Print("error in refresh token: ", err)
 		return
 	}
-
-	// Return both access token and full user
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
 		"access_token": accessToken,
 		"user": gin.H{

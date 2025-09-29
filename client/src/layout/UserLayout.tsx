@@ -6,7 +6,6 @@ const UserLayout: React.FC = () => {
     <div>
       <header>
         <h1>User Dashboard</h1>
-        {/* Add navbar, sidebar, etc. */}
       </header>
       <main>
         <Outlet />

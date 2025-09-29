@@ -50,3 +50,14 @@ export interface AdminProfile {
   createdAt: string;
   foodcourts?: FoodCourt[];
 }
+
+export interface AuthState {
+  user: User | null;
+  accessToken: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  setAuth: (user: User, token: string) => void;
+  setUser: (user: User, token: string) => void;
+  setLoading: (loading: boolean) => void;
+  logout: () => void;
+}
