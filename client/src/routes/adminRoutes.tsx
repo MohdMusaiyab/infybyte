@@ -7,7 +7,7 @@ const AdminRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
     <Route element={<AdminLayout />}>
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      {/* add other admin pages here */}
+      {/* Other admin pages */}
     </Route>
   </Route>
 );
