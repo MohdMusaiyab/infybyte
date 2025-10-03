@@ -1,5 +1,3 @@
-import React from 'react'
-
 const VendorDashboard = () => {
   return (
     <div>VendorDashboard</div>

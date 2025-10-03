@@ -19,6 +19,7 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 	// pagination params
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "50")
+	searchEmail := c.Query("email") // New: search by email
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
@@ -33,6 +34,16 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 
 	collection := db.Collection("users")
 
+	// Build filter query
+	filter := bson.M{}
+	if searchEmail != "" {
+		// Case-insensitive partial match for email
+		filter["email"] = bson.M{
+			"$regex":   searchEmail,
+			"$options": "i", // case-insensitive
+		}
+	}
+
 	// projection (exclude password)
 	findOptions := options.Find().
 		SetProjection(bson.M{
@@ -42,8 +53,8 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 		SetLimit(int64(limit)).
 		SetSort(bson.M{"createdAt": -1})
 
-	// fetch users
-	cursor, err := collection.Find(context.TODO(), bson.M{}, findOptions)
+	// fetch users with filter
+	cursor, err := collection.Find(context.TODO(), filter, findOptions)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to fetch users")
 		return
@@ -56,8 +67,8 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// count total docs
-	total, err := collection.CountDocuments(context.TODO(), bson.M{})
+	// count total docs with filter
+	total, err := collection.CountDocuments(context.TODO(), filter)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to count users")
 		return
@@ -67,10 +78,11 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, 200, "Users fetched successfully", gin.H{
 		"users": users,
 		"meta": gin.H{
-			"page":  page,
-			"limit": limit,
-			"total": total,
-			"pages": (total + int64(limit) - 1) / int64(limit),
+			"page":   page,
+			"limit":  limit,
+			"total":  total,
+			"pages":  (total + int64(limit) - 1) / int64(limit),
+			"search": searchEmail, // Include search query in response
 		},
 	})
 }
@@ -375,4 +387,182 @@ func UpdateAdminProfile(c *gin.Context, db *mongo.Database) {
 	}
 
 	utils.RespondSuccess(c, 200, "Admin profile updated successfully", nil)
+}
+
+
+func GetAllVendors(c *gin.Context, db *mongo.Database) {
+	// pagination params
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "50")
+	searchEmail := c.Query("email") // search by email
+	searchName := c.Query("name")   // search by name
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 50
+	}
+
+	skip := (page - 1) * limit
+
+	usersCollection := db.Collection("users")
+	vendorsCollection := db.Collection("vendors")
+
+	// Build filter query - only fetch users with role "vendor"
+	userFilter := bson.M{"role": "vendor"}
+
+	// Add search filters if provided
+	if searchEmail != "" || searchName != "" {
+		andConditions := []bson.M{{"role": "vendor"}}
+
+		if searchEmail != "" {
+			andConditions = append(andConditions, bson.M{
+				"email": bson.M{
+					"$regex":   searchEmail,
+					"$options": "i", // case-insensitive
+				},
+			})
+		}
+
+		if searchName != "" {
+			andConditions = append(andConditions, bson.M{
+				"name": bson.M{
+					"$regex":   searchName,
+					"$options": "i", // case-insensitive
+				},
+			})
+		}
+
+		userFilter = bson.M{"$and": andConditions}
+	}
+
+	// projection (exclude password)
+	findOptions := options.Find().
+		SetProjection(bson.M{
+			"password": 0,
+		}).
+		SetSkip(int64(skip)).
+		SetLimit(int64(limit)).
+		SetSort(bson.M{"createdAt": -1})
+
+	// fetch vendor users with filter
+	cursor, err := usersCollection.Find(context.TODO(), userFilter, findOptions)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendors")
+		return
+	}
+	defer cursor.Close(context.TODO())
+
+	var vendorUsers []models.User
+	if err := cursor.All(context.TODO(), &vendorUsers); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Error decoding vendors")
+		return
+	}
+
+	// Fetch vendor profiles for additional info
+	type VendorWithProfile struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		Email     string `json:"email"`
+		Role      string `json:"role"`
+		ShopName  string `json:"shopName,omitempty"`
+		VendorID  string `json:"vendorId,omitempty"`
+		CreatedAt string `json:"createdAt"`
+		UpdatedAt string `json:"updatedAt"`
+	}
+
+	var vendorsWithProfiles []VendorWithProfile
+
+	for _, user := range vendorUsers {
+		vendorData := VendorWithProfile{
+			ID:        user.ID.Hex(),
+			Name:      user.Name,
+			Email:     user.Email,
+			Role:      user.Role,
+			CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			UpdatedAt: user.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		}
+
+		// Try to fetch vendor profile
+		var vendor models.Vendor
+		err := vendorsCollection.FindOne(context.TODO(), bson.M{"userId": user.ID}).Decode(&vendor)
+		if err == nil {
+			vendorData.ShopName = vendor.ShopName
+			vendorData.VendorID = vendor.ID.Hex()
+		}
+
+		vendorsWithProfiles = append(vendorsWithProfiles, vendorData)
+	}
+
+	// count total vendor docs with filter
+	total, err := usersCollection.CountDocuments(context.TODO(), userFilter)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to count vendors")
+		return
+	}
+
+	// response
+	utils.RespondSuccess(c, http.StatusOK, "Vendors fetched successfully", gin.H{
+		"vendors": vendorsWithProfiles,
+		"meta": gin.H{
+			"page":        page,
+			"limit":       limit,
+			"total":       total,
+			"pages":       (total + int64(limit) - 1) / int64(limit),
+			"searchEmail": searchEmail,
+			"searchName":  searchName,
+		},
+	})
+}
+
+// GetVendorDetails fetches detailed information about a specific vendor
+func GetVendorDetails(c *gin.Context, db *mongo.Database) {
+	vendorID := c.Param("id")
+	objID, err := primitive.ObjectIDFromHex(vendorID)
+	if err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid vendor ID")
+		return
+	}
+
+	usersCollection := db.Collection("users")
+	vendorsCollection := db.Collection("vendors")
+	itemsCollection := db.Collection("items")
+
+	// Find user with vendor role
+	var user models.User
+	err = usersCollection.FindOne(context.TODO(), bson.M{"_id": objID, "role": "vendor"}).Decode(&user)
+	if err == mongo.ErrNoDocuments {
+		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
+		return
+	} else if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Database error")
+		return
+	}
+
+	// Find vendor profile
+	var vendor models.Vendor
+	err = vendorsCollection.FindOne(context.TODO(), bson.M{"userId": user.ID}).Decode(&vendor)
+	if err != nil && err != mongo.ErrNoDocuments {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendor profile")
+		return
+	}
+
+	// Count items by this vendor
+	itemCount, _ := itemsCollection.CountDocuments(context.TODO(), bson.M{"vendor_id": user.ID})
+
+	// Prepare response
+	utils.RespondSuccess(c, http.StatusOK, "Vendor details fetched", gin.H{
+		"id":         user.ID.Hex(),
+		"name":       user.Name,
+		"email":      user.Email,
+		"role":       user.Role,
+		"shopName":   vendor.ShopName,
+		"vendorId":   vendor.ID.Hex(),
+		"itemCount":  itemCount,
+		"createdAt":  user.CreatedAt,
+		"updatedAt":  user.UpdatedAt,
+	})
 }
