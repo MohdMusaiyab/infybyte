@@ -2,6 +2,10 @@ import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import type { RegisterCredentials } from "../types/auth";
 import { isAxiosError } from "axios";
+import TextInput from "../components/general/input/TextInput";
+import EmailInput from "../components/general/input/EmailInput";
+import PasswordInput from "../components/general/input/PasswordInput";
+import Button from "../components/general/Button";
 
 const Register = () => {
   const { register } = useAuth();
@@ -36,7 +40,8 @@ const Register = () => {
       // Handle Axios error with backend message
       if (isAxiosError(err)) {
         if (err.response?.data && typeof err.response.data === "object") {
-          const backendMessage = (err.response.data as { message?: string }).message;
+          const backendMessage = (err.response.data as { message?: string })
+            .message;
           setError(backendMessage ?? "Registration failed");
         } else {
           setError(err.message || "Registration failed");
@@ -69,74 +74,58 @@ const Register = () => {
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4">
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-3">
             {/* Name Input */}
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Full Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Full Name"
-                value={form.name}
-                onChange={handleChange}
-                minLength={2}
-              />
-            </div>
+            <TextInput
+              label="Full Name"
+              name="name"
+              type="text"
+              required
+              placeholder="Full Name"
+              value={form.name}
+              onChange={handleChange}
+              minLength={2}
+              fullWidth
+              theme="blue"
+              className="justify-center text-center"
+              containerClassName="text-center"
+              labelClassName="text-center"
+            />
 
             {/* Email Input */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Email address"
-                value={form.email}
-                onChange={handleChange}
-              />
-            </div>
+            <EmailInput
+              label="Email address"
+              name="email"
+              autoComplete="email"
+              required
+              placeholder="Email address"
+              value={form.email}
+              onChange={handleChange}
+              fullWidth
+              theme="blue"
+              className="justify-center text-center"
+              containerClassName="text-center"
+              labelClassName="text-center"
+            />
 
             {/* Password Input */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Password (min 6 characters)"
-                value={form.password}
-                onChange={handleChange}
-                minLength={6}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Password must be at least 6 characters
-              </p>
-            </div>
+            <PasswordInput
+              label="Password"
+              name="password"
+              autoComplete="new-password"
+              required
+              placeholder="Password (min 6 characters)"
+              value={form.password}
+              onChange={handleChange}
+              minLength={6}
+              fullWidth
+              theme="blue"
+              helperText="Password must be at least 6 characters"
+              containerClassName="text-center"
+              labelClassName="text-center"
+              className="justify-center text-center"
+            />
           </div>
 
           {/* Error Message */}
@@ -155,13 +144,16 @@ const Register = () => {
 
           {/* Submit Button */}
           <div>
-            <button
+            <Button
               type="submit"
+              variant="solid"
+              size="md"
+              loading={loading}
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              fullWidth
             >
               {loading ? "Registering..." : "Register"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

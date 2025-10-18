@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import type { LoginCredentials } from "../types/auth";
 import axios from "axios"; // for type checking in catch
+import EmailInput from "../components/general/input/EmailInput";
+import PasswordInput from "../components/general/input/PasswordInput";
+import Button from "../components/general/Button";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -36,8 +39,12 @@ const Login = () => {
     } catch (err: unknown) {
       // Axios error handling with full type safety
       if (axios.isAxiosError(err)) {
-        const responseData = err.response?.data as { message?: string } | undefined;
-        setError(responseData?.message ?? err.message ?? "Login failed. Try again.");
+        const responseData = err.response?.data as
+          | { message?: string }
+          | undefined;
+        setError(
+          responseData?.message ?? err.message ?? "Login failed. Try again."
+        );
       } else if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -57,7 +64,10 @@ const Login = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{" "}
-            <a href="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <a
+              href="/register"
+              className="font-medium text-blue-600 hover:text-blue-500"
+            >
               create an account if you don't have one
             </a>
           </p>
@@ -66,41 +76,37 @@ const Login = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Email address"
-                value={form.email}
-                onChange={handleChange}
-              />
-            </div>
-
+            <EmailInput
+              label="Email address"
+              name="email"
+              autoComplete="email"
+              required
+              placeholder="Email address"
+              value={form.email}
+              onChange={handleChange}
+              fullWidth
+              theme="blue"
+              containerClassName="text-center"
+              labelClassName="text-center block"
+              className="text-center"
+            />
             {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Password"
-                value={form.password}
-                onChange={handleChange}
-                minLength={6}
-              />
-            </div>
+            <PasswordInput
+              label="Password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              minLength={6}
+              fullWidth
+              theme="blue"
+              containerClassName="text-center"
+              labelClassName="text-center block"
+              className="text-center"
+            />
           </div>
 
           {/* Error */}
@@ -119,13 +125,16 @@ const Login = () => {
 
           {/* Submit */}
           <div>
-            <button
+            <Button
               type="submit"
+              variant="solid"
+              size="md"
+              loading={loading}
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              fullWidth
             >
               {loading ? "Signing in..." : "Sign in"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
