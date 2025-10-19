@@ -11,7 +11,7 @@ type FoodCourt struct {
 	Name      string               `bson:"name" json:"name" validate:"required,min=2,max=100"`
 	Location  string               `bson:"location" json:"location" validate:"required"`
 	AdminID   primitive.ObjectID   `bson:"admin_id" json:"admin_id" validate:"required"`
-	VendorIDs []primitive.ObjectID `bson:"vendor_ids,omitempty" json:"vendor_ids,omitempty"`
+	VendorIDs []primitive.ObjectID `bson:"vendor_ids,omitempty" json:"vendor_ids"`
 	Timings   string               `bson:"timings,omitempty" json:"timings,omitempty" validate:"omitempty,max=100"`
 	IsOpen    bool                 `bson:"isOpen" json:"isOpen"`
 	Weekends  bool                 `bson:"weekends" json:"weekends"`

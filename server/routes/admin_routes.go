@@ -25,5 +25,17 @@ func AdminRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		// Admin Profile
 		admin.GET("/profile", func(c *gin.Context) { controllers.GetAdminProfile(c, db) })
 		admin.PUT("/profile", func(c *gin.Context) { controllers.UpdateAdminProfile(c, db) })
+
+		//Food Court Management
+		admin.GET("/my-food-courts", func(c *gin.Context) { controllers.GetAllFoodCourtsAdmin(c, db) })
+		admin.GET("/get-food-court-details/:foodCourtId", func(c *gin.Context) { controllers.GetFoodCourtDetailsAdmin(c, db) })
+		admin.POST("/food-courts", func(c *gin.Context) { controllers.CreateFoodCourt(c, db) })
+		admin.POST("/food-courts/:foodCourtId/add-vendor/:vendorId", func(c *gin.Context) { controllers.AddVendorToFoodCourt(c, db) })
+		admin.DELETE("/food-courts/:foodCourtId/remove-vendor/:vendorId", func(c *gin.Context) { controllers.RemoveVendorFromFoodCourt(c, db) })
+		admin.PUT("/food-courts/:foodCourtId", func(c *gin.Context) { controllers.UpdateFoodCourt(c, db) })
+		admin.DELETE("/food-courts/:foodCourtId", func(c *gin.Context) { controllers.DeleteFoodCourt(c, db) })
+
+		//Helper Like Vendor Drop Down
+		admin.GET("/vendor-dropdown", func(c *gin.Context) { controllers.GetVendorDropdown(c, db) })
 	}
 }

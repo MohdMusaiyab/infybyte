@@ -40,6 +40,9 @@ export interface FoodCourt {
   name: string;
   location: string;
   isOpen: boolean;
+  timings?: string;
+  weekdays?: boolean;
+  weekends?: boolean;
 }
 
 export interface AdminProfile {
