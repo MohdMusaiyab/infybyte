@@ -5,7 +5,6 @@ const VendorLayout: React.FC = () => {
   return (
     <div>
       <header>
-        <h1>Vendor Panel</h1>
       </header>
       <main>
         <Outlet />

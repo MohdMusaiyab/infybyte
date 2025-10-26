@@ -13,6 +13,7 @@ type ItemFoodCourt struct {
 	Status      string             `bson:"status" json:"status" validate:"required,oneof=available notavailable sellingfast finishingsoon"`
 	Price       *float64           `bson:"price,omitempty" json:"price,omitempty"` // Optional: different pricing per location
 	IsActive    bool               `bson:"isActive" json:"isActive"`               // Can disable item in specific food court
+	TimeSlot    string             `bson:"timeSlot" json:"timeSlot" validate:"required,oneof=breakfast lunch snacks dinner"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
