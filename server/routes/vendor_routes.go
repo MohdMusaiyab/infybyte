@@ -28,12 +28,15 @@ func VendorRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		vendor.GET("/foodcourt-items", func(c *gin.Context) { controllers.GetVendorFoodCourtItems(c, db) })
 		vendor.POST("/foodcourt-items", func(c *gin.Context) { controllers.CreateFoodCourtItem(c, db) })
 		vendor.PUT("/foodcourt-items/:id", func(c *gin.Context) { controllers.UpdateFoodCourtItem(c, db) })
-		vendor.DELETE("/foodcourt-items/:id", func(c *gin.Context) { controllers.DeleteFoodCourtItem(c, db) })
+		vendor.DELETE("/foodcourt-items", func(c *gin.Context) { controllers.DeleteFoodCourtItem(c, db) })
 		vendor.GET("/items/:id/foodcourts", func(c *gin.Context) { controllers.GetItemFoodCourts(c, db) })
 		//Manager Routes
 		vendor.GET("/managers", func(c *gin.Context) { controllers.GetVendorManagers(c, db) })
 		vendor.POST("/managers", func(c *gin.Context) { controllers.AddManager(c, db) })
 		vendor.PUT("/managers/:id", func(c *gin.Context) { controllers.UpdateManager(c, db) })
 		vendor.DELETE("/managers/:id", func(c *gin.Context) { controllers.RemoveManager(c, db) })
+		vendor.GET("/managers/:id", func(c *gin.Context) { controllers.GetVendorManager(c, db) })
+		//Getting All Users for assigning manager role
+		vendor.GET("/users", func(c *gin.Context) { controllers.GetAllUsersForManager(c, db) })
 	}
 }

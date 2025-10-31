@@ -4,7 +4,7 @@ import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 
 interface FoodCourtAssociation {
-  _id: string;
+  id: string;
   foodCourtId: string;
   foodCourtName: string;
   location: string;
@@ -17,9 +17,16 @@ interface FoodCourtAssociation {
 }
 
 interface Item {
-  _id: string;
+  id: string;
   name: string;
   basePrice: number;
+}
+
+interface FoodCourt {
+  id: string;
+  name: string;
+  location: string;
+  isOpen: boolean;
 }
 
 const ItemFoodCourt: React.FC = () => {
@@ -27,9 +34,11 @@ const ItemFoodCourt: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [adding, setAdding] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [item, setItem] = useState<Item | null>(null);
   const [foodCourts, setFoodCourts] = useState<FoodCourtAssociation[]>([]);
+  const [availableFoodCourts, setAvailableFoodCourts] = useState<FoodCourt[]>([]);
   
   const statusOptions = ["available", "notavailable", "sellingfast", "finishingsoon"];
   const timeSlotOptions = ["breakfast", "lunch", "snacks", "dinner"];
@@ -41,16 +50,22 @@ const ItemFoodCourt: React.FC = () => {
       setLoading(true);
       setError("");
 
-      const response = await axiosInstance.get(`/vendor/items/${id}/foodcourts`);
-      const data = response.data.data;
+      const [itemFoodCourtsResponse, availableFoodCourtsResponse] = await Promise.all([
+        axiosInstance.get(`/vendor/items/${id}/foodcourts`),
+        axiosInstance.get("/vendor/foodcourts")
+      ]);
+
+      const itemData = itemFoodCourtsResponse.data.data;
+      const availableFcData = availableFoodCourtsResponse.data.data || [];
       
-      setItem(data.item);
-      setFoodCourts(data.foodCourts || []);
+      setItem(itemData.item);
+      setFoodCourts(itemData.foodCourts || []);
+      setAvailableFoodCourts(availableFcData);
 
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
-        setError(responseData?.message ?? err.message ?? "Failed to load item food courts");
+        setError(responseData?.message ?? err.message ?? "Failed to load data");
       } else {
         setError("An unexpected error occurred");
       }
@@ -65,6 +80,15 @@ const ItemFoodCourt: React.FC = () => {
     }
   }, [id, fetchItemFoodCourts]);
 
+  // Create a map of existing food court associations for quick lookup
+  const getFoodCourtAssociationMap = () => {
+    const map = new Map<string, FoodCourtAssociation>();
+    foodCourts.forEach(fc => {
+      map.set(fc.foodCourtId, fc);
+    });
+    return map;
+  };
+
   const handleUpdateFoodCourtItem = async (foodCourtItemId: string, field: string, value: string | number | boolean) => {
     try {
       setUpdating(foodCourtItemId);
@@ -73,7 +97,6 @@ const ItemFoodCourt: React.FC = () => {
       const updateData: Record<string, string | number | boolean> = { [field]: value };
       await axiosInstance.put(`/vendor/foodcourt-items/${foodCourtItemId}`, updateData);
       
-      // Refresh data
       await fetchItemFoodCourts();
       
     } catch (err: unknown) {
@@ -97,9 +120,8 @@ const ItemFoodCourt: React.FC = () => {
       setUpdating(foodCourtItemId);
       setError("");
 
-      await axiosInstance.delete(`/vendor/foodcourt-items/${foodCourtItemId}`);
+      axiosInstance.delete(`/vendor/foodcourt-items?itemId=${id}&foodCourtId=${foodCourtItemId}`)
       
-      // Refresh data
       await fetchItemFoodCourts();
       
     } catch (err: unknown) {
@@ -114,13 +136,39 @@ const ItemFoodCourt: React.FC = () => {
     }
   };
 
+  const handleAddToFoodCourt = async (foodCourtId: string) => {
+    try {
+      setAdding(true);
+      setError("");
+
+      const submitData = {
+        itemId: id,
+        foodCourtId: foodCourtId,
+        status: "available",
+        timeSlot: "breakfast",
+      };
+      console.log("Submitting data:", submitData);
+      await axiosInstance.post("/vendor/foodcourt-items", submitData);
+      
+      await fetchItemFoodCourts();
+      
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        const responseData = err.response?.data as { message?: string } | undefined;
+        setError(responseData?.message ?? err.message ?? "Failed to add item to food court");
+      } else {
+        setError("An unexpected error occurred");
+      }
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const handleBackToEdit = () => {
     navigate(`/vendor/items/edit/${id}`);
   };
 
-  const handleAddToFoodCourt = () => {
-    navigate(`/vendor/foodcourt-items/add?itemId=${id}`);
-  };
+  const foodCourtAssociationMap = getFoodCourtAssociationMap();
 
   if (loading) {
     return (
@@ -151,29 +199,21 @@ const ItemFoodCourt: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <button 
-              onClick={handleBackToEdit}
-              className="flex items-center text-blue-600 hover:text-blue-800"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Edit Item
-            </button>
-            <button
-              onClick={handleAddToFoodCourt}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Add to Food Court
-            </button>
-          </div>
+          <button 
+            onClick={handleBackToEdit}
+            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Edit Item
+          </button>
           
           <h1 className="text-3xl font-bold text-gray-900">
             Manage Food Courts - {item?.name}
           </h1>
           <p className="text-gray-600 mt-2">
-            Manage item availability and pricing across different food courts
+            Manage item availability across all your food courts
           </p>
         </div>
 
@@ -184,75 +224,53 @@ const ItemFoodCourt: React.FC = () => {
           </div>
         )}
 
-        {foodCourts.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No Food Courts Found</h3>
-            <p className="text-gray-500 mb-6">This item is not available in any food courts yet.</p>
-            <button
-              onClick={handleAddToFoodCourt}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              Add to First Food Court
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Food Court
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price (₹)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Time Slot
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Active
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {foodCourts.map((fc) => (
-                    <tr key={fc._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">{fc.foodCourtName}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">{fc.location}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Food Courts with Item */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Food Courts with This Item ({foodCourts.length})
+            </h2>
+            {foodCourts.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-gray-500">This item is not available in any food courts yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {foodCourts.map((fc) => (
+                  <div key={fc.id} className="bg-white rounded-lg shadow border-l-4 border-green-500 p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{fc.foodCourtName}</h3>
+                        <p className="text-sm text-gray-500">{fc.location}</p>
+                      </div>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Added
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Price (₹)</label>
                         <input
                           type="number"
                           value={fc.price || item?.basePrice || 0}
-                          onChange={(e) => handleUpdateFoodCourtItem(fc._id, "price", parseFloat(e.target.value))}
-                          className="w-24 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          disabled={updating === fc._id}
+                          onChange={(e) => handleUpdateFoodCourtItem(fc.id, "price", parseFloat(e.target.value))}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={updating === fc.id}
                           min="0"
                           step="0.01"
                         />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
                         <select
                           value={fc.status}
-                          onChange={(e) => handleUpdateFoodCourtItem(fc._id, "status", e.target.value)}
-                          className="w-32 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                          disabled={updating === fc._id}
+                          onChange={(e) => handleUpdateFoodCourtItem(fc.id, "status", e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={updating === fc.id}
                         >
                           {statusOptions.map(option => (
                             <option key={option} value={option}>
@@ -260,13 +278,14 @@ const ItemFoodCourt: React.FC = () => {
                             </option>
                           ))}
                         </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Time Slot</label>
                         <select
                           value={fc.timeSlot}
-                          onChange={(e) => handleUpdateFoodCourtItem(fc._id, "timeSlot", e.target.value)}
-                          className="w-28 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
-                          disabled={updating === fc._id}
+                          onChange={(e) => handleUpdateFoodCourtItem(fc.id, "timeSlot", e.target.value)}
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          disabled={updating === fc.id}
                         >
                           {timeSlotOptions.map(option => (
                             <option key={option} value={option}>
@@ -274,38 +293,88 @@ const ItemFoodCourt: React.FC = () => {
                             </option>
                           ))}
                         </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Active</label>
                         <button
-                          onClick={() => handleUpdateFoodCourtItem(fc._id, "isActive", !fc.isActive)}
-                          disabled={updating === fc._id}
-                          className={`w-16 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                          onClick={() => handleUpdateFoodCourtItem(fc.id, "isActive", !fc.isActive)}
+                          disabled={updating === fc.id}
+                          className={`w-full px-3 py-1 rounded text-xs font-medium transition-colors ${
                             fc.isActive
                               ? 'bg-green-100 text-green-800 hover:bg-green-200'
                               : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                           }`}
                         >
-                          {fc.isActive ? 'Yes' : 'No'}
+                          {fc.isActive ? 'Active' : 'Inactive'}
                         </button>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleDeleteFoodCourtItem(fc._id)}
-                            disabled={updating === fc._id}
-                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                          >
-                            {updating === fc._id ? 'Removing...' : 'Remove'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleDeleteFoodCourtItem(fc.foodCourtId)}
+                        disabled={updating === fc.id}
+                        className="text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50"
+                      >
+                        {updating === fc.id ? 'Removing...' : 'Remove from Food Court'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Available Food Courts */}
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Available Food Courts ({availableFoodCourts.length - foodCourts.length})
+            </h2>
+            {availableFoodCourts.filter(fc => !foodCourtAssociationMap.has(fc.id)).length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-gray-500">This item is available in all your food courts.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {availableFoodCourts
+                  .filter(fc => !foodCourtAssociationMap.has(fc.id))
+                  .map((fc) => (
+                    <div key={fc.id} className="bg-white rounded-lg shadow border-l-4 border-blue-500 p-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{fc.name}</h3>
+                          <p className="text-sm text-gray-500">{fc.location}</p>
+                        </div>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Available
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-500">
+                          {fc.isOpen ? (
+                            <span className="text-green-600">● Open</span>
+                          ) : (
+                            <span className="text-red-600">● Closed</span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleAddToFoodCourt(fc.id)}
+                          disabled={adding}
+                          className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                          {adding ? 'Adding...' : 'Add Item'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
