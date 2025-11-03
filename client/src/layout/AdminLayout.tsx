@@ -1,33 +1,41 @@
-import React from "react";
-import { Outlet } from "react-router-dom";
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import SideBar from '../components/admin/SideBar';
 
 const AdminLayout: React.FC = () => {
   return (
-    <div>
-      <aside style={{ width: "220px", float: "left", height: "100vh", background: "#f4f4f4", padding: "1rem" }}>
-        <h2>Admin</h2>
-        <nav>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-        <li>
-          <a href="/admin/dashboard">Dashboard</a>
-        </li>
-        <li>
-          <a href="/admin/all-users">All Users</a>
-        </li>
-        <li>
-          <a href="/admin/profile">Profile</a>
-        </li>
-          </ul>
-        </nav>
-      </aside>
-      <div style={{ marginLeft: "220px", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-        <header style={{ padding: "1rem", background: "#eaeaea" }}>
-          <h1>Admin Dashboard</h1>
-        </header>
-        <main style={{ flex: 1, padding: "1rem" }}>
-          <Outlet />
-        </main>
-        <footer style={{ padding: "1rem", background: "#eaeaea" }}>Admin Footer</footer>
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex">
+        <SideBar />
+        
+        <div className="flex-1 lg:ml-0 min-h-screen flex flex-col">
+          <header className="bg-white border-b border-gray-200 lg:sticky lg:top-0 z-20">
+          </header>
+          
+          {/* Add bottom padding on mobile to account for FAB */}
+          <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-6">
+            <Outlet />
+          </main>
+          
+          <footer className="bg-white border-t border-gray-200 py-4 px-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <p className="text-gray-600 text-sm">
+                © 2025 Infybite Admin. All rights reserved.
+              </p>
+              <div className="flex gap-4 mt-2 sm:mt-0">
+                <a href="#" className="text-gray-500 hover:text-black text-sm transition-colors">
+                  Privacy
+                </a>
+                <a href="#" className="text-gray-500 hover:text-black text-sm transition-colors">
+                  Terms
+                </a>
+                <a href="#" className="text-gray-500 hover:text-black text-sm transition-colors">
+                  Support
+                </a>
+              </div>
+            </div>
+          </footer>
+        </div>
       </div>
     </div>
   );

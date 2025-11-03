@@ -18,9 +18,20 @@ interface Manager {
 }
 
 interface FoodCourt {
-  _id: string;
+  id: string;
   name: string;
   location: string;
+  timings: string;
+  isOpen: boolean;
+  weekends: boolean;
+  weekdays: boolean;
+  createdAt: string;
+}
+
+interface UpdateManagerData {
+  contactNo: string;
+  foodCourtId: string | null;
+  isActive: boolean;
 }
 
 const EditManager: React.FC = () => {
@@ -32,7 +43,7 @@ const EditManager: React.FC = () => {
   const [manager, setManager] = useState<Manager | null>(null);
   const [foodCourts, setFoodCourts] = useState<FoodCourt[]>([]);
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UpdateManagerData>({
     contactNo: "",
     foodCourtId: "",
     isActive: true
@@ -50,23 +61,28 @@ const EditManager: React.FC = () => {
         axiosInstance.get("/vendor/foodcourts")
       ]);
 
-      const managerData = managerResponse.data.data;
+      const managerData: Manager = managerResponse.data.data;
       setManager(managerData);
       
-      const vendorFoodCourts = foodCourtsResponse.data.data || [];
+      const vendorFoodCourts: FoodCourt[] = foodCourtsResponse.data.data || [];
       
       // Ensure manager's current food court is in the options
-      let allFoodCourts = [...vendorFoodCourts];
+      const allFoodCourts: FoodCourt[] = [...vendorFoodCourts];
       
       if (managerData.foodCourtId && managerData.foodCourtName && managerData.location) {
-        const currentFoodCourtExists = vendorFoodCourts.some(fc => fc._id === managerData.foodCourtId);
+        const currentFoodCourtExists = vendorFoodCourts.some(fc => fc.id === managerData.foodCourtId);
         
         if (!currentFoodCourtExists) {
           // Add the manager's current food court to the options
           allFoodCourts.push({
-            _id: managerData.foodCourtId,
+            id: managerData.foodCourtId,
             name: managerData.foodCourtName,
-            location: managerData.location
+            location: managerData.location,
+            timings: "",
+            isOpen: true,
+            weekends: true,
+            weekdays: true,
+            createdAt: new Date().toISOString()
           });
         }
       }
@@ -132,7 +148,11 @@ const EditManager: React.FC = () => {
       setUpdating(true);
       setError("");
 
-      const updateData: any = {
+      const updateData: {
+        contactNo: string;
+        isActive: boolean;
+        foodCourtId?: string | null;
+      } = {
         contactNo: formData.contactNo,
         isActive: formData.isActive
       };
@@ -166,7 +186,7 @@ const EditManager: React.FC = () => {
 
   // Find the current food court object for display
   const currentFoodCourt = manager?.foodCourtId 
-    ? foodCourts.find(fc => fc._id === manager.foodCourtId)
+    ? foodCourts.find(fc => fc.id === manager.foodCourtId)
     : null;
 
   if (loading) {
@@ -237,6 +257,8 @@ const EditManager: React.FC = () => {
                   <p className="text-gray-900">
                     {currentFoodCourt 
                       ? `${currentFoodCourt.name} - ${currentFoodCourt.location}`
+                      : manager.foodCourtName && manager.location
+                      ? `${manager.foodCourtName} - ${manager.location}`
                       : "Not assigned"}
                   </p>
                 </div>
@@ -277,13 +299,13 @@ const EditManager: React.FC = () => {
               <select
                 id="foodCourtId"
                 name="foodCourtId"
-                value={formData.foodCourtId}
+                value={formData.foodCourtId || ""}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">No food court assigned</option>
                 {foodCourts.map(fc => (
-                  <option key={fc._id} value={fc._id}>
+                  <option key={fc.id} value={fc.id}>
                     {fc.name} - {fc.location}
                   </option>
                 ))}
