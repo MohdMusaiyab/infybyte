@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
+import { ArrowLeft, Save, Utensils, DollarSign, Tag, Leaf, Star, Store, MapPin } from "lucide-react";
 
 interface Item {
   _id: string;
@@ -161,53 +162,70 @@ const EditItem: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-lg">Loading item data...</div>
+      <div className="p-4 lg:p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-white rounded-2xl p-6 border-2 border-gray-200 space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 bg-gray-200 rounded-xl"></div>
+                ))}
+              </div>
+              <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-200 rounded-xl"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error && !formData.name) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full">
-          <div className="text-red-800 font-semibold">Error</div>
-          <div className="text-red-600 mt-2">{error}</div>
-          <button 
-            onClick={handleBackToItems}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-          >
-            Back to Items
-          </button>
+      <div className="p-4 lg:p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
+            <div className="text-black font-bold text-lg mb-2">Error</div>
+            <div className="text-gray-600 mb-4">{error}</div>
+            <button 
+              onClick={handleBackToItems}
+              className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium"
+            >
+              Back to Items
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="p-4 lg:p-6">
       <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="mb-6">
           <button 
             onClick={handleBackToItems}
-            className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+            className="flex items-center gap-2 text-gray-600 hover:text-black mb-4 transition-colors group"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             Back to Items
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Item</h1>
-          <p className="text-gray-600 mt-2">Update item details and manage food court availability</p>
+          <h1 className="text-3xl font-bold text-black mb-2">Edit Item</h1>
+          <p className="text-gray-600">Update item details and manage food court availability</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Edit Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                  <div className="text-red-800 font-medium">Error</div>
+                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
+                  <div className="text-red-800 font-bold">Error</div>
                   <div className="text-red-600 mt-1">{error}</div>
                 </div>
               )}
@@ -215,24 +233,27 @@ const EditItem: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Item Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-3">
                     Item Name *
                   </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Enter item name"
-                    required
-                  />
+                  <div className="relative">
+                    <Utensils className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
+                      placeholder="Enter item name"
+                      required
+                    />
+                  </div>
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-3">
                     Description
                   </label>
                   <textarea
@@ -241,7 +262,7 @@ const EditItem: React.FC = () => {
                     value={formData.description}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors resize-none"
                     placeholder="Enter item description (optional)"
                   />
                 </div>
@@ -250,85 +271,124 @@ const EditItem: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Base Price */}
                   <div>
-                    <label htmlFor="basePrice" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="basePrice" className="block text-sm font-medium text-gray-700 mb-3">
                       Base Price (₹) *
                     </label>
-                    <input
-                      type="number"
-                      id="basePrice"
-                      name="basePrice"
-                      value={formData.basePrice}
-                      onChange={handleChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                      required
-                    />
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <input
+                        type="number"
+                        id="basePrice"
+                        name="basePrice"
+                        value={formData.basePrice}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
                   </div>
 
                   {/* Category */}
                   <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-3">
                       Category *
                     </label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map(category => (
-                        <option key={category} value={category}>
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <select
+                        id="category"
+                        name="category"
+                        value={formData.category}
+                        onChange={handleChange}
+                        className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
+                        required
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map(category => (
+                          <option key={category} value={category} className="capitalize">
+                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Checkboxes */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Veg/Non-Veg */}
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="isVeg"
-                      name="isVeg"
-                      checked={formData.isVeg}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="isVeg" className="ml-2 block text-sm text-gray-900">
-                      Vegetarian Item
-                    </label>
-                  </div>
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-black transition-colors cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        id="isVeg"
+                        name="isVeg"
+                        checked={formData.isVeg}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                        formData.isVeg 
+                          ? 'bg-green-500 border-green-500' 
+                          : 'border-gray-300 group-hover:border-black'
+                      }`}>
+                        {formData.isVeg && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Leaf className={`w-5 h-5 ${formData.isVeg ? 'text-green-500' : 'text-gray-400'}`} />
+                      <span className="font-medium text-black">Vegetarian Item</span>
+                    </div>
+                  </label>
 
                   {/* Special Item */}
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="isSpecial"
-                      name="isSpecial"
-                      checked={formData.isSpecial}
-                      onChange={handleChange}
-                      className="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="isSpecial" className="ml-2 block text-sm text-gray-900">
-                      Special Item
-                    </label>
-                  </div>
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-black transition-colors cursor-pointer group">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        id="isSpecial"
+                        name="isSpecial"
+                        checked={formData.isSpecial}
+                        onChange={handleChange}
+                        className="sr-only"
+                      />
+                      <div className={`w-6 h-6 border-2 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                        formData.isSpecial 
+                          ? 'bg-yellow-500 border-yellow-500' 
+                          : 'border-gray-300 group-hover:border-black'
+                      }`}>
+                        {formData.isSpecial && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Star className={`w-5 h-5 ${formData.isSpecial ? 'text-yellow-500' : 'text-gray-400'}`} />
+                      <span className="font-medium text-black">Special Item</span>
+                    </div>
+                  </label>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={handleBackToItems}
-                    className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex-1 sm:flex-none px-6 py-3 bg-white text-black rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 font-medium"
                     disabled={updating}
                   >
                     Cancel
@@ -336,8 +396,9 @@ const EditItem: React.FC = () => {
                   <button
                     type="submit"
                     disabled={updating}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105 font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
+                    <Save className="w-5 h-5" />
                     {updating ? "Updating..." : "Update Item"}
                   </button>
                 </div>
@@ -347,26 +408,27 @@ const EditItem: React.FC = () => {
 
           {/* Food Courts Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Food Courts</h3>
+                <h3 className="text-lg font-bold text-black">Food Courts</h3>
                 <button
                   onClick={handleManageFoodCourts}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="flex items-center gap-1 text-black hover:text-gray-600 text-sm font-medium transition-colors"
                 >
+                  <Store className="w-4 h-4" />
                   Manage
                 </button>
               </div>
               
               {foodCourts.length === 0 ? (
                 <div className="text-center py-8">
-                  <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <p className="text-gray-500 text-sm">Not available in any food courts</p>
+                  <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Store className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-sm mb-2">Not available in any food courts</p>
                   <button
                     onClick={handleManageFoodCourts}
-                    className="mt-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-black hover:text-gray-600 text-sm font-medium transition-colors"
                   >
                     Add to food courts
                   </button>
@@ -374,20 +436,26 @@ const EditItem: React.FC = () => {
               ) : (
                 <div className="space-y-3">
                   {foodCourts.map((fc) => (
-                    <div key={fc._id} className="border border-gray-200 rounded-lg p-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{fc.foodCourtName}</h4>
-                          <p className="text-sm text-gray-500">{fc.location}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    <div key={fc._id} className="border-2 border-gray-200 rounded-xl p-4 hover:border-black transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Store className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-black truncate">{fc.foodCourtName}</h4>
+                          <div className="flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3 text-gray-400" />
+                            <p className="text-sm text-gray-600 truncate">{fc.location}</p>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               fc.isActive 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-gray-100 text-gray-800'
                             }`}>
                               {fc.isActive ? 'Active' : 'Inactive'}
                             </span>
-                            <span className="text-xs text-gray-500">₹{fc.price || formData.basePrice}</span>
+                            <span className="text-xs font-bold text-black">₹{fc.price || formData.basePrice}</span>
                           </div>
                         </div>
                       </div>
