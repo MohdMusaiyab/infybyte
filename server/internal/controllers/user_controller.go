@@ -73,6 +73,29 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 	ctx := context.Background()
 	usersCollection := db.Collection("users")
 
+	// Check if email already exists (if email is being updated)
+	if updateData.Email != nil {
+		var existingUser struct {
+			ID primitive.ObjectID `bson:"_id"`
+		}
+
+		err := usersCollection.FindOne(ctx, bson.M{
+			"email": *updateData.Email,
+			"_id":   bson.M{"$ne": userObjID}, // Exclude current user
+		}).Decode(&existingUser)
+
+		if err == nil {
+			// Email already exists for another user
+			utils.RespondError(c, http.StatusConflict, "Email already exists")
+			return
+		} else if err != mongo.ErrNoDocuments {
+			// Some other database error occurred
+			utils.RespondError(c, http.StatusInternalServerError, "Failed to check email availability")
+			return
+		}
+		// If err is mongo.ErrNoDocuments, email is available (this is good)
+	}
+
 	updateFields := bson.M{}
 	if updateData.Name != nil {
 		updateFields["name"] = *updateData.Name
@@ -356,7 +379,15 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 		Category    string             `bson:"category" json:"category"`
 		IsVeg       bool               `bson:"isVeg" json:"isVeg"`
 		IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
-		FoodCourts  []interface{}      `bson:"foodCourts" json:"foodCourts"`
+		FoodCourts  []struct {
+			FoodCourtID   primitive.ObjectID `bson:"foodCourtId" json:"foodCourtId"`
+			FoodCourtName string             `bson:"foodCourtName" json:"foodCourtName"`
+			Location      string             `bson:"location" json:"location"`
+			Status        string             `bson:"status" json:"status"`
+			Price         *float64           `bson:"price,omitempty" json:"price,omitempty"`
+			TimeSlot      string             `bson:"timeSlot" json:"timeSlot"`
+			IsActive      bool               `bson:"isActive" json:"isActive"`
+		} `bson:"foodCourts" json:"foodCourts"`
 	}
 
 	pipeline := []bson.M{
@@ -375,6 +406,12 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 			"as":           "foodCourt",
 		}},
 		{"$unwind": bson.M{"path": "$foodCourt", "preserveNullAndEmptyArrays": true}},
+		{"$match": bson.M{
+			"$or": []bson.M{
+				{"foodCourtItems.isActive": true},
+				{"foodCourtItems": bson.M{"$exists": false}},
+			},
+		}},
 		{"$group": bson.M{
 			"_id":         "$_id",
 			"name":        bson.M{"$first": "$name"},
@@ -385,7 +422,10 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 			"isSpecial":   bson.M{"$first": "$isSpecial"},
 			"foodCourts": bson.M{"$push": bson.M{
 				"$cond": bson.M{
-					"if": bson.M{"$ne": bson.A{"$foodCourt", nil}},
+					"if": bson.M{"$and": []bson.M{
+						{"$ne": bson.A{"$foodCourt", nil}},
+						{"$ne": bson.A{"$foodCourtItems", nil}},
+					}},
 					"then": bson.M{
 						"foodCourtId":   "$foodCourt._id",
 						"foodCourtName": "$foodCourt.name",
@@ -424,5 +464,14 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	utils.RespondSuccess(c, http.StatusOK, "Vendor items with food courts retrieved successfully", itemsWithFoodCourts)
+	// Filter out items with empty foodCourts arrays if needed
+	var filteredItems []interface{}
+	for _, item := range itemsWithFoodCourts {
+		// Only include items that have at least one food court
+		if len(item.FoodCourts) > 0 {
+			filteredItems = append(filteredItems, item)
+		}
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Vendor items with food courts retrieved successfully", filteredItems)
 }
