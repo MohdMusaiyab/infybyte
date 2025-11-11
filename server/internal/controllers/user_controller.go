@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -203,19 +204,19 @@ func GetFoodCourtByID(c *gin.Context, db *mongo.Database) {
 
 	// Get Items available in this food court with vendor info
 	var itemsWithVendors []struct {
-		ItemID      primitive.ObjectID `bson:"_id,omitempty" json:"itemId,omitempty"`
-		Name        string             `bson:"name" json:"name"`
-		Description string             `bson:"description,omitempty" json:"description,omitempty"`
-		BasePrice   float64            `bson:"basePrice" json:"basePrice"`
-		Category    string             `bson:"category" json:"category"`
-		IsVeg       bool               `bson:"isVeg" json:"isVeg"`
-		IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
-		VendorID    primitive.ObjectID `bson:"vendor_id" json:"vendorId"`
-		ShopName    string             `bson:"shopName" json:"shopName"`
-		Status      string             `bson:"status" json:"status"`
-		Price       *float64           `bson:"price,omitempty" json:"price,omitempty"`
-		TimeSlot    string             `bson:"timeSlot" json:"timeSlot"`
-	}
+    ItemID      primitive.ObjectID `bson:"itemId" json:"itemId"`
+    Name        string             `bson:"name" json:"name"`
+    Description string             `bson:"description,omitempty" json:"description,omitempty"`
+    BasePrice   float64            `bson:"basePrice" json:"basePrice"`
+    Category    string             `bson:"category" json:"category"`
+    IsVeg       bool               `bson:"isVeg" json:"isVeg"`
+    IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
+    VendorID    primitive.ObjectID `bson:"vendorId" json:"vendorId"`
+    ShopName    string             `bson:"shopName" json:"shopName"`
+    Status      string             `bson:"status" json:"status"`
+    Price       *float64           `bson:"price,omitempty" json:"price,omitempty"`
+    TimeSlot    string             `bson:"timeSlot" json:"timeSlot"`
+}
 
 	pipeline := []bson.M{
 		{"$match": bson.M{"foodcourt_id": foodCourtObjID, "isActive": true}},
@@ -474,4 +475,144 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 	}
 
 	utils.RespondSuccess(c, http.StatusOK, "Vendor items with food courts retrieved successfully", filteredItems)
+}
+
+
+func GetItemDetails(c *gin.Context, db *mongo.Database) {
+	itemID := c.Param("id")
+	itemObjID, err := primitive.ObjectIDFromHex(itemID)
+	if err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid item ID")
+		return
+	}
+	fmt.Println(itemObjID)
+
+	ctx := context.Background()
+	collections := struct {
+		items          *mongo.Collection
+		vendors        *mongo.Collection
+		foodCourts     *mongo.Collection
+		foodCourtItems *mongo.Collection
+	}{
+		items:          db.Collection("items"),
+		// vendors:        db.Collection("vendors"),
+		// foodCourts:     db.Collection("foodcourts"),
+		// foodCourtItems: db.Collection("itemfoodcourts"),
+	}
+
+	// Get item details with vendor information and food court availability
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": itemObjID}},
+		{"$lookup": bson.M{
+			"from":         "vendors",
+			"localField":   "vendor_id",
+			"foreignField": "_id",
+			"as":           "vendor",
+		}},
+		{"$unwind": bson.M{"path": "$vendor", "preserveNullAndEmptyArrays": true}},
+		{"$lookup": bson.M{
+			"from":         "itemfoodcourts",
+			"localField":   "_id",
+			"foreignField": "item_id",
+			"as":           "foodCourtItems",
+		}},
+		{"$unwind": bson.M{"path": "$foodCourtItems", "preserveNullAndEmptyArrays": true}},
+		{"$lookup": bson.M{
+			"from":         "foodcourts",
+			"localField":   "foodCourtItems.foodcourt_id",
+			"foreignField": "_id",
+			"as":           "foodCourt",
+		}},
+		{"$unwind": bson.M{"path": "$foodCourt", "preserveNullAndEmptyArrays": true}},
+		{"$match": bson.M{
+			"$or": []bson.M{
+				{"foodCourtItems.isActive": true},
+				{"foodCourtItems": bson.M{"$exists": false}},
+			},
+		}},
+		{"$group": bson.M{
+			"_id": "$_id",
+			// Item Details
+			"name":        bson.M{"$first": "$name"},
+			"description": bson.M{"$first": "$description"},
+			"basePrice":   bson.M{"$first": "$basePrice"},
+			"category":    bson.M{"$first": "$category"},
+			"isVeg":       bson.M{"$first": "$isVeg"},
+			"isSpecial":   bson.M{"$first": "$isSpecial"},
+			"createdAt":   bson.M{"$first": "$createdAt"},
+			"updatedAt":   bson.M{"$first": "$updatedAt"},
+			// Vendor Details
+			"vendor": bson.M{"$first": bson.M{
+				"id":       "$vendor._id",
+				"shopName": "$vendor.shopName",
+				"gst":      "$vendor.gst",
+			}},
+			// Food Court Availability
+			"availability": bson.M{"$push": bson.M{
+				"$cond": bson.M{
+					"if": bson.M{"$and": []bson.M{
+						{"$ne": bson.A{"$foodCourt", nil}},
+						{"$ne": bson.A{"$foodCourtItems", nil}},
+					}},
+					"then": bson.M{
+						"foodCourtId":   "$foodCourt._id",
+						"foodCourtName": "$foodCourt.name",
+						"location":      "$foodCourt.location",
+						"timings":       "$foodCourt.timings",
+						"isOpen":        "$foodCourt.isOpen",
+						"weekends":      "$foodCourt.weekends",
+						"weekdays":      "$foodCourt.weekdays",
+						"status":        "$foodCourtItems.status",
+						"price":         "$foodCourtItems.price",
+						"timeSlot":      "$foodCourtItems.timeSlot",
+						"isActive":      "$foodCourtItems.isActive",
+						"updatedAt":     "$foodCourtItems.updatedAt",
+					},
+					"else": "$$REMOVE",
+				},
+			}},
+		}},
+		{"$project": bson.M{
+			// Item Information
+			"item": bson.M{
+				"id":          "$_id",
+				"name":        "$name",
+				"description": "$description",
+				"basePrice":   "$basePrice",
+				"category":    "$category",
+				"isVeg":       "$isVeg",
+				"isSpecial":   "$isSpecial",
+				"createdAt":   "$createdAt",
+				"updatedAt":   "$updatedAt",
+			},
+			// Vendor Information
+			"vendor": 1,
+			// Availability across food courts
+			"availability": 1,
+			"_id":          0,
+		}},
+	}
+
+	cursor, err := collections.items.Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch item details")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to process item details")
+		return
+	}
+
+	if len(results) == 0 {
+		utils.RespondError(c, http.StatusNotFound, "Item not found")
+		return
+	}
+
+	// Get the first result (should be only one since we're querying by _id)
+	itemData := results[0]
+
+	utils.RespondSuccess(c, http.StatusOK, "Item details retrieved successfully", itemData)
 }

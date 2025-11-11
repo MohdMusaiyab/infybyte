@@ -24,5 +24,7 @@ func UserRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		// Vendor browsing
 		user.GET("/vendors/:id", func(c *gin.Context) { controllers.GetVendorProfileByID(c, db) })
 		user.GET("/vendors/:id/items", func(c *gin.Context) { controllers.GetVendorItemsWithFoodCourts(c, db) })
+		//For Getting Items Details
+		user.GET("/items/:id", func(c *gin.Context) { controllers.GetItemDetails(c, db) })
 	}
 }
