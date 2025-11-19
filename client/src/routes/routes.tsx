@@ -7,6 +7,7 @@ import { PublicRoute } from "../components/auth/PublicRoute";
 import UserRoutes from "./userRoute";
 import VendorRoutes from "./vendorRoutes";
 import AdminRoutes from "./adminRoutes";
+import ManagerRoutes from "./managerRoutes";
 
 const AppRoutes = () => (
   <Routes>
@@ -16,6 +17,7 @@ const AppRoutes = () => (
     {UserRoutes()}
     {VendorRoutes()}
     {AdminRoutes()}
+    {ManagerRoutes()}
     <Route path="/unauthorized" element={<Unauthorized />} />
   </Routes>
 );

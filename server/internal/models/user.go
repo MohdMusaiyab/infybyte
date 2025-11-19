@@ -12,7 +12,7 @@ type User struct {
 	Name      string             `bson:"name" json:"name" validate:"required,min=2,max=50"`
 	Email     string             `bson:"email" json:"email" validate:"required,email"`
 	Password  string             `bson:"password" json:"password" validate:"required,min=6"` // hashed before save
-	Role      string             `bson:"role" json:"role" validate:"required,oneof=admin vendor user"`
+	Role      string             `bson:"role" json:"role" validate:"required,oneof=admin vendor user manager"`
 	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }

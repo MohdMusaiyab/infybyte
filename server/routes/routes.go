@@ -16,6 +16,7 @@ func InitRoutes(router *gin.Engine, db *mongo.Database) {
 		VendorRoutes(v1, db)
 		//User Routes
 		UserRoutes(v1, db)
-
+		//Manager Routes
+		ManagerRoutes(v1, db)
 	}
 }

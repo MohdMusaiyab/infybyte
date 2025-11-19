@@ -1496,7 +1496,19 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to add manager")
 		return
 	}
-
+	// Update user role to manager
+	_, err = collections.users.UpdateOne(
+		ctx,
+		bson.M{"_id": managerData.UserID},
+		bson.M{"$set": bson.M{
+			"role":      "manager",
+			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
+		}},
+	)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to update user role")
+		return
+	}
 	utils.RespondSuccess(c, http.StatusCreated, "Manager added successfully", bson.M{"id": result.InsertedID})
 }
 func UpdateManager(c *gin.Context, db *mongo.Database) {
@@ -1666,6 +1678,26 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 	if result.DeletedCount == 0 {
 		utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
 		return
+	}
+	// Get manager details to find the user ID
+	var manager struct {
+		UserID primitive.ObjectID `bson:"user_id"`
+	}
+	err = collections.managers.FindOne(ctx, bson.M{"_id": managerObjID}).Decode(&manager)
+	if err == nil {
+		// Update user role back to user
+		_, err = db.Collection("users").UpdateOne(
+			ctx,
+			bson.M{"_id": manager.UserID},
+			bson.M{"$set": bson.M{
+				"role":      "user",
+				"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
+			}},
+		)
+		if err != nil {
+			utils.RespondError(c, http.StatusInternalServerError, "Failed to update user role")
+			return
+		}
 	}
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager removed successfully", nil)

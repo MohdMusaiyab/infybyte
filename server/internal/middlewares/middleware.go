@@ -53,3 +53,16 @@ func AdminMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+func ManagerMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, exists := c.Get("role")
+		if !exists || role != "manager" {
+			utils.RespondError(c, http.StatusForbidden, "Access restricted to managers only")
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
