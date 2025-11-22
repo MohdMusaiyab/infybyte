@@ -1,11 +1,15 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/MohdMusaiyab/infybyte/server/internal/utils"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -66,3 +70,43 @@ func ManagerMiddleware() gin.HandlerFunc {
 	}
 }
 
+func ActiveManagerMiddleware(db *mongo.Database) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("userID")
+		if !exists {
+			utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
+			c.Abort()
+			return
+		}
+
+		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+		if err != nil {
+			utils.RespondError(c, http.StatusBadRequest, "Invalid user ID")
+			c.Abort()
+			return
+		}
+
+		// Get manager's active status from database
+		var manager struct {
+			IsActive bool `bson:"isActive"`
+		}
+		
+		err = db.Collection("managers").FindOne(context.Background(), bson.M{
+			"user_id": userObjID,
+		}).Decode(&manager)
+
+		if err != nil {
+			utils.RespondError(c, http.StatusNotFound, "Manager profile not found")
+			c.Abort()
+			return
+		}
+
+		if !manager.IsActive {
+			utils.RespondError(c, http.StatusForbidden, "Inactive managers cannot perform this action")
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}

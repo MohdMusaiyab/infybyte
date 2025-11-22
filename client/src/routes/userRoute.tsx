@@ -10,7 +10,7 @@ import Profile from "../pages/user/Profile";
 import ItemDetails from "../pages/user/ItemDetails";
 
 const UserRoutes = () => (
-  <Route element={<PrivateRoute allowedRoles={["user"]} />}>
+  <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>
     <Route element={<UserLayout />}>
       <Route path="/user/dashboard" element={<UserDashboard />} />
       <Route path="/user/foodcourt/:id" element={<FoodCourtDetails/>} />

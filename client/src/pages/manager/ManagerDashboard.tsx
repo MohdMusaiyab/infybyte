@@ -151,7 +151,7 @@ const ManagerDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600 mb-1">Team Managers</p>
-                  <p className="text-2xl font-bold text-black">{stats.totalManagers}</p>
+                  <p className="text-2xl font-bold text-black">{stats?.totalManagers}</p>
                 </div>
                 <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
                   <Users className="w-6 h-6 text-white" />
