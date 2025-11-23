@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChefHat, Mail, Phone } from 'lucide-react';
+import { ChefHat } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
               Transforming food court experiences with real-time digital menus. 
               No more whiteboards, no more wasted trips.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 text-sm">
+            {/* <div className="flex flex-col sm:flex-row gap-4 text-sm">
               <div className="flex items-center gap-2 text-gray-400">
                 <Phone className="w-4 h-4" />
                 <span>+1 (555) 123-4567</span>
@@ -28,7 +28,7 @@ const Footer: React.FC = () => {
                 <Mail className="w-4 h-4" />
                 <span>hello@infybite.com</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Links Columns - Stack on mobile */}
@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
         <div className="pt-8 border-t border-gray-800">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-gray-400 text-sm text-center sm:text-left">
-              © 2024 Infybite. All rights reserved.
+              © 2025 Infybite. All rights reserved.
             </div>
             
             {/* Legal Links - Compact on mobile */}

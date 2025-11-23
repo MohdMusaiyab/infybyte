@@ -8,12 +8,28 @@ import UserRoutes from "./userRoute";
 import VendorRoutes from "./vendorRoutes";
 import AdminRoutes from "./adminRoutes";
 import ManagerRoutes from "./managerRoutes";
+import DemoDashboard from "../pages/general/DemoDashboard";
 
 const AppRoutes = () => (
   <Routes>
     <Route path="/" element={<Home />} />
-    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-    <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+    <Route path="/demo-dashboard" element={<DemoDashboard />}></Route>
+    <Route
+      path="/login"
+      element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      }
+    />
+    <Route
+      path="/register"
+      element={
+        <PublicRoute>
+          <Register />
+        </PublicRoute>
+      }
+    />
     {UserRoutes()}
     {VendorRoutes()}
     {AdminRoutes()}

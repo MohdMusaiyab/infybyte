@@ -41,15 +41,15 @@ const InfybiteHero: React.FC = () => {
             <span className="text-2xl font-bold tracking-tight text-black">Infybite</span>
           </div>
           
-          <div className="hidden md:flex items-center gap-8">
+          {/* <div className="hidden md:flex items-center gap-8">
             <a href="#" className="text-sm font-medium text-black hover:text-gray-600 transition-colors">For Vendors</a>
             <a href="#" className="text-sm font-medium text-black hover:text-gray-600 transition-colors">For Customers</a>
-            <a href="#" className="text-sm font-medium text-black hover:text-gray-600 transition-colors">How it Works</a>
-          </div>
+            <a href="#howitworks" className="text-sm font-medium text-black hover:text-gray-600 transition-colors">How it Works</a>
+          </div> */}
           
-          <button className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105">
+          <a href="/login" className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105">
             Login
-          </button>
+          </a>
         </nav>
 
         {/* Hero Content */}
@@ -106,15 +106,15 @@ const InfybiteHero: React.FC = () => {
 
             {/* CTA Buttons */}
             <div className={`flex flex-col sm:flex-row items-start gap-4 transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-              <button className="group px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2">
+              <a  href="/user/dashboard" className="group px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2">
                 View Live Menus
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </a>
               
-              <button className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 hover:scale-105 flex items-center gap-2">
+              <a href="/vendor/dashboard" className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 hover:scale-105 flex items-center gap-2">
                 <Store className="w-5 h-5" />
                 I'm a Vendor
-              </button>
+              </a>
             </div>
           </div>
 
@@ -196,18 +196,6 @@ const InfybiteHero: React.FC = () => {
                 <div className="text-xs text-gray-300 font-medium">Updates</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Trust Indicators */}
-        <div className={`mt-20 text-center transition-all duration-1000 delay-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="text-sm text-gray-500 mb-6 font-medium">Trusted by food courts across the city</div>
-          <div className="flex flex-wrap items-center justify-center gap-8">
-            <div className="text-xl font-bold text-gray-800">Campus Plaza</div>
-            <div className="w-1 h-1 bg-gray-400 rounded-full" />
-            <div className="text-xl font-bold text-gray-800">Tech Park Food Court</div>
-            <div className="w-1 h-1 bg-gray-400 rounded-full" />
-            <div className="text-xl font-bold text-gray-800">City Center Mall</div>
           </div>
         </div>
       </div>

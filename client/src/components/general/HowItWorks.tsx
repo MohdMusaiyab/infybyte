@@ -33,7 +33,7 @@ const HowItWorks: React.FC = () => {
   ];
 
   return (
-    <div className="relative bg-white py-24 overflow-hidden">
+    <div className="relative bg-white py-24 overflow-hidden" id="howitworks">
       {/* Add CSS animations */}
       <style>{`
         @keyframes fadeInUp {
@@ -146,7 +146,7 @@ const HowItWorks: React.FC = () => {
                   "Instant menu availability updates",
                   "Multi-food court vendor management", 
                   "Real-time status indicators",
-                  "Mobile & web platform sync"
+                  "Mobile & Web Responsive"
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-black">
@@ -157,10 +157,10 @@ const HowItWorks: React.FC = () => {
                 ))}
               </div>
 
-              <button className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2 border-2 border-black">
+              <a href="/demo-dashboard" className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2 border-2 border-black">
                 View Demo Dashboard
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </a>
             </div>
 
             {/* Visual Demo */}
@@ -214,15 +214,15 @@ const HowItWorks: React.FC = () => {
             Ready to transform your food court experience?
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="group px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2 border-2 border-black">
+            <a href="/register" className="group px-8 py-4 bg-black text-white text-lg font-semibold rounded-xl hover:bg-gray-800 transition-all duration-300 hover:scale-105 hover:shadow-2xl flex items-center gap-2 border-2 border-black">
               Get Started Today
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
+            </a>
             
-            <button className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 hover:scale-105 flex items-center gap-2">
+            <a href="/register" className="group px-8 py-4 bg-white text-black text-lg font-semibold rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 hover:scale-105 flex items-center gap-2">
               <Store className="w-5 h-5" />
               Vendor Sign Up
-            </button>
+            </a>
           </div>
         </div>
       </div>
