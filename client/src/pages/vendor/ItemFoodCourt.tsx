@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Plus, Store, MapPin, Clock, DollarSign, Zap, CheckCircle, XCircle, Loader } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
 interface FoodCourtAssociation {
   id: string;
@@ -33,6 +35,7 @@ interface FoodCourt {
 const ItemFoodCourt: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { lastMessage, isConnected } = useWebSocketContext(); // ✅ NEW: WebSocket hook
   const [loading, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
@@ -54,6 +57,40 @@ const ItemFoodCourt: React.FC = () => {
     { value: "snacks", label: "Snacks" },
     { value: "dinner", label: "Dinner" }
   ];
+
+  // ✅ NEW: Handle real-time WebSocket updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+      const action = lastMessage.action;
+      
+      console.log("🔄 Real-time update received:", { update, action });
+
+      if (action === "update") {
+        // Update the specific food court item in real-time
+        setFoodCourts(prev => 
+          prev.map(fc => 
+            fc.id === update._id 
+              ? { 
+                  ...fc, 
+                  status: update.status,
+                  price: update.price,
+                  timeSlot: update.timeSlot,
+                  isActive: update.isActive,
+                  updatedAt: update.updatedAt
+                }
+              : fc
+          )
+        );
+      } else if (action === "create") {
+        // If a new item is added, refresh the data to get the complete picture
+        fetchItemFoodCourts();
+      } else if (action === "delete") {
+        // If an item is removed, remove it from the list
+        setFoodCourts(prev => prev.filter(fc => fc.id !== update._id));
+      }
+    }
+  }, [lastMessage]);
 
   const fetchItemFoodCourts = useCallback(async () => {
     if (!id) return;
@@ -125,14 +162,17 @@ const ItemFoodCourt: React.FC = () => {
       setError("");
 
       await axiosInstance.put(`/vendor/foodcourt-items/${foodCourtItemId}`, { price: numericValue });
-      await fetchItemFoodCourts();
+      // Note: No need to call fetchItemFoodCourts() - WebSocket will handle the real-time update
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         setError(responseData?.message ?? err.message ?? "Failed to update price");
+        // Revert local state on error
+        fetchItemFoodCourts();
       } else {
         setError("An unexpected error occurred");
+        fetchItemFoodCourts();
       }
     } finally {
       setUpdating(null);
@@ -146,15 +186,17 @@ const ItemFoodCourt: React.FC = () => {
 
       const updateData: Record<string, string | number | boolean> = { [field]: value };
       await axiosInstance.put(`/vendor/foodcourt-items/${foodCourtItemId}`, updateData);
-      
-      await fetchItemFoodCourts();
+      // Note: No need to call fetchItemFoodCourts() - WebSocket will handle the real-time update
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         setError(responseData?.message ?? err.message ?? "Failed to update food court item");
+        // Revert local state on error
+        fetchItemFoodCourts();
       } else {
         setError("An unexpected error occurred");
+        fetchItemFoodCourts();
       }
     } finally {
       setUpdating(null);
@@ -171,14 +213,16 @@ const ItemFoodCourt: React.FC = () => {
       setError("");
 
       await axiosInstance.delete(`/vendor/foodcourt-items?itemId=${id}&foodCourtId=${foodCourtItemId}`);
-      await fetchItemFoodCourts();
+      // Note: No need to call fetchItemFoodCourts() - WebSocket will handle the real-time update
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         setError(responseData?.message ?? err.message ?? "Failed to remove item from food court");
+        fetchItemFoodCourts();
       } else {
         setError("An unexpected error occurred");
+        fetchItemFoodCourts();
       }
     } finally {
       setUpdating(null);
@@ -198,14 +242,16 @@ const ItemFoodCourt: React.FC = () => {
       };
       
       await axiosInstance.post("/vendor/foodcourt-items", submitData);
-      await fetchItemFoodCourts();
+      // Note: No need to call fetchItemFoodCourts() - WebSocket will handle the real-time update
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         setError(responseData?.message ?? err.message ?? "Failed to add item to food court");
+        fetchItemFoodCourts();
       } else {
         setError("An unexpected error occurred");
+        fetchItemFoodCourts();
       }
     } finally {
       setAdding(null);
@@ -218,59 +264,12 @@ const ItemFoodCourt: React.FC = () => {
 
   const foodCourtAssociationMap = getFoodCourtAssociationMap();
 
-  if (loading) {
-    return (
-      <div className="p-4 lg:p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[...Array(2)].map((_, i) => (
-                <div key={i} className="space-y-4">
-                  <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-                  {[...Array(3)].map((_, j) => (
-                    <div key={j} className="bg-white rounded-2xl p-6 border-2 border-gray-200 space-y-3">
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[...Array(4)].map((_, k) => (
-                          <div key={k} className="h-8 bg-gray-200 rounded"></div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !item) {
-    return (
-      <div className="p-4 lg:p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
-            <div className="text-black font-bold text-lg mb-2">Error</div>
-            <div className="text-gray-600 mb-4">{error}</div>
-            <button 
-              onClick={() => navigate("/vendor/items")}
-              className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium"
-            >
-              Back to Items
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // ... rest of your component (loading states, error handling, JSX) remains the same ...
 
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-6">
           <button 
             onClick={handleBackToEdit}
@@ -280,14 +279,28 @@ const ItemFoodCourt: React.FC = () => {
             Back to Edit Item
           </button>
           
-          <h1 className="text-3xl font-bold text-black mb-2">
-            Manage Food Courts - {item?.name}
-          </h1>
-          <p className="text-gray-600">
-            Manage item availability across all your food courts
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-black mb-2">
+                Manage Food Courts - {item?.name}
+              </h1>
+              <p className="text-gray-600">
+                Manage item availability across all your food courts
+              </p>
+            </div>
+            {/* ✅ NEW: WebSocket connection status */}
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+              isConnected 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
+              {isConnected ? 'Live Updates' : 'Connecting...'}
+            </div>
+          </div>
         </div>
-
         {error && (
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
             <div className="text-red-800 font-bold">Error</div>

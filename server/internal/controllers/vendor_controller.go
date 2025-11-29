@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/MohdMusaiyab/infybyte/server/internal/models"
 	"github.com/MohdMusaiyab/infybyte/server/internal/utils"
 )
 
@@ -964,6 +965,7 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 	}{
 		vendors:        db.Collection("vendors"),
 		foodCourtItems: db.Collection("itemfoodcourts"),
+		items:          db.Collection("items"),
 	}
 
 	// Get vendor ID from user ID
@@ -1040,7 +1042,20 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	utils.RespondSuccess(c, http.StatusOK, "Food court item updated successfully", nil)
+	// ✅ NEW: Fetch the updated document to broadcast
+	var updatedItem models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{"_id": foodCourtItemObjID}).Decode(&updatedItem)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch updated item")
+		return
+	}
+
+	// ✅ NEW: Broadcast the update to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(updatedItem, "update")
+
+	utils.RespondSuccess(c, http.StatusOK, "Food court item updated successfully", gin.H{
+		"updatedItem": updatedItem,
+	})
 }
 
 func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {

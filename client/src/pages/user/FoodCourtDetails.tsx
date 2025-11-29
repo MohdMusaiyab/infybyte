@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, MapPin, Clock, Search, Heart, ChefHat, Zap, Users, Tag } from "lucide-react";
-
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 interface FoodCourt {
   id: string;
   name: string;
@@ -54,7 +55,7 @@ const FoodCourtDetails: React.FC = () => {
 
   const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
-
+const { lastMessage, isConnected } = useWebSocketContext();
   useEffect(() => {
     if (id) {
       fetchFoodCourtDetails();
@@ -104,6 +105,36 @@ const FoodCourtDetails: React.FC = () => {
   const handleBack = () => {
     navigate("/user/dashboard");
   };
+  // ✅ NEW: Handle real-time WebSocket updates
+// ✅ FIXED: Handle real-time WebSocket updates
+useEffect(() => {
+  if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+    const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+    
+    console.log("🔄 Real-time update received in FoodCourtDetails:", update);
+
+    // Update the specific item in real-time
+    setData(prev => {
+      if (!prev) return prev;
+      
+      return {
+        ...prev,
+        items: prev.items.map(item => 
+          // Match by item_id (from WebSocket) to itemId (from your data)
+          item.itemId === update.item_id 
+            ? { 
+                ...item, 
+                status: update.status,
+                price: update.price,
+                timeSlot: update.timeSlot,
+                isActive: update.isActive
+              }
+            : item
+        )
+      };
+    });
+  }
+}, [lastMessage]);
 
   if (loading) {
     return (
