@@ -138,7 +138,7 @@ const EditItem: React.FC = () => {
 
       await axiosInstance.put(`/vendor/items/${id}`, submitData);
       
-      navigate("/vendor/items");
+      navigate("/vendor/item-management");
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {

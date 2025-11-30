@@ -59,39 +59,46 @@ const ItemFoodCourt: React.FC = () => {
   ];
 
   // ✅ NEW: Handle real-time WebSocket updates
-  useEffect(() => {
-    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
-      const action = lastMessage.action;
-      
-      console.log("🔄 Real-time update received:", { update, action });
+// ✅ FIXED: Handle real-time WebSocket updates for both local and external changes
+useEffect(() => {
+  if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+    const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+    const action = lastMessage.action;
+    
+    console.log("🔄 Real-time update received:", { update, action });
 
-      if (action === "update") {
-        // Update the specific food court item in real-time
-        setFoodCourts(prev => 
-          prev.map(fc => 
-            fc.id === update._id 
-              ? { 
-                  ...fc, 
-                  status: update.status,
-                  price: update.price,
-                  timeSlot: update.timeSlot,
-                  isActive: update.isActive,
-                  updatedAt: update.updatedAt
-                }
-              : fc
-          )
-        );
-      } else if (action === "create") {
-        // If a new item is added, refresh the data to get the complete picture
-        fetchItemFoodCourts();
-      } else if (action === "delete") {
-        // If an item is removed, remove it from the list
-        setFoodCourts(prev => prev.filter(fc => fc.id !== update._id));
-      }
+    if (action === "update") {
+      setFoodCourts(prev => 
+        prev.map(fc => {
+          // ✅ Try multiple ID comparisons to catch all cases
+          const isMatch = 
+            fc.id === update._id || // Association ID matches MongoDB _id
+            fc.foodCourtId === update.foodcourt_id; // Food court ID matches
+          
+          return isMatch
+            ? { 
+                ...fc, 
+                status: update.status,
+                price: update.price,
+                timeSlot: update.timeSlot,
+                isActive: update.isActive,
+                updatedAt: update.updatedAt
+              }
+            : fc;
+        })
+      );
+    } else if (action === "create") {
+      // Refresh to get the complete data for new items
+      fetchItemFoodCourts();
+    } else if (action === "delete") {
+      setFoodCourts(prev => 
+        prev.filter(fc => 
+          !(fc.id === update._id || fc.foodCourtId === update.foodcourt_id)
+        )
+      );
     }
-  }, [lastMessage]);
-
+  }
+}, [lastMessage]);
   const fetchItemFoodCourts = useCallback(async () => {
     if (!id) return;
 

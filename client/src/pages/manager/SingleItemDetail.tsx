@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Save, RotateCcw, DollarSign } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
 interface FoodCourt {
   id: string;
@@ -39,29 +41,103 @@ interface UpdateData {
   timeSlot?: "breakfast" | "lunch" | "snacks" | "dinner";
 }
 
+interface FormData {
+  status: "available" | "notavailable" | "sellingfast" | "finishingsoon";
+  price: string;
+  isActive: boolean;
+  timeSlot: "breakfast" | "lunch" | "snacks" | "dinner";
+}
+
 const SingleItemDetail: React.FC = () => {
   const { foodCourtId, itemId } = useParams<{ foodCourtId: string; itemId: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext();
   const [foodCourt, setFoodCourt] = useState<FoodCourt | null>(null);
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [saving, setSaving] = useState<boolean>(false);
-  const [formData, setFormData] = useState({
-    status: "",
+  
+  const [formData, setFormData] = useState<FormData>({
+    status: "available",
     price: "",
-    isActive: false,
-    timeSlot: ""
+    isActive: true,
+    timeSlot: "breakfast"
   });
 
+  // ✅ FIXED: WebSocket updates without causing loops
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as any;
+      const action = lastMessage.action;
+      
+      console.log("🔄 Real-time update received in SingleItemDetail:", { update, action });
+
+      if (action === "update") {
+        // Check if this update is relevant for the current item
+        const isCurrentItem = 
+          update.id === item?._id || 
+          (update.item_id === itemId && update.foodcourt_id === foodCourtId);
+        
+        if (isCurrentItem) {
+          console.log("✅ Updating current item with real-time data");
+          
+          // ✅ FIX: Only update if the values are actually different to avoid loops
+          setItem(prev => {
+            if (!prev) return prev;
+            
+            const hasChanges = 
+              prev.status !== update.status ||
+              prev.price !== update.price ||
+              prev.timeSlot !== update.timeSlot ||
+              prev.isActive !== update.isActive;
+              
+            if (!hasChanges) return prev;
+            
+            return {
+              ...prev,
+              status: update.status,
+              price: update.price,
+              timeSlot: update.timeSlot,
+              isActive: update.isActive,
+              updatedAt: update.updatedAt
+            };
+          });
+
+          // ✅ FIX: Only update formData if user hasn't made local changes
+          setFormData(prev => {
+            const hasLocalChanges = 
+              prev.status !== item?.status ||
+              prev.price !== (item?.price?.toString() || "") ||
+              prev.timeSlot !== item?.timeSlot ||
+              prev.isActive !== item?.isActive;
+              
+            // Don't overwrite form data if user is actively editing
+            if (hasLocalChanges) {
+              console.log("📝 User has local changes, not overwriting form");
+              return prev;
+            }
+            
+            return {
+              status: update.status,
+              price: update.price ? update.price.toString() : "",
+              isActive: update.isActive,
+              timeSlot: update.timeSlot
+            };
+          });
+        }
+      }
+    }
+  }, [lastMessage, itemId, foodCourtId]); // ✅ REMOVED: 'item' from dependencies to break the loop
+
   // Helper function to convert key-value array to object
-    const transformItemData = (itemArray: KeyValuePair[]): ItemDetails => {
-      const itemObj: Record<string, string | number | boolean | null> = {};
-      itemArray.forEach(pair => {
-        itemObj[pair.Key] = pair.Value;
-      });
-      return itemObj as unknown as ItemDetails;
-    };
+  const transformItemData = (itemArray: KeyValuePair[]): ItemDetails => {
+    const itemObj: Record<string, string | number | boolean | null> = {};
+    itemArray.forEach(pair => {
+      itemObj[pair.Key] = pair.Value;
+    });
+    return itemObj as unknown as ItemDetails;
+  };
 
   useEffect(() => {
     const fetchItemData = async () => {
@@ -76,17 +152,16 @@ const SingleItemDetail: React.FC = () => {
         
         setFoodCourt(data.foodCourt);
         
-        // Transform the item data from key-value pairs to object
         const transformedItem = transformItemData(data.item);
         setItem(transformedItem);
         
-        // Initialize form data
         setFormData({
-          status: transformedItem.status,
+          status: transformedItem.status || "available",
           price: transformedItem.price ? transformedItem.price.toString() : "",
-          isActive: transformedItem.isActive,
-          timeSlot: transformedItem.timeSlot
+          isActive: transformedItem.isActive !== undefined ? transformedItem.isActive : true,
+          timeSlot: transformedItem.timeSlot || "breakfast"
         });
+
       } catch (err: unknown) {
         if (err instanceof AxiosError) {
           const responseData = err.response?.data as { message?: string } | undefined;
@@ -102,52 +177,80 @@ const SingleItemDetail: React.FC = () => {
     fetchItemData();
   }, [foodCourtId, itemId]);
 
+  // Form handlers
+  const handleStatusChange = (status: FormData["status"]) => {
+    setFormData(prev => ({ ...prev, status }));
+  };
+
+  const handlePriceChange = (price: string) => {
+    const numericValue = price.replace(/[^0-9.]/g, '');
+    const parts = numericValue.split('.');
+    const finalValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : numericValue;
+    setFormData(prev => ({ ...prev, price: finalValue }));
+  };
+
+  const handleTimeSlotChange = (timeSlot: FormData["timeSlot"]) => {
+    setFormData(prev => ({ ...prev, timeSlot }));
+  };
+
+  const handleActiveChange = (isActive: boolean) => {
+    setFormData(prev => ({ ...prev, isActive }));
+  };
+
   const handleSave = async () => {
-    if (!itemId) return;
+    if (!itemId || !item) return;
 
     try {
       setSaving(true);
       
       const updateData: UpdateData = {};
       
-      if (formData.status !== item?.status) {
-        updateData.status = formData.status as "available" | "notavailable" | "sellingfast" | "finishingsoon";
+      if (formData.status !== item.status) {
+        updateData.status = formData.status;
       }
       
-      if (formData.price !== "" && parseFloat(formData.price) !== item?.price) {
-        updateData.price = parseFloat(formData.price);
-      } else if (formData.price === "" && item?.price !== null) {
-        updateData.price = null;
+      const currentPrice = formData.price ? parseFloat(formData.price) : null;
+      if (currentPrice !== item.price) {
+        updateData.price = currentPrice;
       }
       
-      if (formData.isActive !== item?.isActive) {
+      if (formData.isActive !== item.isActive) {
         updateData.isActive = formData.isActive;
       }
       
-      if (formData.timeSlot !== item?.timeSlot) {
-        updateData.timeSlot = formData.timeSlot as "breakfast" | "lunch" | "snacks" | "dinner";
+      if (formData.timeSlot !== item.timeSlot) {
+        updateData.timeSlot = formData.timeSlot;
       }
 
-      // Only send request if there are changes
       if (Object.keys(updateData).length > 0) {
         await axiosInstance.put(`/manager/foodcourt/item/${itemId}`, updateData);
         
         // Update local state
-        if (item) {
-          const updatedItem = {
-            ...item,
-            ...updateData,
-            price: updateData.price !== undefined ? updateData.price : item.price
-          };
-          setItem(updatedItem);
-        }
+        const updatedItem = {
+          ...item,
+          ...updateData,
+          updatedAt: new Date().toISOString()
+        };
+        setItem(updatedItem);
         
         alert("Item updated successfully!");
+      } else {
+        alert("No changes to save.");
       }
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         alert(responseData?.message ?? "Failed to update item");
+        
+        // Revert form data on error
+        if (item) {
+          setFormData({
+            status: item.status,
+            price: item.price ? item.price.toString() : "",
+            isActive: item.isActive,
+            timeSlot: item.timeSlot
+          });
+        }
       } else {
         alert("Failed to update item");
       }
@@ -170,9 +273,8 @@ const SingleItemDetail: React.FC = () => {
   const hasChanges = () => {
     if (!item) return false;
     
-    const priceChanged = formData.price !== "" ? 
-      parseFloat(formData.price) !== item.price : 
-      item.price !== null;
+    const currentPrice = formData.price ? parseFloat(formData.price) : null;
+    const priceChanged = currentPrice !== item.price;
     
     return formData.status !== item.status ||
            priceChanged ||
@@ -267,6 +369,16 @@ const SingleItemDetail: React.FC = () => {
                       Special Item
                     </div>
                   )}
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                    isConnected 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                    }`}></div>
+                    {isConnected ? 'Live' : 'Connecting...'}
+                  </div>
                 </div>
               </div>
               <div className="text-right">
@@ -331,7 +443,7 @@ const SingleItemDetail: React.FC = () => {
                       <button
                         key={status}
                         type="button"
-                        onClick={() => setFormData({...formData, status})}
+                        onClick={() => handleStatusChange(status as FormData["status"])}
                         className={`p-3 rounded-xl border-2 transition-all duration-200 font-medium ${
                           formData.status === status
                             ? "bg-black text-white border-black"
@@ -352,11 +464,9 @@ const SingleItemDetail: React.FC = () => {
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
+                      type="text"
                       value={formData.price}
-                      onChange={(e) => setFormData({...formData, price: e.target.value})}
+                      onChange={(e) => handlePriceChange(e.target.value)}
                       placeholder={`Base price: ₹${item?.basePrice}`}
                       className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:ring-0 transition-colors"
                     />
@@ -374,7 +484,7 @@ const SingleItemDetail: React.FC = () => {
                       <button
                         key={slot}
                         type="button"
-                        onClick={() => setFormData({...formData, timeSlot: slot})}
+                        onClick={() => handleTimeSlotChange(slot as FormData["timeSlot"])}
                         className={`p-3 rounded-xl border-2 transition-all duration-200 font-medium ${
                           formData.timeSlot === slot
                             ? "bg-black text-white border-black"
@@ -395,7 +505,7 @@ const SingleItemDetail: React.FC = () => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setFormData({...formData, isActive: !formData.isActive})}
+                    onClick={() => handleActiveChange(!formData.isActive)}
                     className={`relative inline-flex items-center w-14 h-8 rounded-full transition-colors ${
                       formData.isActive ? "bg-green-500" : "bg-gray-300"
                     }`}

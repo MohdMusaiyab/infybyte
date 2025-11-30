@@ -16,6 +16,7 @@ import {
   Zap,
   MapPin
 } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext"; // ✅ ADDED
 
 interface FoodCourt {
   foodCourtId: string;
@@ -58,9 +59,23 @@ interface ApiResponse {
   };
 }
 
+// ✅ ADDED: WebSocket message interface
+interface WebSocketUpdatePayload {
+  id: string;
+  item_id: string;
+  foodcourt_id: string;
+  status: "available" | "notavailable" | "sellingfast" | "finishingsoon";
+  price?: number;
+  isActive: boolean;
+  timeSlot: "breakfast" | "lunch" | "snacks" | "dinner";
+  createdAt: string;
+  updatedAt: string;
+}
+
 const ItemManagement: React.FC = () => {
   const { itemId } = useParams<{ itemId: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext(); // ✅ ADDED: WebSocket hook
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -74,6 +89,30 @@ const ItemManagement: React.FC = () => {
     timeSlot: "lunch" as FoodCourtAssignment["timeSlot"],
     isActive: true
   });
+
+  // ✅ ADDED: WebSocket handler without loops
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update" && data) {
+      const update = lastMessage.payload as WebSocketUpdatePayload;
+      const action = lastMessage.action;
+      
+      console.log("🔄 Real-time update in ItemManagement:", { update, action });
+
+      if (action === "update" || action === "create" || action === "delete") {
+        // Refresh data to get the latest state
+        const refreshData = async () => {
+          try {
+            const response = await axiosInstance.get(`/manager/items/${itemId}`);
+            setData(response.data.data);
+          } catch (err) {
+            console.error("Failed to refresh data:", err);
+          }
+        };
+        
+        refreshData();
+      }
+    }
+  }, [lastMessage]); // ✅ Only depend on lastMessage to avoid loops
 
   useEffect(() => {
     const fetchItemData = async () => {
@@ -301,7 +340,7 @@ const ItemManagement: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-8">
           <button 
             onClick={() => navigate(-1)}
@@ -334,6 +373,17 @@ const ItemManagement: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       Base Price: <span className="font-bold text-black">₹{data.item.basePrice}</span>
                     </div>
+                    {/* ✅ ADDED: WebSocket connection status */}
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                      isConnected 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      <div className={`w-2 h-2 rounded-full ${
+                        isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                      }`}></div>
+                      {isConnected ? 'Live Updates' : 'Connecting...'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -357,7 +407,7 @@ const ItemManagement: React.FC = () => {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              Current Assignments ({data.currentAssignments?.length})
+              Current Assignments ({data.currentAssignments?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab("available")}
@@ -367,14 +417,14 @@ const ItemManagement: React.FC = () => {
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}
             >
-              Available Food Courts ({data.availableForAssignment?.length})
+              Available Food Courts ({data.availableForAssignment?.length || 0})
             </button>
           </div>
 
           {/* Current Assignments */}
           {activeTab === "current" && (
             <div className="space-y-4">
-              {data.currentAssignments?.length === 0 ? (
+              {!data.currentAssignments || data.currentAssignments.length === 0 ? (
                 <div className="text-center py-12">
                   <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">No food court assignments yet</p>
@@ -537,14 +587,14 @@ const ItemManagement: React.FC = () => {
           {/* Available Food Courts */}
           {activeTab === "available" && (
             <div className="space-y-4">
-              {data.availableForAssignment?.length === 0 ? (
+              {!data.availableForAssignment || data.availableForAssignment.length === 0 ? (
                 <div className="text-center py-12">
                   <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-600">No available food courts</p>
                   <p className="text-sm text-gray-500">This item is already in all your assigned food courts</p>
                 </div>
               ) : (
-                data.availableForAssignment?.map((foodCourt) => (
+                data.availableForAssignment.map((foodCourt) => (
                   <div key={foodCourt.foodCourtId} className="border-2 border-gray-200 rounded-xl p-4">
                     {addingToFC === foodCourt.foodCourtId ? (
                       // Add Form
@@ -647,7 +697,7 @@ const ItemManagement: React.FC = () => {
         </div>
 
         {/* Inaccessible Food Courts */}
-        {data.notAccessible?.length > 0 && (
+        {data.notAccessible && data.notAccessible.length > 0 && (
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <h2 className="text-xl font-bold text-black mb-4">Other Food Courts</h2>
             <p className="text-gray-600 mb-4">This item is available in these food courts, but you don't have management access.</p>

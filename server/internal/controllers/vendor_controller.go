@@ -921,6 +921,16 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to add item to food court")
 		return
 	}
+	// ✅ NEW: Fetch the created document for broadcasting
+	var createdItemFoodCourt models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&createdItemFoodCourt)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch created item")
+		return
+	}
+
+	// ✅ NEW: Broadcast the creation to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(createdItemFoodCourt, "create")
 
 	utils.RespondSuccess(c, http.StatusCreated, "Item added to food court successfully", bson.M{"id": result.InsertedID})
 }
@@ -1147,6 +1157,18 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 	}
 
 	// Delete the food court item association
+	// ✅ NEW: Fetch the item to be deleted for broadcasting
+	var itemToDelete models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{
+		"item_id":      itemObjID,
+		"foodcourt_id": foodCourtObjID,
+	}).Decode(&itemToDelete)
+	if err != nil {
+		utils.RespondError(c, http.StatusNotFound, "Food court item association not found")
+		return
+	}
+
+	// Delete the food court item association
 	result, err := collections.foodCourtItems.DeleteOne(
 		ctx,
 		bson.M{
@@ -1163,6 +1185,9 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Food court item association not found")
 		return
 	}
+
+	// ✅ NEW: Broadcast the deletion to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(itemToDelete, "delete")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item removed from food court successfully", nil)
 }

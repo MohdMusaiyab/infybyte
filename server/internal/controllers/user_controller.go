@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -485,7 +484,6 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid item ID")
 		return
 	}
-	fmt.Println(itemObjID)
 
 	ctx := context.Background()
 	collections := struct {
@@ -495,12 +493,13 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		foodCourtItems *mongo.Collection
 	}{
 		items:          db.Collection("items"),
-		// vendors:        db.Collection("vendors"),
-		// foodCourts:     db.Collection("foodcourts"),
-		// foodCourtItems: db.Collection("itemfoodcourts"),
+		vendors:        db.Collection("vendors"),
+		foodCourts:     db.Collection("foodcourts"),
+		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get item details with vendor information and food court availability
+
+
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": itemObjID}},
 		{"$lookup": bson.M{
@@ -510,70 +509,7 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 			"as":           "vendor",
 		}},
 		{"$unwind": bson.M{"path": "$vendor", "preserveNullAndEmptyArrays": true}},
-		{"$lookup": bson.M{
-			"from":         "itemfoodcourts",
-			"localField":   "_id",
-			"foreignField": "item_id",
-			"as":           "foodCourtItems",
-		}},
-		{"$unwind": bson.M{"path": "$foodCourtItems", "preserveNullAndEmptyArrays": true}},
-		{"$lookup": bson.M{
-			"from":         "foodcourts",
-			"localField":   "foodCourtItems.foodcourt_id",
-			"foreignField": "_id",
-			"as":           "foodCourt",
-		}},
-		{"$unwind": bson.M{"path": "$foodCourt", "preserveNullAndEmptyArrays": true}},
-		{"$match": bson.M{
-			"$or": []bson.M{
-				{"foodCourtItems.isActive": true},
-				{"foodCourtItems": bson.M{"$exists": false}},
-			},
-		}},
-		{"$group": bson.M{
-			"_id": "$_id",
-			// Item Details
-			"name":        bson.M{"$first": "$name"},
-			"description": bson.M{"$first": "$description"},
-			"basePrice":   bson.M{"$first": "$basePrice"},
-			"category":    bson.M{"$first": "$category"},
-			"isVeg":       bson.M{"$first": "$isVeg"},
-			"isSpecial":   bson.M{"$first": "$isSpecial"},
-			"createdAt":   bson.M{"$first": "$createdAt"},
-			"updatedAt":   bson.M{"$first": "$updatedAt"},
-			// Vendor Details
-			"vendor": bson.M{"$first": bson.M{
-				"id":       "$vendor._id",
-				"shopName": "$vendor.shopName",
-				"gst":      "$vendor.gst",
-			}},
-			// Food Court Availability
-			"availability": bson.M{"$push": bson.M{
-				"$cond": bson.M{
-					"if": bson.M{"$and": []bson.M{
-						{"$ne": bson.A{"$foodCourt", nil}},
-						{"$ne": bson.A{"$foodCourtItems", nil}},
-					}},
-					"then": bson.M{
-						"foodCourtId":   "$foodCourt._id",
-						"foodCourtName": "$foodCourt.name",
-						"location":      "$foodCourt.location",
-						"timings":       "$foodCourt.timings",
-						"isOpen":        "$foodCourt.isOpen",
-						"weekends":      "$foodCourt.weekends",
-						"weekdays":      "$foodCourt.weekdays",
-						"status":        "$foodCourtItems.status",
-						"price":         "$foodCourtItems.price",
-						"timeSlot":      "$foodCourtItems.timeSlot",
-						"isActive":      "$foodCourtItems.isActive",
-						"updatedAt":     "$foodCourtItems.updatedAt",
-					},
-					"else": "$$REMOVE",
-				},
-			}},
-		}},
 		{"$project": bson.M{
-			// Item Information
 			"item": bson.M{
 				"id":          "$_id",
 				"name":        "$name",
@@ -585,11 +521,11 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 				"createdAt":   "$createdAt",
 				"updatedAt":   "$updatedAt",
 			},
-			// Vendor Information
-			"vendor": 1,
-			// Availability across food courts
-			"availability": 1,
-			"_id":          0,
+			"vendor": bson.M{
+				"id":       "$vendor._id",
+				"shopName": "$vendor.shopName",
+				"gst":      "$vendor.gst",
+			},
 		}},
 	}
 
@@ -601,18 +537,61 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 	defer cursor.Close(ctx)
 
 	var results []bson.M
-	if err := cursor.All(ctx, &results); err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to process item details")
-		return
-	}
-
-	if len(results) == 0 {
+	if err := cursor.All(ctx, &results); err != nil || len(results) == 0 {
 		utils.RespondError(c, http.StatusNotFound, "Item not found")
 		return
 	}
 
-	// Get the first result (should be only one since we're querying by _id)
+	// Get the item and vendor data
 	itemData := results[0]
+	item := itemData["item"]
+	vendor := itemData["vendor"]
 
-	utils.RespondSuccess(c, http.StatusOK, "Item details retrieved successfully", itemData)
+	// Get food court availability separately with a simpler query
+	var availability []bson.M
+	availabilityPipeline := []bson.M{
+		{"$match": bson.M{
+			"item_id":  itemObjID,
+			"isActive": true,
+		}},
+		{"$lookup": bson.M{
+			"from":         "foodcourts",
+			"localField":   "foodcourt_id",
+			"foreignField": "_id",
+			"as":           "foodCourt",
+		}},
+		{"$unwind": bson.M{"path": "$foodCourt", "preserveNullAndEmptyArrays": true}},
+		{"$match": bson.M{
+			"foodCourt": bson.M{"$ne": nil},
+		}},
+		{"$project": bson.M{
+			"foodCourtId":   "$foodCourt._id",
+			"foodCourtName": "$foodCourt.name",
+			"location":      "$foodCourt.location",
+			"timings":       "$foodCourt.timings",
+			"isOpen":        "$foodCourt.isOpen",
+			"weekends":      "$foodCourt.weekends",
+			"weekdays":      "$foodCourt.weekdays",
+			"status":        "$status",
+			"price":         "$price",
+			"timeSlot":      "$timeSlot",
+			"isActive":      "$isActive",
+			"updatedAt":     "$updatedAt",
+		}},
+	}
+
+	availabilityCursor, err := collections.foodCourtItems.Aggregate(ctx, availabilityPipeline)
+	if err == nil {
+		defer availabilityCursor.Close(ctx)
+		availabilityCursor.All(ctx, &availability)
+	}
+
+	// Construct the final response
+	response := bson.M{
+		"item":        item,
+		"vendor":      vendor,
+		"availability": availability,
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Item details retrieved successfully", response)
 }

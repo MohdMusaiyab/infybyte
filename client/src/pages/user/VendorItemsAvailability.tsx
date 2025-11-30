@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Store, MapPin, Clock, Search, ChevronDown, ChevronUp, Zap, Tag } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
 interface FoodCourtAvailability {
   foodCourtId: string;
@@ -28,6 +30,7 @@ interface VendorItem {
 const VendorItemsAvailability: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext();
   const [items, setItems] = useState<VendorItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -39,6 +42,36 @@ const VendorItemsAvailability: React.FC = () => {
 
   const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
+
+  // WebSocket real-time updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+      
+      console.log("🔄 Real-time update in VendorItemsAvailability:", update);
+
+      setItems(prev => 
+        prev.map(item => 
+          item.itemId === update.item_id
+            ? {
+                ...item,
+                foodCourts: item.foodCourts.map(fc => 
+                  fc.foodCourtId === update.foodcourt_id
+                    ? {
+                        ...fc,
+                        status: update.status,
+                        price: update.price,
+                        timeSlot: update.timeSlot,
+                        isActive: update.isActive
+                      }
+                    : fc
+                )
+              }
+            : item
+        )
+      );
+    }
+  }, [lastMessage]);
 
   useEffect(() => {
     if (id) {
@@ -157,7 +190,7 @@ const VendorItemsAvailability: React.FC = () => {
   const handleFoodCourtClick = (foodCourtId: string) => {
     navigate(`/user/foodcourt/${foodCourtId}`);
   };
-
+  
   if (loading) {
     return (
       <div className="p-4 lg:p-6">
@@ -210,7 +243,7 @@ const VendorItemsAvailability: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-6">
           <button 
             onClick={handleBack}
@@ -221,10 +254,25 @@ const VendorItemsAvailability: React.FC = () => {
           </button>
           
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
-            <h1 className="text-3xl font-bold text-black mb-2">Item Availability</h1>
-            <p className="text-gray-600">
-              See where each item is available across different food courts
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-black mb-2">Item Availability</h1>
+                <p className="text-gray-600">
+                  See where each item is available across different food courts
+                </p>
+              </div>
+              {/* WebSocket Status */}
+              <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                isConnected 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                }`}></div>
+                {isConnected ? 'Live Updates' : 'Connecting...'}
+              </div>
+            </div>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/MohdMusaiyab/infybyte/server/internal/models"
 	"github.com/MohdMusaiyab/infybyte/server/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -164,6 +165,7 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager dashboard retrieved successfully", response)
 }
+
 // Helper function to get vendor's item IDs
 func getVendorItemIDs(ctx context.Context, itemsCollection *mongo.Collection, vendorID primitive.ObjectID) []primitive.ObjectID {
 	var itemIDs []primitive.ObjectID
@@ -550,7 +552,15 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Item not found in your food court")
 		return
 	}
+	var updatedItemFoodCourt models.ItemFoodCourt
+	err = collections.itemFoodCourts.FindOne(ctx, bson.M{"_id": itemFoodCourtObjID}).Decode(&updatedItemFoodCourt)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch updated item")
+		return
+	}
 
+	// ✅ NEW: Broadcast the update to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 	utils.RespondSuccess(c, http.StatusOK, "Item status updated successfully", nil)
 }
 
@@ -653,6 +663,18 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Item not found in your food court")
 		return
 	}
+	var updatedItemFoodCourt models.ItemFoodCourt
+	err = collections.itemFoodCourts.FindOne(ctx, bson.M{
+		"item_id":      itemObjID,
+		"foodcourt_id": manager.FoodCourtID,
+	}).Decode(&updatedItemFoodCourt)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch updated item")
+		return
+	}
+
+	// ✅ NEW: Broadcast the update to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item updated successfully", nil)
 }
@@ -963,7 +985,15 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to add item to food court")
 		return
 	}
+	var createdItemFoodCourt models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&createdItemFoodCourt)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch created item")
+		return
+	}
 
+	// ✅ NEW: Broadcast the creation to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(createdItemFoodCourt, "create")
 	utils.RespondSuccess(c, http.StatusCreated, "Item added to food court successfully", bson.M{"id": result.InsertedID})
 }
 
@@ -1082,7 +1112,19 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Item not found in this food court")
 		return
 	}
+	// ✅ NEW: Fetch the updated document for broadcasting
+	var updatedItemFoodCourt models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{
+		"item_id":      itemObjID,
+		"foodcourt_id": request.FoodCourtID,
+	}).Decode(&updatedItemFoodCourt)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch updated item")
+		return
+	}
 
+	// ✅ NEW: Broadcast the update to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 	utils.RespondSuccess(c, http.StatusOK, "Item updated in food court successfully", nil)
 }
 
@@ -1158,6 +1200,18 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	}
 
 	// Delete the food court item
+	// ✅ NEW: Fetch the item to be deleted for broadcasting
+	var itemToDelete models.ItemFoodCourt
+	err = collections.foodCourtItems.FindOne(ctx, bson.M{
+		"item_id":      itemObjID,
+		"foodcourt_id": request.FoodCourtID,
+	}).Decode(&itemToDelete)
+	if err != nil {
+		utils.RespondError(c, http.StatusNotFound, "Item not found in this food court")
+		return
+	}
+
+	// Delete the food court item
 	result, err := collections.foodCourtItems.DeleteOne(ctx, bson.M{
 		"item_id":      itemObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -1171,6 +1225,9 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Item not found in this food court")
 		return
 	}
+
+	// ✅ NEW: Broadcast the deletion to all connected clients
+	utils.BroadcastItemFoodCourtUpdate(itemToDelete, "delete")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item removed from food court successfully", nil)
 }

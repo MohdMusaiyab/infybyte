@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, ChefHat, MapPin, Clock, Zap, Tag, Calendar, Heart, ShoppingBag } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
 interface Item {
   id: string;
@@ -46,12 +48,45 @@ interface ItemDetailsResponse {
 const ItemDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext();
   const [data, setData] = useState<ItemDetailsResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("all");
 
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
+
+  // WebSocket real-time updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+      
+      console.log("🔄 Real-time update in ItemDetails:", update);
+
+      setData(prev => {
+        if (!prev) return prev;
+
+        // Check if this is the same item
+        if (prev.item.id !== update.item_id) return prev;
+
+        return {
+          ...prev,
+          availability: prev.availability.map(avail => 
+            avail.foodCourtId === update.foodcourt_id
+              ? {
+                  ...avail,
+                  status: update.status,
+                  price: update.price,
+                  timeSlot: update.timeSlot,
+                  isActive: update.isActive,
+                  updatedAt: new Date().toISOString()
+                }
+              : avail
+          )
+        };
+      });
+    }
+  }, [lastMessage]);
 
   useEffect(() => {
     if (id) {
@@ -64,7 +99,16 @@ const ItemDetails: React.FC = () => {
       setLoading(true);
       setError("");
       const response = await axiosInstance.get(`/user/items/${id}`);
-      setData(response.data.data);
+      
+      // Transform the API response to ensure availability is always an array
+      const apiData = response.data.data;
+      const transformedData: ItemDetailsResponse = {
+        item: apiData.item,
+        vendor: apiData.vendor,
+        availability: Array.isArray(apiData.availability) ? apiData.availability : []
+      };
+      
+      setData(transformedData);
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
@@ -205,9 +249,22 @@ const ItemDetails: React.FC = () => {
                   <h1 className="text-3xl font-bold text-black mb-2">{data.item.name}</h1>
                   <p className="text-gray-600 text-lg">{data.item.description}</p>
                 </div>
-                <button className="p-3 hover:bg-gray-100 rounded-xl transition-colors">
-                  <Heart className="w-6 h-6 text-gray-400 hover:text-red-500" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {/* WebSocket Status */}
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                    isConnected 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                    }`}></div>
+                    {isConnected ? 'Live' : 'Connecting...'}
+                  </div>
+                  <button className="p-3 hover:bg-gray-100 rounded-xl transition-colors">
+                    <Heart className="w-6 h-6 text-gray-400 hover:text-red-500" />
+                  </button>
+                </div>
               </div>
 
               {/* Item Tags */}

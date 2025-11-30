@@ -11,6 +11,7 @@ import {
   Eye,
   Check,
 } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext"; // ✅ ADDED
 
 interface FoodCourt {
   _id: string;
@@ -48,8 +49,22 @@ interface ApiResponse {
   };
 }
 
+// ✅ ADDED: WebSocket message interface
+interface WebSocketUpdatePayload {
+  id: string;
+  item_id: string;
+  foodcourt_id: string;
+  status: "available" | "notavailable" | "sellingfast" | "finishingsoon";
+  price?: number;
+  isActive: boolean;
+  timeSlot: "breakfast" | "lunch" | "snacks" | "dinner";
+  createdAt: string;
+  updatedAt: string;
+}
+
 const MultipleItemManagement: React.FC = () => {
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext(); // ✅ ADDED: WebSocket hook
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -58,6 +73,31 @@ const MultipleItemManagement: React.FC = () => {
   const [selectedFoodCourt, setSelectedFoodCourt] = useState<string>("all");
   const [addingItems, setAddingItems] = useState<{[key: string]: string}>({}); // itemId -> foodCourtId
   const [successMessage, setSuccessMessage] = useState<string>("");
+
+  // ✅ ADDED: WebSocket handler without loops
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as WebSocketUpdatePayload;
+      const action = lastMessage.action;
+      
+      console.log("🔄 Real-time update in MultipleItemManagement:", { update, action });
+
+      if (action === "create" || action === "update" || action === "delete") {
+        // Refresh data to get the latest state
+        const refreshData = async () => {
+          try {
+            const response = await axiosInstance.get("/manager/vendor-items");
+            setData(response.data.data);
+            console.log("✅ Data refreshed via WebSocket");
+          } catch (err) {
+            console.error("Failed to refresh data:", err);
+          }
+        };
+        
+        refreshData();
+      }
+    }
+  }, [lastMessage]); // ✅ Only depend on lastMessage to avoid loops
 
   useEffect(() => {
     const fetchVendorItems = async () => {
@@ -169,9 +209,22 @@ const MultipleItemManagement: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-black mb-2">Vendor Items Management</h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold text-black">Vendor Items Management</h1>
+            {/* ✅ ADDED: WebSocket connection status */}
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+              isConnected 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
+              {isConnected ? 'Live Updates' : 'Connecting...'}
+            </div>
+          </div>
           <p className="text-gray-600">
             Manage item distribution across your food courts
           </p>

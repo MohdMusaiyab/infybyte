@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Store, Package, Clock, MapPin, Edit } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext"; // ✅ ADDED
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket"; // ✅ ADDED
 
 interface FoodCourt {
   id: string;
@@ -34,12 +36,53 @@ interface KeyValuePair {
 const SingleFoodCourt: React.FC = () => {
   const { foodCourtId } = useParams<{ foodCourtId: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext(); // ✅ ADDED: WebSocket hook
   const [foodCourt, setFoodCourt] = useState<FoodCourt | null>(null);
   const [items, setItems] = useState<FoodCourtItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [updatingItem, setUpdatingItem] = useState<string | null>(null);
 
+  // ✅ ADDED: Handle real-time WebSocket updates
+// ✅ FIXED: Handle real-time WebSocket updates with correct payload structure
+useEffect(() => {
+  if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+    const update = lastMessage.payload as any; // Use any to handle the actual structure
+    const action = lastMessage.action;
+    
+    console.log("🔄 Real-time update received in SingleFoodCourt:", { update, action });
+
+    if (action === "update") {
+      // Update the specific item in real-time if it belongs to this food court
+      setItems(prev => 
+        prev.map(item => {
+          // ✅ FIX: Compare with the correct IDs from the payload
+          const isMatch = 
+            item._id === update.id || // Compare with the id from payload
+            (item.item_id === update.item_id && update.foodcourt_id === foodCourtId);
+          
+          if (isMatch) {
+            console.log("✅ Updating item:", item._id, "with new status:", update.status);
+            return { 
+              ...item, 
+              status: update.status,
+              price: update.price,
+              timeSlot: update.timeSlot,
+              isActive: update.isActive,
+              // Add any other fields that might be in the update
+            };
+          }
+          return item;
+        })
+      );
+    } else if (action === "delete") {
+      // Remove item if it was deleted from this food court
+      setItems(prev => prev.filter(item => 
+        !(item._id === update.id || (item.item_id === update.item_id && update.foodcourt_id === foodCourtId))
+      ));
+    }
+  }
+}, [lastMessage, foodCourtId]);
   useEffect(() => {
     const fetchFoodCourtData = async () => {
       if (!foodCourtId) return;
@@ -54,62 +97,62 @@ const SingleFoodCourt: React.FC = () => {
         setFoodCourt(data.foodCourt);
 
         // Convert backend key/value pair list to real JSON
-                const formattedItems: FoodCourtItem[] = (data.items || []).map((arr: KeyValuePair[]) => {
-                  const obj: Record<string, string | number | boolean | null | undefined> = {};
-                  arr.forEach((item) => {
-                    obj[item.Key] = item.Value;
-                  });
-        
-                  const asString = (k: string) => {
-                    const v = obj[k];
-                    return v === null || v === undefined ? "" : String(v);
-                  };
-        
-                  const parseNumber = (k: string, fallback?: number): number | undefined => {
-                    const v = obj[k];
-                    if (typeof v === "number") return v;
-                    if (typeof v === "string" && v.trim() !== "") {
-                      const n = Number(v);
-                      return Number.isNaN(n) ? fallback : n;
-                    }
-                    return fallback;
-                  };
-        
-                  const parseBoolean = (k: string) => {
-                    const v = obj[k];
-                    if (typeof v === "boolean") return v;
-                    if (typeof v === "string") return v.toLowerCase() === "true" || v === "1";
-                    if (typeof v === "number") return v === 1;
-                    return false;
-                  };
-        
-                  const statusRaw = asString("status") || asString("Status");
-                  const validStatuses: FoodCourtItem["status"][] = ["available", "notavailable", "sellingfast", "finishingsoon"];
-                  const status = validStatuses.includes(statusRaw as FoodCourtItem["status"]) ? (statusRaw as FoodCourtItem["status"]) : "notavailable";
-        
-                  const timeSlotRaw = asString("timeSlot") || asString("time_slot") || asString("timeSlot");
-                  const validTimeSlots: FoodCourtItem["timeSlot"][] = ["breakfast", "lunch", "snacks", "dinner"];
-                  const timeSlot = validTimeSlots.includes(timeSlotRaw as FoodCourtItem["timeSlot"]) ? (timeSlotRaw as FoodCourtItem["timeSlot"]) : "lunch";
-        
-                  const price = parseNumber("price");
-                  const basePrice = parseNumber("basePrice", 0) ?? 0;
-        
-                  const itemObj: FoodCourtItem = {
-                    _id: asString("_id") || asString("id") || "",
-                    item_id: asString("item_id") || asString("itemId") || "",
-                    status,
-                    price,
-                    isActive: parseBoolean("isActive") || parseBoolean("is_active"),
-                    timeSlot,
-                    name: asString("name") || "",
-                    description: asString("description") || undefined,
-                    category: asString("category") || "",
-                    isVeg: parseBoolean("isVeg") || parseBoolean("is_veg"),
-                    basePrice,
-                  };
-        
-                  return itemObj;
-                });
+        const formattedItems: FoodCourtItem[] = (data.items || []).map((arr: KeyValuePair[]) => {
+          const obj: Record<string, string | number | boolean | null | undefined> = {};
+          arr.forEach((item) => {
+            obj[item.Key] = item.Value;
+          });
+
+          const asString = (k: string) => {
+            const v = obj[k];
+            return v === null || v === undefined ? "" : String(v);
+          };
+
+          const parseNumber = (k: string, fallback?: number): number | undefined => {
+            const v = obj[k];
+            if (typeof v === "number") return v;
+            if (typeof v === "string" && v.trim() !== "") {
+              const n = Number(v);
+              return Number.isNaN(n) ? fallback : n;
+            }
+            return fallback;
+          };
+
+          const parseBoolean = (k: string) => {
+            const v = obj[k];
+            if (typeof v === "boolean") return v;
+            if (typeof v === "string") return v.toLowerCase() === "true" || v === "1";
+            if (typeof v === "number") return v === 1;
+            return false;
+          };
+
+          const statusRaw = asString("status") || asString("Status");
+          const validStatuses: FoodCourtItem["status"][] = ["available", "notavailable", "sellingfast", "finishingsoon"];
+          const status = validStatuses.includes(statusRaw as FoodCourtItem["status"]) ? (statusRaw as FoodCourtItem["status"]) : "notavailable";
+
+          const timeSlotRaw = asString("timeSlot") || asString("time_slot") || asString("timeSlot");
+          const validTimeSlots: FoodCourtItem["timeSlot"][] = ["breakfast", "lunch", "snacks", "dinner"];
+          const timeSlot = validTimeSlots.includes(timeSlotRaw as FoodCourtItem["timeSlot"]) ? (timeSlotRaw as FoodCourtItem["timeSlot"]) : "lunch";
+
+          const price = parseNumber("price");
+          const basePrice = parseNumber("basePrice", 0) ?? 0;
+
+          const itemObj: FoodCourtItem = {
+            _id: asString("_id") || asString("id") || "",
+            item_id: asString("item_id") || asString("itemId") || "",
+            status,
+            price,
+            isActive: parseBoolean("isActive") || parseBoolean("is_active"),
+            timeSlot,
+            name: asString("name") || "",
+            description: asString("description") || undefined,
+            category: asString("category") || "",
+            isVeg: parseBoolean("isVeg") || parseBoolean("is_veg"),
+            basePrice,
+          };
+
+          return itemObj;
+        });
 
         setItems(formattedItems);
 
@@ -136,7 +179,8 @@ const SingleFoodCourt: React.FC = () => {
         status: newStatus
       });
 
-      // Update local state
+      // ✅ OPTIMISTIC UPDATE: Update local state immediately
+      // WebSocket will also send the update, but this makes UI responsive
       setItems(prevItems => 
         prevItems.map(item => 
           item._id === itemId ? { ...item, status: newStatus } : item
@@ -146,12 +190,84 @@ const SingleFoodCourt: React.FC = () => {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as { message?: string } | undefined;
         alert(responseData?.message ?? "Failed to update item status");
+        // Revert optimistic update on error
+        const fetchFoodCourtData = async () => {
+          try {
+            const response = await axiosInstance.get(`/manager/foodcourts/${foodCourtId}`);
+            const data = response.data.data;
+            const formattedItems = formatItems(data.items || []);
+            setItems(formattedItems);
+          } catch (fetchErr) {
+            console.error("Failed to revert update:", fetchErr);
+          }
+        };
+        fetchFoodCourtData();
       } else {
         alert("Failed to update item status");
       }
     } finally {
       setUpdatingItem(null);
     }
+  };
+
+  // Helper function to format items (extracted from useEffect)
+  const formatItems = (itemsData: KeyValuePair[][]): FoodCourtItem[] => {
+    return itemsData.map((arr: KeyValuePair[]) => {
+      const obj: Record<string, string | number | boolean | null | undefined> = {};
+      arr.forEach((item) => {
+        obj[item.Key] = item.Value;
+      });
+
+      const asString = (k: string) => {
+        const v = obj[k];
+        return v === null || v === undefined ? "" : String(v);
+      };
+
+      const parseNumber = (k: string, fallback?: number): number | undefined => {
+        const v = obj[k];
+        if (typeof v === "number") return v;
+        if (typeof v === "string" && v.trim() !== "") {
+          const n = Number(v);
+          return Number.isNaN(n) ? fallback : n;
+        }
+        return fallback;
+      };
+
+      const parseBoolean = (k: string) => {
+        const v = obj[k];
+        if (typeof v === "boolean") return v;
+        if (typeof v === "string") return v.toLowerCase() === "true" || v === "1";
+        if (typeof v === "number") return v === 1;
+        return false;
+      };
+
+      const statusRaw = asString("status") || asString("Status");
+      const validStatuses: FoodCourtItem["status"][] = ["available", "notavailable", "sellingfast", "finishingsoon"];
+      const status = validStatuses.includes(statusRaw as FoodCourtItem["status"]) ? (statusRaw as FoodCourtItem["status"]) : "notavailable";
+
+      const timeSlotRaw = asString("timeSlot") || asString("time_slot") || asString("timeSlot");
+      const validTimeSlots: FoodCourtItem["timeSlot"][] = ["breakfast", "lunch", "snacks", "dinner"];
+      const timeSlot = validTimeSlots.includes(timeSlotRaw as FoodCourtItem["timeSlot"]) ? (timeSlotRaw as FoodCourtItem["timeSlot"]) : "lunch";
+
+      const price = parseNumber("price");
+      const basePrice = parseNumber("basePrice", 0) ?? 0;
+
+      const itemObj: FoodCourtItem = {
+        _id: asString("_id") || asString("id") || "",
+        item_id: asString("item_id") || asString("itemId") || "",
+        status,
+        price,
+        isActive: parseBoolean("isActive") || parseBoolean("is_active"),
+        timeSlot,
+        name: asString("name") || "",
+        description: asString("description") || undefined,
+        category: asString("category") || "",
+        isVeg: parseBoolean("isVeg") || parseBoolean("is_veg"),
+        basePrice,
+      };
+
+      return itemObj;
+    });
   };
 
   const getStatusColor = (status: FoodCourtItem["status"]) => {
@@ -212,7 +328,7 @@ const SingleFoodCourt: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-8">
           <button 
             onClick={() => navigate(-1)}
@@ -242,6 +358,17 @@ const SingleFoodCourt: React.FC = () => {
                           <span>{foodCourt.timings}</span>
                         </div>
                       )}
+                      {/* ✅ ADDED: WebSocket connection status */}
+                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                        isConnected 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${
+                          isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}></div>
+                        {isConnected ? 'Live Updates' : 'Connecting...'}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Store, MapPin, Clock, Tag, Calendar, Zap, Search, Heart } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
+import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
 interface Vendor {
   id: string;
@@ -50,6 +52,7 @@ interface VendorProfileResponse {
 const VendorProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { lastMessage, isConnected } = useWebSocketContext();
   const [data, setData] = useState<VendorProfileResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -58,6 +61,40 @@ const VendorProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"items" | "locations">("items");
 
   const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
+
+  // WebSocket real-time updates
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+      
+      console.log("🔄 Real-time update in VendorProfile:", update);
+
+      setData(prev => {
+        if (!prev) return prev;
+
+        // Check if this vendor owns the updated item
+        const vendorOwnsItem = prev.items.some(item => item.id === update.item_id);
+        if (!vendorOwnsItem) return prev;
+
+        return {
+          ...prev,
+          foodCourtItems: prev.foodCourtItems ? 
+            prev.foodCourtItems.map(fci => 
+              fci.itemId === update.item_id && fci.foodCourtId === update.foodcourt_id
+                ? {
+                    ...fci,
+                    status: update.status,
+                    price: update.price,
+                    timeSlot: update.timeSlot,
+                    isActive: update.isActive
+                  }
+                : fci
+            )
+            : []
+        };
+      });
+    }
+  }, [lastMessage]);
 
   useEffect(() => {
     if (id) {
@@ -191,7 +228,7 @@ const VendorProfile: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {/* Header with WebSocket status */}
         <div className="mb-6">
           <button 
             onClick={handleBack}
@@ -210,7 +247,20 @@ const VendorProfile: React.FC = () => {
                 <Store className="w-10 h-10 text-white" />
               </div>
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-black mb-2">{data.vendor.shopName}</h1>
+                <div className="flex items-center gap-4 mb-2">
+                  <h1 className="text-3xl font-bold text-black">{data.vendor.shopName}</h1>
+                  {/* WebSocket Status */}
+                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                    isConnected 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    <div className={`w-2 h-2 rounded-full ${
+                      isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                    }`}></div>
+                    {isConnected ? 'Live' : 'Connecting...'}
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
