@@ -20,7 +20,9 @@ const AdminRoutes = () => (
 
       {/* ===============Food Court Related========================== */}
       <Route path="/admin/food-courts" element={<AllFoodCourts />} />
-      <Route  path="/admin/food-courts/:id" element={<SingleFoodCourtDetails />}
+      <Route
+        path="/admin/food-courts/:id"
+        element={<SingleFoodCourtDetails />}
       />
     </Route>
   </Route>

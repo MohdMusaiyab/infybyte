@@ -1,13 +1,11 @@
-// src/utils/axiosInstance.ts
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  withCredentials: true, // important for cookies
+  withCredentials: true,
 });
 
-// Request interceptor → add Authorization
 axiosInstance.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) {
@@ -16,13 +14,11 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor → handle 401 and refresh
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Prevent infinite loop
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {

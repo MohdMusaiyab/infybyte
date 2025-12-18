@@ -17,7 +17,6 @@ const ManagerRoutes = () => (
        <Route path="/manager/item-management/:itemId" element={<ItemManagement />} /> 
        <Route path="/manager/item-management" element={<MultipleItemManagement />} /> 
        <Route path="/manager/profile" element={<Profile></Profile>}></Route>
-      {/* Other manager pages here */}
     </Route>
   </Route>
 );

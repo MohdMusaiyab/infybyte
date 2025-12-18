@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import type { RegisterCredentials } from "../../types/auth";
 import { isAxiosError } from "axios";
@@ -10,6 +11,7 @@ import { ChefHat, ArrowRight, User } from "lucide-react";
 
 const Register = () => {
   const { register } = useAuth();
+  const navigate = useNavigate(); // Add this hook
 
   const [form, setForm] = useState<RegisterCredentials>({
     name: "",
@@ -34,11 +36,13 @@ const Register = () => {
     setSuccess(null);
 
     try {
-      const user = await register(form); // our hook handles axios + store
+      const user = await register(form);
       console.log(user);
       setSuccess(`Registration successful. Welcome, ${user.name}!`);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (err: unknown) {
-      // Handle Axios error with backend message
       if (isAxiosError(err)) {
         if (err.response?.data && typeof err.response.data === "object") {
           const backendMessage = (err.response.data as { message?: string })
@@ -52,6 +56,9 @@ const Register = () => {
       } else {
         setError("An unexpected error occurred.");
       }
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -59,39 +66,40 @@ const Register = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Background Pattern Matching Hero */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:48px_48px]" />
-        
-        {/* Floating Food Icons */}
-        <div className="absolute top-20 left-10 text-6xl opacity-5 animate-pulse">🍕</div>
-        <div className="absolute top-40 right-20 text-6xl opacity-5 animate-pulse delay-500">🍔</div>
-        <div className="absolute bottom-32 left-20 text-6xl opacity-5 animate-pulse delay-1000">🍜</div>
+
+        <div className="absolute top-20 left-10 text-6xl opacity-5 animate-pulse">
+          🍕
+        </div>
+        <div className="absolute top-40 right-20 text-6xl opacity-5 animate-pulse delay-500">
+          🍔
+        </div>
+        <div className="absolute bottom-32 left-20 text-6xl opacity-5 animate-pulse delay-1000">
+          🍜
+        </div>
       </div>
 
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {/* Register Card */}
         <div className="max-w-md w-full space-y-8 bg-white border-2 border-black rounded-3xl p-8 md:p-12 shadow-2xl">
-          {/* Brand Header */}
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-6">
               <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
                 <ChefHat className="w-6 h-6 text-white" />
               </div>
-              <span className="text-3xl font-bold tracking-tight text-black">Infybite</span>
+              <span className="text-3xl font-bold tracking-tight text-black">
+                Infybite
+              </span>
             </div>
-            
+
             <h2 className="text-2xl md:text-3xl font-bold text-black mb-2">
               Join Infybite
             </h2>
-            <p className="text-gray-600 text-lg">
-              Create your account
-            </p>
+            <p className="text-gray-600 text-lg">Create your account</p>
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-6">
-              {/* Name Input */}
               <TextInput
                 label="Full Name"
                 name="name"
@@ -110,8 +118,6 @@ const Register = () => {
                 labelClassName="text-left block text-gray-700 font-medium"
                 className="text-left border-2 border-gray-300 focus:border-black"
               />
-
-              {/* Email Input */}
               <EmailInput
                 label="Email address"
                 name="email"
@@ -128,8 +134,6 @@ const Register = () => {
                 labelClassName="text-left block text-gray-700 font-medium"
                 className="text-left border-2 border-gray-300 focus:border-black"
               />
-
-              {/* Password Input */}
               <PasswordInput
                 label="Password"
                 name="password"
@@ -150,21 +154,21 @@ const Register = () => {
               />
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
-                <p className="text-sm text-red-700 text-center font-medium">{error}</p>
+                <p className="text-sm text-red-700 text-center font-medium">
+                  {error}
+                </p>
               </div>
             )}
 
-            {/* Success Message */}
             {success && (
               <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
-                <p className="text-sm text-green-700 text-center font-medium">{success}</p>
+                <p className="text-sm text-green-700 text-center font-medium">
+                  {success}
+                </p>
               </div>
             )}
-
-            {/* Submit Button */}
             <div className="pt-4">
               <Button
                 type="submit"
@@ -177,11 +181,12 @@ const Register = () => {
                 className="group hover:scale-105 transition-transform duration-200"
               >
                 {loading ? "Creating Account..." : "Create Account"}
-                {!loading && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
+                {!loading && (
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                )}
               </Button>
             </div>
 
-            {/* Login Link */}
             <div className="text-center pt-4">
               <p className="text-gray-600">
                 Already have an account?{" "}

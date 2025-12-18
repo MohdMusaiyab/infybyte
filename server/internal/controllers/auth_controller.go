@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -169,7 +168,7 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "User not found")
-		fmt.Print("error in refresh token: ", err)
+		
 		return
 	}
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{

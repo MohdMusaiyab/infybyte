@@ -10,10 +10,9 @@ export const useWebSocket = (config?: WebSocketConfig) => {
   const ws = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const configRef = useRef(config);
-  const isInternalCloseRef = useRef(false); // NEW: Track internal closes
+  const isInternalCloseRef = useRef(false);
   const { accessToken } = useAuthStore();
 
-  // Update config ref when it changes
   useEffect(() => {
     configRef.current = config;
   }, [config]);
@@ -29,7 +28,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
     clearReconnectTimeout();
 
     if (ws.current) {
-      isInternalCloseRef.current = true; // Mark as intentional
+      isInternalCloseRef.current = true;
       ws.current.close(1000, "Manual disconnect");
       ws.current = null;
       isInternalCloseRef.current = false; // Reset
@@ -40,21 +39,19 @@ export const useWebSocket = (config?: WebSocketConfig) => {
   }, [clearReconnectTimeout]);
 
   const connect = useCallback(() => {
-    clearReconnectTimeout(); // Ensure any pending reconnect is cancelled before a new connect
+    clearReconnectTimeout();
 
     if (!accessToken) {
       console.warn("No access token available for WebSocket connection");
-      disconnect(); // Ensure previous state is cleaned up
+      disconnect();
       return;
     }
 
-    // Fix: Clean up existing connection while marking it as an internal close
     if (ws.current) {
-      // Mark as internal close before closing
       isInternalCloseRef.current = true;
       ws.current.close();
-      ws.current = null; // Clear the ref immediately
-      isInternalCloseRef.current = false; // Reset for the new connection
+      ws.current = null;
+      isInternalCloseRef.current = false;
     }
 
     try {
@@ -64,7 +61,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
 
       console.log("🔌 Connecting to WebSocket...", wsUrl);
       const newWs = new WebSocket(wsUrl);
-      ws.current = newWs; // Assign the new instance
+      ws.current = newWs;
 
       newWs.onopen = () => {
         setIsConnected(true);
@@ -72,8 +69,6 @@ export const useWebSocket = (config?: WebSocketConfig) => {
         console.log("✅ WebSocket connected successfully");
         configRef.current?.onOpen?.();
       };
-
-      // Removed non-standard 'ping' listener
 
       newWs.onmessage = (event) => {
         try {
@@ -94,11 +89,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
         });
         configRef.current?.onClose?.(event);
 
-        // Policy Error (e.g., Auth failure) - Do not reconnect
         const isAuthError = event.code === 1008;
-
-        // Only auto-reconnect if it wasn't a manual (1000) or internal disconnect
-        // AND not a known Authorization error (1008).
         if (
           !isInternalCloseRef.current &&
           event.code !== 1000 &&
@@ -111,7 +102,6 @@ export const useWebSocket = (config?: WebSocketConfig) => {
             const nextAttempt = prev + 1;
 
             if (nextAttempt <= maxReconnectAttempts) {
-              // Exponential Backoff calculation (capped at 30s)
               const timeout = Math.min(
                 (configRef.current?.reconnectInterval || 1000) *
                   Math.pow(2, prev),
@@ -122,7 +112,6 @@ export const useWebSocket = (config?: WebSocketConfig) => {
                 `🔄 Reconnecting in ${timeout}ms (attempt ${nextAttempt}/${maxReconnectAttempts})`
               );
 
-              // Use window.setTimeout for proper typing with clearTimeout
               reconnectTimeoutRef.current = window.setTimeout(() => {
                 connect();
               }, timeout) as unknown as number;
@@ -156,16 +145,13 @@ export const useWebSocket = (config?: WebSocketConfig) => {
     }
   }, []);
 
-  // Effect to manage connection based on accessToken availability
   useEffect(() => {
     if (accessToken) {
       connect();
     } else {
-      // Clean up if the token is lost
       disconnect();
     }
 
-    // Cleanup function when the component unmounts or effect reruns
     return () => {
       disconnect();
     };

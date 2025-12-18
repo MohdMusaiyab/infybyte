@@ -9,6 +9,7 @@ import VendorRoutes from "./vendorRoutes";
 import AdminRoutes from "./adminRoutes";
 import ManagerRoutes from "./managerRoutes";
 import DemoDashboard from "../pages/general/DemoDashboard";
+import NotFound from "../pages/general/NotFound";
 
 const AppRoutes = () => (
   <Routes>
@@ -35,6 +36,7 @@ const AppRoutes = () => (
     {AdminRoutes()}
     {ManagerRoutes()}
     <Route path="/unauthorized" element={<Unauthorized />} />
+    <Route path="*" element={<NotFound />} />
   </Routes>
 );
 

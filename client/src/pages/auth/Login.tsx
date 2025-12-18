@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import type { LoginCredentials } from "../../types/auth";
-import axios from "axios"; // for type checking in catch
+import axios from "axios";
 import EmailInput from "../../components/general/input/EmailInput";
 import PasswordInput from "../../components/general/input/PasswordInput";
 import Button from "../../components/general/Button";
@@ -31,14 +31,14 @@ const Login = () => {
     setSuccess(null);
 
     try {
-      const user = await login(form); // our hook handles axios + store
+      const user = await login(form); 
       setSuccess(`Welcome back, ${user.name}! Redirecting...`);
 
       setTimeout(() => {
-        navigate(`/${user.role}/dashboard`); // Redirect based on role
+        navigate(`/${user.role}/dashboard`); 
       }, 1200);
     } catch (err: unknown) {
-      // Axios error handling with full type safety
+      
       if (axios.isAxiosError(err)) {
         const responseData = err.response?.data as
           | { message?: string }
@@ -51,6 +51,9 @@ const Login = () => {
       } else {
         setError("An unexpected error occurred. Please try again later.");
       }
+      setTimeout(() => {
+        setError(null);
+      }, 2000);
     } finally {
       setLoading(false);
     }
@@ -58,20 +61,20 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
-      {/* Background Pattern Matching Hero */}
+      
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] bg-[size:48px_48px]" />
         
-        {/* Floating Food Icons */}
+      
         <div className="absolute top-20 left-10 text-6xl opacity-5 animate-pulse">🍕</div>
         <div className="absolute top-40 right-20 text-6xl opacity-5 animate-pulse delay-500">🍔</div>
         <div className="absolute bottom-32 left-20 text-6xl opacity-5 animate-pulse delay-1000">🍜</div>
       </div>
 
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        {/* Login Card */}
+      
         <div className="max-w-md w-full space-y-8 bg-white border-2 border-black rounded-3xl p-8 md:p-12 shadow-2xl">
-          {/* Brand Header */}
+      
           <div className="text-center">
             <div className="flex items-center justify-center gap-3 mb-6">
               <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
@@ -90,7 +93,7 @@ const Login = () => {
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-6">
-              {/* Email Input */}
+      
               <EmailInput
                 label="Email address"
                 name="email"
@@ -107,8 +110,6 @@ const Login = () => {
                 labelClassName="text-left block text-gray-700 font-medium"
                 className="text-left border-2 border-gray-300 focus:border-black"
               />
-              
-              {/* Password Input */}
               <PasswordInput
                 label="Password"
                 name="password"
@@ -128,21 +129,18 @@ const Login = () => {
               />
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4">
                 <p className="text-sm text-red-700 text-center font-medium">{error}</p>
               </div>
             )}
 
-            {/* Success Message */}
             {success && (
               <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4">
                 <p className="text-sm text-green-700 text-center font-medium">{success}</p>
               </div>
             )}
 
-            {/* Submit Button */}
             <div className="pt-4">
               <Button
                 type="submit"
@@ -159,7 +157,6 @@ const Login = () => {
               </Button>
             </div>
 
-            {/* Register Link */}
             <div className="text-center pt-4">
               <p className="text-gray-600">
                 Don't have an account?{" "}

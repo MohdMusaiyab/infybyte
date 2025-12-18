@@ -21,7 +21,6 @@ const VendorRoutes = () => (
       <Route path="/vendor/managers" element={<VendorManagers />} />
       <Route path="/vendor/managers/create" element={<CreateManager />} />
       <Route path="vendor/managers/edit/:id" element={<EditManager />} />
-      {/* Other vendor pages here */}
     </Route>
   </Route>
 );
