@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -9,10 +9,14 @@ import {
   DollarSign,
   Building,
   Utensils,
+  ChevronRight,
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 
 const Sidebar: React.FC = () => {
+  const { user, logout, isLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
 
@@ -41,14 +45,23 @@ const Sidebar: React.FC = () => {
     },
   ];
 
-
   const isActive = (path: string, exact = false) => {
     if (exact) {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
   };
+  const handleLogout = async () => {
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (!confirmed) return;
 
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   const NavItem: React.FC<{
     item: (typeof menuItems)[0];
     onItemClick: () => void;
@@ -180,28 +193,33 @@ const Sidebar: React.FC = () => {
         {/* Bottom Section */}
         <div className="p-6 border-t border-gray-200 space-y-2">
           {/* Logout Button */}
-          <button className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 mt-4">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
+          <button
+            onClick={handleLogout}
+            disabled={isLoading}
+            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 mt-4"
+          >
+            <LogOut className={`w-5 h-5 ${isLoading ? "animate-pulse" : ""}`} />
+            <span className="font-medium">
+              {isLoading ? "Logging out..." : "Logout"}
+            </span>
           </button>
 
           {/* User Profile */}
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-3">
-              <img
-                src="/api/placeholder/40/40"
-                alt="Profile"
-                className="w-10 h-10 rounded-full bg-gray-200"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-black truncate">
-                  Manager Name
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  manager@foodcourt.com
-                </p>
+            <Link to="/user/profile">
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-black truncate">
+                    {user?.name || "User Name"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email || "useremail@gmail.com"}
+                  </p>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-gray-400" />
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>

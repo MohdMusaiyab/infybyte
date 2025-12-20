@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ArrowLeft, Store, MapPin, Clock, Tag, Calendar, Zap, Search, Heart } from "lucide-react";
+import {
+  ArrowLeft,
+  Store,
+  MapPin,
+  Clock,
+  Tag,
+  Calendar,
+  Zap,
+  Search,
+} from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
 import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
 
@@ -10,17 +19,6 @@ interface Vendor {
   id: string;
   shopName: string;
   gst?: string;
-  createdAt: string;
-}
-
-interface Item {
-  id: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  category: string;
-  isVeg: boolean;
-  isSpecial: boolean;
   createdAt: string;
 }
 
@@ -33,20 +31,55 @@ interface FoodCourt {
   createdAt: string;
 }
 
-interface FoodCourtItem {
+interface ItemFoodCourtDetail {
   id: string;
-  itemId: string;
-  foodCourtId: string;
+  item_id: string;
+  foodcourt_id: string;
   status: string;
   price?: number;
   timeSlot: string;
+  isActive?: boolean;
+  updatedAt?: string;
+  
+  // Item details
+  item_name: string;
+  item_description?: string;
+  item_basePrice: number;
+  item_category: string;
+  item_isVeg: boolean;
+  item_isSpecial: boolean;
+  
+  // Food court details
+  foodcourt_name: string;
+  foodcourt_location: string;
+  foodcourt_isOpen: boolean;
+  foodcourt_timings?: string;
+}
+
+interface Summary {
+  total_items: number;
+  total_locations: number;
+  available_items: number;
+  selling_fast_items: number;
 }
 
 interface VendorProfileResponse {
   vendor: Vendor;
-  items: Item[];
+  item_foodcourt_details: ItemFoodCourtDetail[];
   foodCourts: FoodCourt[];
-  foodCourtItems: FoodCourtItem[];
+  summary: Summary;
+}
+
+interface ItemDisplay {
+  id: string;
+  name: string;
+  description: string;
+  basePrice: number;
+  category: string;
+  isVeg: boolean;
+  isSpecial: boolean;
+  createdAt: string;
+  availability: ItemFoodCourtDetail[];
 }
 
 const VendorProfile: React.FC = () => {
@@ -54,47 +87,95 @@ const VendorProfile: React.FC = () => {
   const navigate = useNavigate();
   const { lastMessage, isConnected } = useWebSocketContext();
   const [data, setData] = useState<VendorProfileResponse | null>(null);
+  const [itemsDisplay, setItemsDisplay] = useState<ItemDisplay[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"items" | "locations">("items");
 
-  const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
+  const categories = [
+    "all",
+    "breakfast",
+    "maincourse",
+    "dessert",
+    "beverage",
+    "dosa",
+    "northmeal",
+    "paratha",
+    "chinese",
+    "combo",
+  ];
 
   // WebSocket real-time updates
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
       const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
-      
       console.log("🔄 Real-time update in VendorProfile:", update);
 
-      setData(prev => {
+      setData((prev) => {
         if (!prev) return prev;
 
-        // Check if this vendor owns the updated item
-        const vendorOwnsItem = prev.items.some(item => item.id === update.item_id);
-        if (!vendorOwnsItem) return prev;
+        // Check if this vendor has this item-foodcourt combination
+        const hasItemFoodCourt = prev.item_foodcourt_details.some(
+          (detail) => 
+            detail.item_id === update.item_id && 
+            detail.foodcourt_id === update.foodcourt_id
+        );
+        
+        if (!hasItemFoodCourt) return prev;
 
+        // Update the specific item-foodcourt detail
         return {
           ...prev,
-          foodCourtItems: prev.foodCourtItems ? 
-            prev.foodCourtItems.map(fci => 
-              fci.itemId === update.item_id && fci.foodCourtId === update.foodcourt_id
-                ? {
-                    ...fci,
-                    status: update.status,
-                    price: update.price,
-                    timeSlot: update.timeSlot,
-                    isActive: update.isActive
-                  }
-                : fci
-            )
-            : []
+          item_foodcourt_details: prev.item_foodcourt_details.map((detail) =>
+            detail.item_id === update.item_id &&
+            detail.foodcourt_id === update.foodcourt_id
+              ? {
+                  ...detail,
+                  status: update.status,
+                  price: update.price,
+                  timeSlot: update.timeSlot,
+                  isActive: update.isActive,
+                  updatedAt: update.updatedAt || new Date().toISOString(),
+                }
+              : detail
+          ),
         };
       });
     }
   }, [lastMessage]);
+
+  // Transform data into items display format when data changes
+  useEffect(() => {
+    if (data && data.item_foodcourt_details) {
+      // Group by item_id to create unique items
+      const itemsMap = new Map<string, ItemDisplay>();
+      
+      data.item_foodcourt_details.forEach((detail) => {
+        if (!itemsMap.has(detail.item_id)) {
+          // Create new item entry
+          itemsMap.set(detail.item_id, {
+            id: detail.item_id,
+            name: detail.item_name,
+            description: detail.item_description || "",
+            basePrice: detail.item_basePrice,
+            category: detail.item_category,
+            isVeg: detail.item_isVeg,
+            isSpecial: detail.item_isSpecial,
+            createdAt: "", // Not provided in new response
+            availability: [detail]
+          });
+        } else {
+          // Add to existing item's availability
+          const existingItem = itemsMap.get(detail.item_id)!;
+          existingItem.availability.push(detail);
+        }
+      });
+      
+      setItemsDisplay(Array.from(itemsMap.values()));
+    }
+  }, [data]);
 
   useEffect(() => {
     if (id) {
@@ -110,8 +191,14 @@ const VendorProfile: React.FC = () => {
       setData(response.data.data);
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
-        const responseData = err.response?.data as { message?: string } | undefined;
-        setError(responseData?.message ?? err.message ?? "Failed to load vendor profile");
+        const responseData = err.response?.data as
+          | { message?: string }
+          | undefined;
+        setError(
+          responseData?.message ??
+            err.message ??
+            "Failed to load vendor profile"
+        );
       } else {
         setError("An unexpected error occurred");
       }
@@ -120,29 +207,50 @@ const VendorProfile: React.FC = () => {
     }
   };
 
-  const filteredItems = data?.items?.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(item =>
-    selectedCategory === "all" || item.category === selectedCategory
-  ) || [];
-
-  const getItemAvailability = (itemId: string) => {
-    return data?.foodCourtItems?.filter(fci => fci.itemId === itemId) || [];
-  };
-
-  const getFoodCourtName = (foodCourtId: string) => {
-    return data?.foodCourts.find(fc => fc.id === foodCourtId)?.name || "Unknown Food Court";
-  };
+  const filteredItems =
+    itemsDisplay?.filter(
+      (item) =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .filter(
+      (item) =>
+        selectedCategory === "all" || item.category === selectedCategory
+    ) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "available": return "bg-green-100 text-green-800";
-      case "sellingfast": return "bg-orange-100 text-orange-800";
-      case "finishingsoon": return "bg-yellow-100 text-yellow-800";
-      case "notavailable": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "available":
+        return "bg-green-100 text-green-800";
+      case "sellingfast":
+        return "bg-orange-100 text-orange-800";
+      case "finishingsoon":
+        return "bg-yellow-100 text-yellow-800";
+      case "notavailable":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "available":
+        return "Available";
+      case "sellingfast":
+        return "Selling Fast";
+      case "finishingsoon":
+        return "Finishing Soon";
+      case "notavailable":
+        return "Not Available";
+      default:
+        return status;
+    }
+  };
+
+  const getDisplayPrice = (item: ItemDisplay, availability: ItemFoodCourtDetail) => {
+    // Use foodcourt-specific price if available, otherwise use item base price
+    return availability.price !== undefined ? availability.price : item.basePrice;
   };
 
   const handleBack = () => {
@@ -169,7 +277,10 @@ const VendorProfile: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 border-2 border-gray-200"
+                >
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -189,13 +300,13 @@ const VendorProfile: React.FC = () => {
           <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
             <div className="text-black font-bold text-lg mb-2">Error</div>
             <div className="text-gray-600 mb-4">{error}</div>
-            <button 
+            <button
               onClick={fetchVendorProfile}
               className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium mr-4"
             >
               Try Again
             </button>
-            <button 
+            <button
               onClick={handleBack}
               className="bg-white text-black px-6 py-3 rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 font-medium"
             >
@@ -213,7 +324,7 @@ const VendorProfile: React.FC = () => {
         <div className="max-w-6xl mx-auto">
           <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
             <div className="text-gray-600">Vendor not found</div>
-            <button 
+            <button
               onClick={handleBack}
               className="mt-4 bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium"
             >
@@ -230,7 +341,7 @@ const VendorProfile: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header with WebSocket status */}
         <div className="mb-6">
-          <button 
+          <button
             onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 hover:text-black mb-4 transition-colors group"
           >
@@ -248,23 +359,32 @@ const VendorProfile: React.FC = () => {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-4 mb-2">
-                  <h1 className="text-3xl font-bold text-black">{data.vendor.shopName}</h1>
+                  <h1 className="text-3xl font-bold text-black">
+                    {data.vendor.shopName}
+                  </h1>
                   {/* WebSocket Status */}
-                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                    isConnected 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                      isConnected ? 'bg-green-500' : 'bg-yellow-500'
-                    }`}></div>
-                    {isConnected ? 'Live' : 'Connecting...'}
+                  <div
+                    className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                      isConnected
+                        ? "bg-green-100 text-green-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        isConnected ? "bg-green-500" : "bg-yellow-500"
+                      }`}
+                    ></div>
+                    {isConnected ? "Live" : "Connecting..."}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>Member since {new Date(data.vendor.createdAt).toLocaleDateString()}</span>
+                    <span>
+                      Member since{" "}
+                      {new Date(data.vendor.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                   {data.vendor.gst && (
                     <div className="flex items-center gap-2">
@@ -275,12 +395,20 @@ const VendorProfile: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-                    {data.items?.length} Items
+                    {data.summary.total_items} Items
                   </div>
                   <div className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-                    {data.foodCourts.length} Locations
+                    {data.summary.total_locations} Locations
                   </div>
-                  <button 
+                  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {data.summary.available_items} Available
+                  </div>
+                  {data.summary.selling_fast_items > 0 && (
+                    <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                      {data.summary.selling_fast_items} Selling Fast
+                    </div>
+                  )}
+                  <button
                     onClick={handleViewAvailability}
                     className="bg-black text-white px-4 py-1 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
                   >
@@ -299,21 +427,21 @@ const VendorProfile: React.FC = () => {
               onClick={() => setActiveTab("items")}
               className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "items"
-                  ? 'bg-black text-white'
-                  : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                  ? "bg-black text-white"
+                  : "text-gray-600 hover:text-black hover:bg-gray-100"
               }`}
             >
-              Menu Items ({data.items?.length})
+              Menu Items ({data.summary.total_items})
             </button>
             <button
               onClick={() => setActiveTab("locations")}
               className={`flex-1 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
                 activeTab === "locations"
-                  ? 'bg-black text-white'
-                  : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                  ? "bg-black text-white"
+                  : "text-gray-600 hover:text-black hover:bg-gray-100"
               }`}
             >
-              Locations ({data.foodCourts.length})
+              Locations ({data.summary.total_locations})
             </button>
           </div>
         </div>
@@ -335,7 +463,7 @@ const VendorProfile: React.FC = () => {
                     className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
                   />
                 </div>
-                
+
                 {/* Category Filter */}
                 <div>
                   <select
@@ -343,9 +471,12 @@ const VendorProfile: React.FC = () => {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
                   >
-                    {categories.map(category => (
+                    {categories.map((category) => (
                       <option key={category} value={category}>
-                        {category === "all" ? "All Categories" : category.charAt(0).toUpperCase() + category.slice(1)}
+                        {category === "all"
+                          ? "All Categories"
+                          : category.charAt(0).toUpperCase() +
+                            category.slice(1)}
                       </option>
                     ))}
                   </select>
@@ -354,15 +485,17 @@ const VendorProfile: React.FC = () => {
             </div>
 
             {/* Items Grid */}
-            {filteredItems?.length === 0 ? (
+            {filteredItems.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Tag className="w-8 h-8 text-gray-400" />
                 </div>
-                <h3 className="text-lg font-bold text-black mb-2">No items found</h3>
+                <h3 className="text-lg font-bold text-black mb-2">
+                  No items found
+                </h3>
                 <p className="text-gray-600">
                   {searchTerm || selectedCategory !== "all"
-                    ? "Try adjusting your search or filter criteria" 
+                    ? "Try adjusting your search or filter criteria"
                     : "No items available from this vendor"}
                 </p>
               </div>
@@ -370,9 +503,11 @@ const VendorProfile: React.FC = () => {
               <>
                 {/* Results Info */}
                 <div className="flex items-center justify-between mb-6">
-                  <span className="text-gray-600">{filteredItems.length} item(s) found</span>
+                  <span className="text-gray-600">
+                    {filteredItems.length} item(s) found
+                  </span>
                   {(searchTerm || selectedCategory !== "all") && (
-                    <button 
+                    <button
                       onClick={() => {
                         setSearchTerm("");
                         setSelectedCategory("all");
@@ -386,81 +521,101 @@ const VendorProfile: React.FC = () => {
 
                 {/* Items Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredItems.map((item) => {
-                    const availability = getItemAvailability(item.id);
-                    
-                    return (
-                      <div
-                        key={item.id}
-                        className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
-                      >
-                        {/* Header */}
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-bold text-black text-lg line-clamp-2">{item.name}</h3>
-                          <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                            <Heart className="w-5 h-5 text-gray-400 hover:text-red-500" />
-                          </button>
-                        </div>
+                  {filteredItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <Link to={`/user/item/${item.id}`}>
+                        <h3 className="font-bold text-black text-lg line-clamp-2">
+                          {item.name}
+                        </h3>
+                        </Link>
+                      </div>
 
-                        {/* Description */}
-                        {item.description && (
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{item.description}</p>
+                      {/* Description */}
+                      {item.description && (
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            item.isVeg
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {item.isVeg ? "Veg" : "Non-Veg"}
+                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
+                          {item.category}
+                        </span>
+                        {item.isSpecial && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <Zap className="w-3 h-3 mr-1" />
+                            Special
+                          </span>
                         )}
+                      </div>
 
-                        {/* Tags */}
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            item.isVeg ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {item.isVeg ? 'Veg' : 'Non-Veg'}
+                      {/* Availability */}
+                      <div className="mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-700">
+                            Available at:
                           </span>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
-                            {item.category}
-                          </span>
-                          {item.isSpecial && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              <Zap className="w-3 h-3 mr-1" />
-                              Special
-                            </span>
-                          )}
                         </div>
-
-                        {/* Availability */}
-                        <div className="mb-4">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-medium text-gray-700">Available at:</span>
-                          </div>
-                          <div className="space-y-1">
-                            {availability.slice(0, 2).map((avail) => (
-                              <div key={avail.id} className="flex items-center justify-between text-xs">
-                                <span className="text-gray-600 truncate">{getFoodCourtName(avail.foodCourtId)}</span>
-                                <span className={`px-2 py-1 rounded-full ${getStatusColor(avail.status)}`}>
-                                  {avail.status}
+                        <div className="space-y-1">
+                          {item.availability.slice(0, 2).map((avail) => (
+                            <div
+                              key={avail.id}
+                              className="flex items-center justify-between text-xs"
+                            >
+                              <span className="text-gray-600 truncate">
+                                {avail.foodcourt_name}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span
+                                  className={`px-2 py-1 rounded-full ${getStatusColor(
+                                    avail.status
+                                  )}`}
+                                >
+                                  {getStatusText(avail.status)}
+                                </span>
+                                <span className="text-black font-medium">
+                                  ₹{getDisplayPrice(item, avail)}
                                 </span>
                               </div>
-                            ))}
-                            {availability.length > 2 && (
-                              <div className="text-xs text-gray-500">
-                                +{availability.length - 2} more locations
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="flex items-center justify-between">
-                          <div className="text-right">
-                            <div className="font-bold text-black text-lg">₹{item.basePrice}</div>
-                            <div className="text-xs text-gray-500">Base Price</div>
-                          </div>
-                          <button className="bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium text-sm">
-                            View Details
-                          </button>
+                            </div>
+                          ))}
+                          {item.availability.length > 2 && (
+                            <div className="text-xs text-gray-500">
+                              +{item.availability.length - 2} more locations
+                            </div>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
+
+                      {/* Footer - Show base price */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-600">
+                          Base price: ₹{item.basePrice}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-gray-500 mb-1">
+                            Available at {item.availability.length} location(s)
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </>
             )}
@@ -481,18 +636,30 @@ const VendorProfile: React.FC = () => {
                     <MapPin className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-black text-lg mb-1">{foodCourt.name}</h3>
+                    <h3 className="font-bold text-black text-lg mb-1">
+                      {foodCourt.name}
+                    </h3>
                     <div className="flex items-center gap-1 mb-2">
                       <MapPin className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{foodCourt.location}</span>
+                      <span className="text-sm text-gray-600">
+                        {foodCourt.location}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
-                  <div className={`w-2 h-2 rounded-full ${foodCourt.isOpen ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <span className={`text-sm font-medium ${foodCourt.isOpen ? 'text-green-600' : 'text-red-600'}`}>
-                    {foodCourt.isOpen ? 'Open Now' : 'Closed'}
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      foodCourt.isOpen ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  />
+                  <span
+                    className={`text-sm font-medium ${
+                      foodCourt.isOpen ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {foodCourt.isOpen ? "Open Now" : "Closed"}
                   </span>
                 </div>
 
@@ -504,8 +671,13 @@ const VendorProfile: React.FC = () => {
                 )}
 
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 mb-2">
                     Vendor items available here
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {data.item_foodcourt_details
+                      .filter(detail => detail.foodcourt_id === foodCourt.id)
+                      .length} items
                   </div>
                 </div>
               </div>

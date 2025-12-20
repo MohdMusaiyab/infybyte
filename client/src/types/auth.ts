@@ -35,24 +35,7 @@ export interface RegisterResponse {
   };
 }
 
-export interface FoodCourt {
-  id: string;
-  name: string;
-  location: string;
-  isOpen: boolean;
-  timings?: string;
-  weekdays?: boolean;
-  weekends?: boolean;
-}
 
-export interface AdminProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-  foodcourts?: FoodCourt[];
-}
 
 export interface AuthState {
   user: User | null;

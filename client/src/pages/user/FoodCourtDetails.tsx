@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ArrowLeft, MapPin, Clock, Search, Heart, ChefHat, Zap, Users, Tag } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Search, ChefHat, Zap, Users, Tag } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
 import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
-interface FoodCourt {
-  id: string;
-  name: string;
-  location: string;
-  timings: string;
-  isOpen: boolean;
-  weekends: boolean;
-  weekdays: boolean;
-}
+import {type  FoodCourt,type FoodItem } from "../../types/type";
 
 interface Vendor {
   id: string;
@@ -21,20 +13,7 @@ interface Vendor {
   gst?: string;
 }
 
-interface FoodItem {
-  itemId: string;
-  name: string;
-  description: string;
-  basePrice: number;
-  category: string;
-  isVeg: boolean;
-  isSpecial: boolean;
-  vendorId: string;
-  shopName: string;
-  status: string;
-  price?: number;
-  timeSlot: string;
-}
+
 
 interface FoodCourtDetailsResponse {
   foodCourt: FoodCourt;
@@ -55,7 +34,7 @@ const FoodCourtDetails: React.FC = () => {
 
   const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
-const { lastMessage, isConnected } = useWebSocketContext();
+const { lastMessage, } = useWebSocketContext();
   useEffect(() => {
     if (id) {
       fetchFoodCourtDetails();
@@ -253,6 +232,11 @@ useEffect(() => {
                     </span>
                   )}
                 </div>
+                <div>
+                  <Link to={`/user/foodcourt/${data.foodCourt.id}/vendors`} className="inline-block mt-4 text-black font-medium hover:underline">
+                  See Vendor Wise Items Here
+                  </Link>
+                </div>
               </div>
             </div>
             
@@ -395,6 +379,7 @@ useEffect(() => {
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
                 >
                   {/* Header */}
+                  <Link to={`/user/item/${item.itemId}`} className="no-underline">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-bold text-black text-lg mb-1 line-clamp-2">{item.name}</h3>
@@ -403,10 +388,9 @@ useEffect(() => {
                         <span className="text-sm text-gray-600">{item.shopName}</span>
                       </div>
                     </div>
-                    <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                      <Heart className="w-5 h-5 text-gray-400 hover:text-red-500" />
-                    </button>
+                  
                   </div>
+                  </Link>
 
                   {/* Description */}
                   {item.description && (

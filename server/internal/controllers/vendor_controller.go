@@ -254,7 +254,6 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 
 	ctx := context.Background()
 	collections := struct {
-		users          *mongo.Collection
 		vendors        *mongo.Collection
 		items          *mongo.Collection
 		foodCourts     *mongo.Collection
@@ -266,11 +265,47 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
+	// Define response structure with enriched data
+	type ItemFoodCourtDetail struct {
+		ItemFoodCourtID primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+		ItemID          primitive.ObjectID `bson:"item_id" json:"item_id"`
+		FoodCourtID     primitive.ObjectID `bson:"foodcourt_id" json:"foodcourt_id"`
+		Status          string             `bson:"status" json:"status"`
+		Price           *float64           `bson:"price,omitempty" json:"price,omitempty"`
+		TimeSlot        string             `bson:"timeSlot" json:"timeSlot"`
+		IsActive        bool               `bson:"isActive" json:"isActive"`
+		UpdatedAt       primitive.DateTime `bson:"updatedAt" json:"updatedAt"`
+		
+		// Item Details (joined)
+		ItemName        string             `json:"item_name"`
+		ItemDescription string             `json:"item_description,omitempty"`
+		ItemBasePrice   float64            `json:"item_basePrice"`
+		ItemCategory    string             `json:"item_category"`
+		ItemIsVeg       bool               `json:"item_isVeg"`
+		ItemIsSpecial   bool               `json:"item_isSpecial"`
+		
+		// Food Court Details (joined)
+		FoodCourtName   string             `json:"foodcourt_name"`
+		FoodCourtLocation string           `json:"foodcourt_location"`
+		FoodCourtIsOpen bool               `json:"foodcourt_isOpen"`
+		FoodCourtTimings *string           `json:"foodcourt_timings,omitempty"`
+	}
+
 	var response struct {
-		Vendor         interface{}   `json:"vendor"`
-		Items          []interface{} `json:"items"`
-		FoodCourts     []interface{} `json:"foodCourts"`
-		FoodCourtItems []interface{} `json:"foodCourtItems"`
+		Vendor struct {
+			ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+			ShopName  string             `bson:"shopName" json:"shopName"`
+			GST       string             `bson:"gst,omitempty" json:"gst,omitempty"`
+			CreatedAt primitive.DateTime `bson:"createdAt" json:"createdAt"`
+		} `json:"vendor"`
+		ItemFoodCourtDetails []ItemFoodCourtDetail `json:"item_foodcourt_details"`
+		FoodCourts           []interface{}         `json:"foodCourts"`
+		Summary              struct {
+			TotalItems       int `json:"total_items"`
+			TotalLocations   int `json:"total_locations"`
+			AvailableItems   int `json:"available_items"`
+			SellingFastItems int `json:"selling_fast_items"`
+		} `json:"summary"`
 	}
 
 	// Fetch Vendor Details
@@ -287,94 +322,183 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 	}
 	response.Vendor = vendor
 
-	// Fetch All Items for this Vendor (only public fields)
-	itemsCursor, err := collections.items.Find(ctx, bson.M{"vendor_id": vendorObjID})
-	if err == nil {
-		defer itemsCursor.Close(ctx)
-		var items []interface{}
-		for itemsCursor.Next(ctx) {
-			var item struct {
-				ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-				Name        string             `bson:"name" json:"name"`
-				Description string             `bson:"description,omitempty" json:"description,omitempty"`
-				BasePrice   float64            `bson:"basePrice" json:"basePrice"`
-				Category    string             `bson:"category" json:"category"`
-				IsVeg       bool               `bson:"isVeg" json:"isVeg"`
-				IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
-				CreatedAt   primitive.DateTime `bson:"createdAt" json:"createdAt"`
-			}
-			if err := itemsCursor.Decode(&item); err == nil {
-				items = append(items, item)
-			}
-		}
-		response.Items = items
-	}
-
 	// Fetch Food Courts the Vendor is part of
 	var foodCourtIDs []primitive.ObjectID
+	var foodCourtMap = make(map[primitive.ObjectID]struct {
+		Name     string
+		Location string
+		IsOpen   bool
+		Timings  *string
+	})
+	
 	foodCourtsCursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendorObjID})
 	if err == nil {
 		defer foodCourtsCursor.Close(ctx)
-		var foodCourts []interface{}
 		for foodCourtsCursor.Next(ctx) {
 			var foodCourt struct {
 				ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 				Name      string             `bson:"name" json:"name"`
 				Location  string             `bson:"location" json:"location"`
 				IsOpen    bool               `bson:"isOpen" json:"isOpen"`
-				Timings   string             `bson:"timings,omitempty" json:"timings,omitempty"`
-				CreatedAt primitive.DateTime `bson:"createdAt" json:"createdAt"`
+				Timings   *string            `bson:"timings,omitempty" json:"timings,omitempty"`
 			}
 			if err := foodCourtsCursor.Decode(&foodCourt); err == nil {
-				foodCourts = append(foodCourts, foodCourt)
 				foodCourtIDs = append(foodCourtIDs, foodCourt.ID)
+				foodCourtMap[foodCourt.ID] = struct {
+					Name     string
+					Location string
+					IsOpen   bool
+					Timings  *string
+				}{
+					Name:     foodCourt.Name,
+					Location: foodCourt.Location,
+					IsOpen:   foodCourt.IsOpen,
+					Timings:  foodCourt.Timings,
+				}
+				
+				// Add to response.FoodCourts
+				response.FoodCourts = append(response.FoodCourts, map[string]interface{}{
+					"id":       foodCourt.ID,
+					"name":     foodCourt.Name,
+					"location": foodCourt.Location,
+					"isOpen":   foodCourt.IsOpen,
+					"timings":  foodCourt.Timings,
+				})
 			}
 		}
-		response.FoodCourts = foodCourts
 	}
 
-	// Fetch Food Court Items for this Vendor's Items
-	if len(response.Items) > 0 && len(foodCourtIDs) > 0 {
+	// If vendor has no food courts, return early
+	if len(foodCourtIDs) == 0 {
+		response.Summary.TotalLocations = 0
+		utils.RespondSuccess(c, http.StatusOK, "Vendor profile retrieved successfully", response)
+		return
+	}
+
+	// Fetch ALL item-foodcourt entries for this vendor's food courts
+	// This includes ALL items (not just vendor's items) available in these food courts
+	foodCourtItemsCursor, err := collections.foodCourtItems.Find(ctx, bson.M{
+		"foodcourt_id": bson.M{"$in": foodCourtIDs},
+	})
+	if err == nil {
+		defer foodCourtItemsCursor.Close(ctx)
+		
 		var itemIDs []primitive.ObjectID
-		for _, item := range response.Items {
-			if itemMap, ok := item.(bson.M); ok {
-				if id, exists := itemMap["_id"]; exists {
-					if objID, ok := id.(primitive.ObjectID); ok {
-						itemIDs = append(itemIDs, objID)
+		var itemFoodCourtMap = make(map[primitive.ObjectID][]bson.M)
+		
+		// First pass: collect all item IDs
+		for foodCourtItemsCursor.Next(ctx) {
+			var fci bson.M
+			if err := foodCourtItemsCursor.Decode(&fci); err == nil {
+				if itemID, ok := fci["item_id"].(primitive.ObjectID); ok {
+					itemIDs = append(itemIDs, itemID)
+					
+					// Store the raw food court item data
+					if _, exists := itemFoodCourtMap[itemID]; !exists {
+						itemFoodCourtMap[itemID] = []bson.M{}
 					}
+					itemFoodCourtMap[itemID] = append(itemFoodCourtMap[itemID], fci)
 				}
 			}
 		}
-
+		
+		// If we have items in food courts, fetch their details
 		if len(itemIDs) > 0 {
-			foodCourtItemsCursor, err := collections.foodCourtItems.Find(ctx, bson.M{
-				"item_id":      bson.M{"$in": itemIDs},
-				"foodcourt_id": bson.M{"$in": foodCourtIDs},
+			// Fetch items that belong to this vendor AND are in the itemIDs list
+			itemsCursor, err := collections.items.Find(ctx, bson.M{
+				"_id":       bson.M{"$in": itemIDs},
+				"vendor_id": vendorObjID, // Only items owned by this vendor
 			})
 			if err == nil {
-				defer foodCourtItemsCursor.Close(ctx)
-				var foodCourtItems []interface{}
-				for foodCourtItemsCursor.Next(ctx) {
-					var fci struct {
-						ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-						ItemID      primitive.ObjectID `bson:"item_id" json:"item_id"`
-						FoodCourtID primitive.ObjectID `bson:"foodcourt_id" json:"foodcourt_id"`
-						Status      string             `bson:"status" json:"status"`
-						Price       *float64           `bson:"price,omitempty" json:"price,omitempty"`
-						TimeSlot    string             `bson:"timeSlot" json:"timeSlot"`
-					}
-					if err := foodCourtItemsCursor.Decode(&fci); err == nil {
-						foodCourtItems = append(foodCourtItems, fci)
+				defer itemsCursor.Close(ctx)
+				
+				var itemMap = make(map[primitive.ObjectID]bson.M)
+				for itemsCursor.Next(ctx) {
+					var item bson.M
+					if err := itemsCursor.Decode(&item); err == nil {
+						if itemID, ok := item["_id"].(primitive.ObjectID); ok {
+							itemMap[itemID] = item
+						}
 					}
 				}
-				response.FoodCourtItems = foodCourtItems
+				
+				// Now combine item details with food court item details
+				for itemID, itemDetails := range itemMap {
+					// Get all food court entries for this item
+					if fciList, exists := itemFoodCourtMap[itemID]; exists {
+						for _, fci := range fciList {
+							foodCourtID, ok := fci["foodcourt_id"].(primitive.ObjectID)
+							if !ok {
+								continue
+							}
+							
+							// Get food court details
+							fcDetails, fcExists := foodCourtMap[foodCourtID]
+							if !fcExists {
+								continue
+							}
+							
+							// Create enriched item-foodcourt detail
+							detail := ItemFoodCourtDetail{
+								ItemFoodCourtID: fci["_id"].(primitive.ObjectID),
+								ItemID:          itemID,
+								FoodCourtID:     foodCourtID,
+								Status:          fci["status"].(string),
+								TimeSlot:        fci["timeSlot"].(string),
+							}
+							
+							// Add price if exists
+							if price, ok := fci["price"].(float64); ok {
+								detail.Price = &price
+							}
+							
+							// Add isActive if exists
+							if isActive, ok := fci["isActive"].(bool); ok {
+								detail.IsActive = isActive
+							}
+							
+							// Add updatedAt if exists
+							if updatedAt, ok := fci["updatedAt"].(primitive.DateTime); ok {
+								detail.UpdatedAt = updatedAt
+							}
+							
+							// Add item details
+							detail.ItemName = itemDetails["name"].(string)
+							if desc, ok := itemDetails["description"].(string); ok {
+								detail.ItemDescription = desc
+							}
+							detail.ItemBasePrice = itemDetails["basePrice"].(float64)
+							detail.ItemCategory = itemDetails["category"].(string)
+							detail.ItemIsVeg = itemDetails["isVeg"].(bool)
+							detail.ItemIsSpecial = itemDetails["isSpecial"].(bool)
+							
+							// Add food court details
+							detail.FoodCourtName = fcDetails.Name
+							detail.FoodCourtLocation = fcDetails.Location
+							detail.FoodCourtIsOpen = fcDetails.IsOpen
+							detail.FoodCourtTimings = fcDetails.Timings
+							
+							response.ItemFoodCourtDetails = append(response.ItemFoodCourtDetails, detail)
+							
+							// Update summary counters
+							response.Summary.TotalItems++
+							if detail.Status == "available" {
+								response.Summary.AvailableItems++
+							} else if detail.Status == "sellingfast" {
+								response.Summary.SellingFastItems++
+							}
+						}
+					}
+				}
 			}
 		}
 	}
-
+	
+	// Set summary
+	response.Summary.TotalLocations = len(response.FoodCourts)
+	
 	utils.RespondSuccess(c, http.StatusOK, "Vendor profile retrieved successfully", response)
 }
-
 // =================================Vendor Item Management==================================
 func GetVendorItems(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")

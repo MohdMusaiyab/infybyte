@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Package, 
-  BarChart3, 
-  Settings, 
-  Users, 
-  Bell, 
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  Home,
+  Package,
+  BarChart3,
+  Settings,
+  Users,
+  Bell,
   MessageSquare,
   LogOut,
   Menu,
@@ -14,80 +16,93 @@ import {
   ChefHat,
   Clock,
   DollarSign,
-  Star
-} from 'lucide-react';
+  Star,
+  ChevronRight,
+} from "lucide-react";
 
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
+  const { user, logout, isLoading } = useAuth();
 
   // Check if mobile on mount and resize
   React.useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   const menuItems = [
     {
-      name: 'Dashboard',
-      path: '/vendor/dashboard',
+      name: "Dashboard",
+      path: "/vendor/dashboard",
       icon: Home,
-      exact: true
+      exact: true,
     },
     {
-      name: 'Orders',
-      path: '/vendor/orders',
+      name: "Orders",
+      path: "/vendor/orders",
       icon: Package,
-      badge: '12'
+      badge: "12",
     },
     {
-      name: 'Menu Management',
-      path: '/vendor/menu',
-      icon: ChefHat
+      name: "Menu Management",
+      path: "/vendor/menu",
+      icon: ChefHat,
     },
     {
-      name: 'Analytics',
-      path: '/vendor/analytics',
-      icon: BarChart3
+      name: "Analytics",
+      path: "/vendor/analytics",
+      icon: BarChart3,
     },
     {
-      name: 'Customers',
-      path: '/vendor/customers',
-      icon: Users
+      name: "Customers",
+      path: "/vendor/customers",
+      icon: Users,
     },
     {
-      name: 'Reviews',
-      path: '/vendor/reviews',
-      icon: Star
+      name: "Reviews",
+      path: "/vendor/reviews",
+      icon: Star,
     },
     {
-      name: 'Messages',
-      path: '/vendor/messages',
+      name: "Messages",
+      path: "/vendor/messages",
       icon: MessageSquare,
-      badge: '3'
-    }
+      badge: "3",
+    },
   ];
 
   const bottomMenuItems = [
     {
-      name: 'Notifications',
-      path: '/vendor/notifications',
+      name: "Notifications",
+      path: "/vendor/notifications",
       icon: Bell,
-      badge: '5'
+      badge: "5",
     },
     {
-      name: 'Settings',
-      path: '/vendor/settings',
-      icon: Settings
-    }
+      name: "Settings",
+      path: "/vendor/settings",
+      icon: Settings,
+    },
   ];
+    const handleLogout = async () => {
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (!confirmed) return;
 
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   const isActive = (path: string, exact = false) => {
     if (exact) {
       return location.pathname === path;
@@ -96,34 +111,36 @@ const Sidebar: React.FC = () => {
   };
 
   const NavItem: React.FC<{
-    item: typeof menuItems[0];
+    item: (typeof menuItems)[0];
     onItemClick: () => void;
   }> = ({ item, onItemClick }) => {
     const active = isActive(item.path, item.exact);
-    
+
     return (
       <Link
         to={item.path}
         onClick={onItemClick}
         className={`relative flex items-center gap-3 p-3 rounded-xl transition-all duration-200 group ${
-          active 
-            ? 'bg-black text-white shadow-lg' 
-            : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+          active
+            ? "bg-black text-white shadow-lg"
+            : "text-gray-700 hover:bg-gray-100 hover:shadow-md"
         }`}
       >
-        <item.icon className={`w-5 h-5 ${active ? 'text-white' : 'text-gray-500'}`} />
+        <item.icon
+          className={`w-5 h-5 ${active ? "text-white" : "text-gray-500"}`}
+        />
         <span className="font-medium">{item.name}</span>
-        
+
         {item.badge && (
-          <span className={`absolute right-3 px-2 py-1 text-xs rounded-full ${
-            active 
-              ? 'bg-white text-black' 
-              : 'bg-black text-white'
-          }`}>
+          <span
+            className={`absolute right-3 px-2 py-1 text-xs rounded-full ${
+              active ? "bg-white text-black" : "bg-black text-white"
+            }`}
+          >
             {item.badge}
           </span>
         )}
-        
+
         {/* Hover indicator */}
         {!active && (
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-black rounded-r opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
@@ -146,7 +163,7 @@ const Sidebar: React.FC = () => {
               <p className="text-xs text-gray-500">Vendor Portal</p>
             </div>
           </div>
-          
+
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -158,22 +175,29 @@ const Sidebar: React.FC = () => {
 
       {/* Overlay */}
       {isMobile && isOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-80 bg-white border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         flex flex-col
-        ${isMobile ? (isOpen ? 'translate-x-0' : '-translate-x-full') : 'translate-x-0'}
-        ${isMobile ? 'mt-16' : ''}
-      `}>
-        
+        ${
+          isMobile
+            ? isOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+            : "translate-x-0"
+        }
+        ${isMobile ? "mt-16" : ""}
+      `}
+      >
         {/* Desktop Header */}
         {!isMobile && (
           <div className="p-6 border-b border-gray-200">
@@ -186,7 +210,7 @@ const Sidebar: React.FC = () => {
                 <p className="text-sm text-gray-500">Vendor Portal</p>
               </div>
             </div>
-            
+
             {/* Quick Stats */}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="bg-gray-50 rounded-lg p-2">
@@ -211,9 +235,9 @@ const Sidebar: React.FC = () => {
         <nav className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-2">
             {menuItems.map((item) => (
-              <NavItem 
-                key={item.path} 
-                item={item} 
+              <NavItem
+                key={item.path}
+                item={item}
                 onItemClick={() => isMobile && setIsOpen(false)}
               />
             ))}
@@ -223,32 +247,41 @@ const Sidebar: React.FC = () => {
         {/* Bottom Section */}
         <div className="p-6 border-t border-gray-200 space-y-2">
           {bottomMenuItems.map((item) => (
-            <NavItem 
-              key={item.path} 
-              item={item} 
+            <NavItem
+              key={item.path}
+              item={item}
               onItemClick={() => isMobile && setIsOpen(false)}
             />
           ))}
-          
+
           {/* Logout Button */}
-          <button className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 mt-4">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
+          <button
+            onClick={handleLogout}
+            disabled={isLoading}
+            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 mt-4"
+          >
+            <LogOut className={`w-5 h-5 ${isLoading ? "animate-pulse" : ""}`} />
+            <span className="font-medium">
+              {isLoading ? "Logging out..." : "Logout"}
+            </span>
           </button>
-          
+
           {/* User Profile */}
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <div className="flex items-center gap-3">
-              <img 
-                src="/api/placeholder/40/40" 
-                alt="Profile" 
-                className="w-10 h-10 rounded-full bg-gray-200"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-black truncate">John Restaurant</p>
-                <p className="text-xs text-gray-500 truncate">john@restaurant.com</p>
+            <Link to="/user/profile">
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-black truncate">
+                    {user?.name || "User Name"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email || "useremail@gmail.com"}
+                  </p>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-gray-400" />
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </aside>

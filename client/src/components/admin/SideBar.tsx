@@ -1,59 +1,62 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  Users, 
-  User, 
-  Settings, 
-  LogOut, 
-  Menu, 
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  Home,
+  Users,
+  User,
+  Settings,
+  LogOut,
+  Menu,
   X,
   ChevronDown,
   BarChart3,
-  Shield
-} from 'lucide-react';
-
+  Shield,
+  ChevronRight,
+} from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
 const SideBar: React.FC = () => {
+  const navigate = useNavigate();
+  const { user, logout, isLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isUsersOpen, setIsUsersOpen] = useState(false);
   const location = useLocation();
 
   const menuItems = [
-    { 
-      name: 'Dashboard', 
-      path: '/admin/dashboard', 
+    {
+      name: "Dashboard",
+      path: "/admin/dashboard",
       icon: Home,
-      exact: true
+      exact: true,
     },
-    { 
-      name: 'Users', 
-      path: '/admin/users',
+    {
+      name: "Users",
+      path: "/admin/users",
       icon: Users,
       children: [
-        { name: 'All Users', path: '/admin/all-users' },
-        { name: 'User Roles', path: '/admin/user-roles' },
-        { name: 'Activity Log', path: '/admin/activity-log' }
-      ]
+        { name: "All Users", path: "/admin/all-users" },
+        { name: "User Roles", path: "/admin/user-roles" },
+        { name: "Activity Log", path: "/admin/activity-log" },
+      ],
     },
-    { 
-      name: 'Profile', 
-      path: '/admin/profile', 
-      icon: User 
+    {
+      name: "Profile",
+      path: "/admin/profile",
+      icon: User,
     },
-    { 
-      name: 'Analytics', 
-      path: '/admin/analytics', 
-      icon: BarChart3 
+    {
+      name: "Analytics",
+      path: "/admin/analytics",
+      icon: BarChart3,
     },
-    { 
-      name: 'Security', 
-      path: '/admin/security', 
-      icon: Shield 
+    {
+      name: "Security",
+      path: "/admin/security",
+      icon: Shield,
     },
-    { 
-      name: 'Settings', 
-      path: '/admin/settings', 
-      icon: Settings 
+    {
+      name: "Settings",
+      path: "/admin/settings",
+      icon: Settings,
     },
   ];
 
@@ -63,9 +66,19 @@ const SideBar: React.FC = () => {
     }
     return location.pathname.startsWith(path);
   };
+  const handleLogout = async () => {
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (!confirmed) return;
 
+    try {
+      await logout();
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
   const NavItem: React.FC<{
-    item: typeof menuItems[0];
+    item: (typeof menuItems)[0];
     onItemClick: () => void;
   }> = ({ item, onItemClick }) => {
     const hasChildren = item.children && item.children.length > 0;
@@ -77,20 +90,20 @@ const SideBar: React.FC = () => {
           <button
             onClick={() => setIsUsersOpen(!isUsersOpen)}
             className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
-              active ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100'
+              active ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
             }`}
           >
             <div className="flex items-center gap-3">
               <item.icon className="w-5 h-5" />
               <span className="font-medium">{item.name}</span>
             </div>
-            <ChevronDown 
+            <ChevronDown
               className={`w-4 h-4 transition-transform duration-200 ${
-                isUsersOpen ? 'rotate-180' : ''
-              }`} 
+                isUsersOpen ? "rotate-180" : ""
+              }`}
             />
           </button>
-          
+
           {isUsersOpen && (
             <div className="ml-4 mt-2 space-y-1">
               {item.children!.map((child) => (
@@ -99,9 +112,9 @@ const SideBar: React.FC = () => {
                   to={child.path}
                   onClick={onItemClick}
                   className={`block p-2 rounded-lg text-sm transition-all duration-200 ${
-                    isActive(child.path) 
-                      ? 'bg-gray-800 text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
+                    isActive(child.path)
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
                   {child.name}
@@ -118,9 +131,9 @@ const SideBar: React.FC = () => {
         to={item.path}
         onClick={onItemClick}
         className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 mb-2 ${
-          active 
-            ? 'bg-black text-white shadow-lg' 
-            : 'text-gray-700 hover:bg-gray-100 hover:shadow-md'
+          active
+            ? "bg-black text-white shadow-lg"
+            : "text-gray-700 hover:bg-gray-100 hover:shadow-md"
         }`}
       >
         <item.icon className="w-5 h-5" />
@@ -131,7 +144,6 @@ const SideBar: React.FC = () => {
 
   return (
     <>
-      {/* Floating Action Button - Bottom Right */}
       <button
         onClick={() => setIsOpen(true)}
         className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-black text-white rounded-full shadow-2xl hover:bg-gray-800 hover:scale-110 transition-all duration-200 active:scale-95"
@@ -139,24 +151,21 @@ const SideBar: React.FC = () => {
       >
         <Menu className="w-6 h-6" />
       </button>
-
-      {/* Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
-
-      {/* Sidebar */}
-      <aside className={`
+      <aside
+        className={`
         fixed lg:static inset-y-0 left-0 z-50
         w-80 bg-white border-r border-gray-200
         transform transition-transform duration-300 ease-in-out
         flex flex-col
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        {/* Header */}
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+      `}
+      >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -167,7 +176,7 @@ const SideBar: React.FC = () => {
               <p className="text-sm text-gray-500">Administrator</p>
             </div>
           </div>
-          
+
           <button
             onClick={() => setIsOpen(false)}
             className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -176,30 +185,48 @@ const SideBar: React.FC = () => {
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-1">
             {menuItems.map((item) => (
-              <NavItem 
-                key={item.path} 
-                item={item} 
+              <NavItem
+                key={item.path}
+                item={item}
                 onItemClick={() => setIsOpen(false)}
               />
             ))}
           </div>
         </nav>
 
-        {/* Footer */}
         <div className="p-6 border-t border-gray-200">
-          <button className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200">
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
+          <button
+            onClick={handleLogout}
+            disabled={isLoading}
+            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 mt-4"
+          >
+            <LogOut className={`w-5 h-5 ${isLoading ? "animate-pulse" : ""}`} />
+            <span className="font-medium">
+              {isLoading ? "Logging out..." : "Logout"}
+            </span>
           </button>
-          
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <Link to="/user/profile">
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-black truncate">
+                    {user?.name || "User Name"}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email || "useremail@gmail.com"}
+                  </p>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+            </Link>
+          </div>
+
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-500">
-              v1.0.0 • Infybite Admin
-            </p>
+            <p className="text-xs text-gray-500">v1.0.0 • Infybite Admin</p>
           </div>
         </div>
       </aside>
