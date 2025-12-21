@@ -301,11 +301,16 @@ const ItemsManagement: React.FC = () => {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          {item.isSpecial && (
+                            {item.isSpecial ? (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
                               Special
                             </span>
-                          )}
+                            ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                              Normal
+                            </span>
+                            )}
+                        
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-2">

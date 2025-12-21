@@ -6,7 +6,7 @@ import FoodCourtDetails from "../pages/user/FoodCourtDetails";
 import FoodCourtVendors from "../pages/user/FoodCourtVendors";
 import VendorProfile from "../pages/user/VendorProfile";
 import VendorItemsAvailability from "../pages/user/VendorItemsAvailability";
-import Profile from "../pages/user/Profile";
+// import Profile from "../pages/user/Profile";
 import ItemDetails from "../pages/user/ItemDetails";
 
 const UserRoutes = () => (
@@ -23,7 +23,7 @@ const UserRoutes = () => (
         path="/user/vendors/:id/availability"
         element={<VendorItemsAvailability />}
       />
-      <Route path="/user/profile" element={<Profile />} />
+      {/* <Route path="/user/profile" element={<Profile />} /> */}
       <Route path="/user/item/:id" element={<ItemDetails />} />
     </Route>
   </Route>

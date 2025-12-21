@@ -10,6 +10,8 @@ import AdminRoutes from "./adminRoutes";
 import ManagerRoutes from "./managerRoutes";
 import DemoDashboard from "../pages/general/DemoDashboard";
 import NotFound from "../pages/general/NotFound";
+import { PrivateRoute } from "../components/auth/ProtectedRoute";
+import Profile from "../pages/user/Profile";
 
 const AppRoutes = () => (
   <Routes>
@@ -31,10 +33,20 @@ const AppRoutes = () => (
         </PublicRoute>
       }
     />
+      <Route
+      element={
+        <PrivateRoute
+          allowedRoles={["user", "admin", "vendor", "manager"]}
+        />
+      }
+    >
+      <Route path="/user/profile" element={<Profile/>} />
+    </Route>
     {UserRoutes()}
     {VendorRoutes()}
     {AdminRoutes()}
     {ManagerRoutes()}
+  
     <Route path="/unauthorized" element={<Unauthorized />} />
     <Route path="*" element={<NotFound />} />
   </Routes>

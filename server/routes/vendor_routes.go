@@ -17,6 +17,12 @@ func VendorRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		vendor.GET("/profile", func(c *gin.Context) { controllers.GetVendorProfile(c, db) })
 		vendor.PUT("/profile", func(c *gin.Context) { controllers.UpdateVendorProfile(c, db) })
 		vendor.GET("/profile/:id", func(c *gin.Context) { controllers.GetVendorProfileByID(c, db) })
+
+		//Dashboard Route
+		vendor.GET("/dashboard", func(c *gin.Context) { controllers.GetVendorDashboardStats(c, db) })
+		// In VendorRoutes function, add this line:
+		vendor.GET("/foodcourts/:id/items", func(c *gin.Context) { controllers.SingleFoodCourtItems(c, db) })
+
 		//Vendor Item Management
 		vendor.GET("/items", func(c *gin.Context) { controllers.GetVendorItems(c, db) })
 		vendor.POST("/items", func(c *gin.Context) { controllers.CreateItem(c, db) })
@@ -30,6 +36,7 @@ func VendorRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		vendor.PUT("/foodcourt-items/:id", func(c *gin.Context) { controllers.UpdateFoodCourtItem(c, db) })
 		vendor.DELETE("/foodcourt-items", func(c *gin.Context) { controllers.DeleteFoodCourtItem(c, db) })
 		vendor.GET("/items/:id/foodcourts", func(c *gin.Context) { controllers.GetItemFoodCourts(c, db) })
+		vendor.GET("/my-foodcourts", func(c *gin.Context) { controllers.GetVendorFoodCourtsForDisplay(c, db) })
 		//Manager Routes
 		vendor.GET("/managers", func(c *gin.Context) { controllers.GetVendorManagers(c, db) })
 		vendor.POST("/managers", func(c *gin.Context) { controllers.AddManager(c, db) })

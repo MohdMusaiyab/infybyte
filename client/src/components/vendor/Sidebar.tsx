@@ -1,34 +1,30 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+import React, { useState, useEffect } from "react";
+import { Link,  useNavigate } from "react-router-dom";
 import {
   Home,
-  Package,
-  BarChart3,
-  Settings,
-  Users,
-  Bell,
-  MessageSquare,
   LogOut,
   Menu,
   X,
-  ChefHat,
-  Clock,
-  DollarSign,
-  Star,
+  MapPin,
   ChevronRight,
+  LayoutDashboard,
+  UtensilsCrossed, // Added
+  PlusCircle, // Added
+  Users, // Added
+  UserPlus, // Added
+  Store, // Added
 } from "lucide-react";
+import { useAuth } from "../../hooks/useAuth";
+import ConfirmModal from "../general/ConfirmModel";
 
 const Sidebar: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
-  const [isMobile, setIsMobile] = useState(false);
-  const location = useLocation();
   const { user, logout, isLoading } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  // Check if mobile on mount and resize
-  React.useEffect(() => {
+  useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 1024);
     };
@@ -41,80 +37,73 @@ const Sidebar: React.FC = () => {
   const menuItems = [
     {
       name: "Dashboard",
-      path: "/vendor/dashboard",
+      path: "/user/dashboard",
+      icon: LayoutDashboard,
+      exact: true,
+    },
+    {
+      name: "Home",
+      path: "/",
       icon: Home,
       exact: true,
     },
     {
-      name: "Orders",
-      path: "/vendor/orders",
-      icon: Package,
-      badge: "12",
+      name: "Items Management",
+      path: "/vendor/items-management",
+      icon: UtensilsCrossed, // More relevant than Dashboard
+      exact: true,
     },
     {
-      name: "Menu Management",
-      path: "/vendor/menu",
-      icon: ChefHat,
+      name: "Create Item",
+      path: "/vendor/items/create",
+      icon: PlusCircle, // Visual cue for "Add"
+      exact: true,
     },
     {
-      name: "Analytics",
-      path: "/vendor/analytics",
-      icon: BarChart3,
+      name: "View Your Food Courts",
+      path: "/vendor/foodcourt",
+      icon: Store, // Represents the physical location better
+      exact: false, // Set to false so /vendor/foodcourt/:id keeps this active
     },
     {
-      name: "Customers",
-      path: "/vendor/customers",
-      icon: Users,
+      name: "Manage Managers",
+      path: "/vendor/managers",
+      icon: Users, // Represents staff management
+      exact: false,
     },
     {
-      name: "Reviews",
-      path: "/vendor/reviews",
-      icon: Star,
-    },
-    {
-      name: "Messages",
-      path: "/vendor/messages",
-      icon: MessageSquare,
-      badge: "3",
+      name: "Create Manager",
+      path: "/vendor/managers/create",
+      icon: UserPlus, // Visual cue for adding staff
+      exact: true,
     },
   ];
 
-  const bottomMenuItems = [
-    {
-      name: "Notifications",
-      path: "/vendor/notifications",
-      icon: Bell,
-      badge: "5",
-    },
-    {
-      name: "Settings",
-      path: "/vendor/settings",
-      icon: Settings,
-    },
-  ];
-    const handleLogout = async () => {
-    const confirmed = window.confirm("Are you sure you want to logout?");
-    if (!confirmed) return;
+  const handleLogout = () => {
+    // Show modal instead of window.confirm
+    setShowLogoutModal(true);
+  };
 
+  const handleConfirmLogout = async () => {
     try {
       await logout();
+      setShowLogoutModal(false);
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+      setShowLogoutModal(false);
     }
   };
-  const isActive = (path: string, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   const NavItem: React.FC<{
     item: (typeof menuItems)[0];
     onItemClick: () => void;
   }> = ({ item, onItemClick }) => {
-    const active = isActive(item.path, item.exact);
+    const active = false;
 
     return (
       <Link
@@ -131,17 +120,6 @@ const Sidebar: React.FC = () => {
         />
         <span className="font-medium">{item.name}</span>
 
-        {item.badge && (
-          <span
-            className={`absolute right-3 px-2 py-1 text-xs rounded-full ${
-              active ? "bg-white text-black" : "bg-black text-white"
-            }`}
-          >
-            {item.badge}
-          </span>
-        )}
-
-        {/* Hover indicator */}
         {!active && (
           <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-black rounded-r opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
         )}
@@ -151,16 +129,15 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-      {/* Mobile Header with Hamburger */}
       {isMobile && (
         <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 z-40 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-              <ChefHat className="w-6 h-6 text-white" />
+              <MapPin className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-black">My Restaurant</h1>
-              <p className="text-xs text-gray-500">Vendor Portal</p>
+              <h1 className="text-lg font-bold text-black">Infybite</h1>
+              <p className="text-xs text-gray-500">Food Explorer</p>
             </div>
           </div>
 
@@ -173,7 +150,6 @@ const Sidebar: React.FC = () => {
         </header>
       )}
 
-      {/* Overlay */}
       {isMobile && isOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity duration-300"
@@ -181,7 +157,6 @@ const Sidebar: React.FC = () => {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`
         fixed lg:static inset-y-0 left-0 z-50
@@ -198,40 +173,20 @@ const Sidebar: React.FC = () => {
         ${isMobile ? "mt-16" : ""}
       `}
       >
-        {/* Desktop Header */}
         {!isMobile && (
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
-                <ChefHat className="w-7 h-7 text-white" />
+                <MapPin className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-black">My Restaurant</h1>
-                <p className="text-sm text-gray-500">Vendor Portal</p>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-gray-600" />
-                  <span className="text-xs text-gray-600">Active</span>
-                </div>
-                <p className="text-sm font-semibold text-black">Online</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2">
-                <div className="flex items-center gap-1">
-                  <DollarSign className="w-3 h-3 text-gray-600" />
-                  <span className="text-xs text-gray-600">Today</span>
-                </div>
-                <p className="text-sm font-semibold text-black">₹2,847</p>
+                <h1 className="text-xl font-bold text-black">Infybite</h1>
+                <p className="text-sm text-gray-500">Food Explorer</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Navigation */}
         <nav className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-2">
             {menuItems.map((item) => (
@@ -244,17 +199,7 @@ const Sidebar: React.FC = () => {
           </div>
         </nav>
 
-        {/* Bottom Section */}
         <div className="p-6 border-t border-gray-200 space-y-2">
-          {bottomMenuItems.map((item) => (
-            <NavItem
-              key={item.path}
-              item={item}
-              onItemClick={() => isMobile && setIsOpen(false)}
-            />
-          ))}
-
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             disabled={isLoading}
@@ -266,7 +211,6 @@ const Sidebar: React.FC = () => {
             </span>
           </button>
 
-          {/* User Profile */}
           <div className="mt-4 pt-4 border-t border-gray-200">
             <Link to="/user/profile">
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
@@ -285,6 +229,18 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
       </aside>
+
+      {/* Custom Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Logout Confirmation"
+        message="Are you sure you want to log out? You'll need to sign in again to access your dashboard."
+        confirmText="Logout"
+        cancelText="Stay Logged In"
+        isLoading={isLoading}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </>
   );
 };

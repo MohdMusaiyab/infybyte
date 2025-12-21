@@ -75,7 +75,7 @@ const VendorManagers: React.FC = () => {
     navigate(`/vendor/managers/edit/${managerId}`);
   };
 
-  // Filter managers based on search
+  
   const filteredManagers = managers.filter(manager =>
     manager.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     manager.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||

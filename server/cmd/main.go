@@ -45,10 +45,9 @@ func main() {
 	AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions"},
 	ExposeHeaders:    []string{"Content-Length"},
 	AllowCredentials: true,
-	AllowWebSockets:  true, // Add this if your CORS package supports it
+	AllowWebSockets:  true, 
 }))
 
-	// Initialize routes (pass db as before)
 	routes.InitRoutes(router, db, wsHandler)
 
 	router.GET("/health", func(c *gin.Context) {

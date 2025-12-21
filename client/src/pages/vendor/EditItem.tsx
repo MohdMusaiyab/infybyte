@@ -138,7 +138,7 @@ const EditItem: React.FC = () => {
 
       await axiosInstance.put(`/vendor/items/${id}`, submitData);
       
-      navigate("/vendor/item-management");
+      navigate("/vendor/items-management");
       
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
@@ -157,7 +157,7 @@ const EditItem: React.FC = () => {
   };
 
   const handleBackToItems = () => {
-    navigate("/vendor/items");
+    navigate("/vendor/items-management");
   };
 
   if (loading) {

@@ -2063,3 +2063,397 @@ func GetVendorManager(c *gin.Context, db *mongo.Database) {
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager retrieved successfully", results[0])
 }
+
+
+func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
+	// Get user ID from JWT context (as per your working code)
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	ctx := context.Background()
+	collections := struct {
+		vendors        *mongo.Collection
+		items          *mongo.Collection
+		foodCourts     *mongo.Collection
+		foodCourtItems *mongo.Collection
+		managers       *mongo.Collection
+	}{
+		vendors:        db.Collection("vendors"),
+		items:          db.Collection("items"),
+		foodCourts:     db.Collection("foodcourts"),
+		foodCourtItems: db.Collection("itemfoodcourts"),
+		managers:       db.Collection("managers"),
+	}
+
+	// Get vendor ID from user ID (as per your working code)
+	var vendor struct {
+		ID       primitive.ObjectID `bson:"_id"`
+		ShopName string             `bson:"shopName"`
+	}
+	err = collections.vendors.FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+	if err != nil {
+		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
+		return
+	}
+	vendorObjID := vendor.ID
+
+	// Count total items for this vendor
+	totalItems, err := collections.items.CountDocuments(ctx, bson.M{"vendor_id": vendorObjID})
+	if err != nil {
+		totalItems = 0
+	}
+
+	// Count total managers for this vendor
+	totalManagers, err := collections.managers.CountDocuments(ctx, bson.M{"vendor_id": vendorObjID})
+	if err != nil {
+		totalManagers = 0
+	}
+
+	// Get food courts where vendor operates
+	var foodCourtIDs []primitive.ObjectID
+	var foodCourtMap = make(map[primitive.ObjectID]string)
+	
+	foodCourtsCursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendorObjID})
+	if err == nil {
+		defer foodCourtsCursor.Close(ctx)
+		for foodCourtsCursor.Next(ctx) {
+			var foodCourt struct {
+				ID   primitive.ObjectID `bson:"_id"`
+				Name string             `bson:"name"`
+			}
+			if err := foodCourtsCursor.Decode(&foodCourt); err == nil {
+				foodCourtIDs = append(foodCourtIDs, foodCourt.ID)
+				foodCourtMap[foodCourt.ID] = foodCourt.Name
+			}
+		}
+	}
+	totalFoodCourts := len(foodCourtIDs)
+
+	// Get all item IDs for this vendor
+	var itemIDs []primitive.ObjectID
+	itemsCursor, err := collections.items.Find(ctx, bson.M{"vendor_id": vendorObjID})
+	if err == nil {
+		defer itemsCursor.Close(ctx)
+		for itemsCursor.Next(ctx) {
+			var item struct {
+				ID primitive.ObjectID `bson:"_id"`
+			}
+			if err := itemsCursor.Decode(&item); err == nil {
+				itemIDs = append(itemIDs, item.ID)
+			}
+		}
+	}
+
+	// Initialize counters
+	totalFoodCourtItems := int64(0)
+	activeItems := int64(0)
+	availableItems := int64(0)
+
+	// Get stats if we have items and food courts
+	if len(itemIDs) > 0 && len(foodCourtIDs) > 0 {
+		// Count total food court items
+		totalFoodCourtItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
+			"item_id":      bson.M{"$in": itemIDs},
+			"foodcourt_id": bson.M{"$in": foodCourtIDs},
+		})
+
+		// Count active items
+		activeItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
+			"item_id":      bson.M{"$in": itemIDs},
+			"foodcourt_id": bson.M{"$in": foodCourtIDs},
+			"isActive":     true,
+		})
+
+		// Count available items
+		availableItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
+			"item_id":      bson.M{"$in": itemIDs},
+			"foodcourt_id": bson.M{"$in": foodCourtIDs},
+			"status":       "available",
+		})
+	}
+
+	// Prepare response
+	response := struct {
+		VendorName string `json:"vendorName"`
+		TotalStats struct {
+			TotalItems         int64 `json:"totalItems"`
+			TotalManagers      int64 `json:"totalManagers"`
+			TotalFoodCourts    int   `json:"totalFoodCourts"`
+			TotalFoodCourtItems int64 `json:"totalFoodCourtItems"`
+			ActiveItems        int64 `json:"activeItems"`
+			AvailableItems     int64 `json:"availableItems"`
+		} `json:"totalStats"`
+		FoodCourts []struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			ItemCount int64  `json:"itemCount"`
+		} `json:"foodCourts,omitempty"`
+		RecentUpdates []struct {
+			ItemName      string `json:"itemName"`
+			FoodCourtName string `json:"foodCourtName"`
+			Status        string `json:"status"`
+			UpdatedAt     string `json:"updatedAt"`
+		} `json:"recentUpdates,omitempty"`
+	}{
+		VendorName: vendor.ShopName,
+	}
+
+	// Set total stats
+	response.TotalStats.TotalItems = totalItems
+	response.TotalStats.TotalManagers = totalManagers
+	response.TotalStats.TotalFoodCourts = totalFoodCourts
+	response.TotalStats.TotalFoodCourtItems = totalFoodCourtItems
+	response.TotalStats.ActiveItems = activeItems
+	response.TotalStats.AvailableItems = availableItems
+
+	// Get item counts per food court
+	for foodCourtID, foodCourtName := range foodCourtMap {
+		itemCount, _ := collections.foodCourtItems.CountDocuments(ctx, bson.M{
+			"foodcourt_id": foodCourtID,
+			"item_id":      bson.M{"$in": itemIDs},
+		})
+		
+		response.FoodCourts = append(response.FoodCourts, struct {
+			ID       string `json:"id"`
+			Name     string `json:"name"`
+			ItemCount int64  `json:"itemCount"`
+		}{
+			ID:       foodCourtID.Hex(),
+			Name:     foodCourtName,
+			ItemCount: itemCount,
+		})
+	}
+
+	// Get recent updates (last 5)
+	if len(itemIDs) > 0 && len(foodCourtIDs) > 0 {
+		cursor, err := collections.foodCourtItems.Find(ctx, bson.M{
+			"item_id":      bson.M{"$in": itemIDs},
+			"foodcourt_id": bson.M{"$in": foodCourtIDs},
+		}, options.Find().SetSort(bson.M{"updatedAt": -1}).SetLimit(5))
+		
+		if err == nil {
+			defer cursor.Close(ctx)
+			for cursor.Next(ctx) {
+				var fci struct {
+					ItemID      primitive.ObjectID `bson:"item_id"`
+					FoodCourtID primitive.ObjectID `bson:"foodcourt_id"`
+					Status      string             `bson:"status"`
+					UpdatedAt   primitive.DateTime `bson:"updatedAt"`
+				}
+				if err := cursor.Decode(&fci); err == nil {
+					// Get item name
+					var item struct {
+						Name string `bson:"name"`
+					}
+					collections.items.FindOne(ctx, bson.M{"_id": fci.ItemID}).Decode(&item)
+					
+					// Get food court name
+					foodCourtName := foodCourtMap[fci.FoodCourtID]
+					
+					response.RecentUpdates = append(response.RecentUpdates, struct {
+						ItemName      string `json:"itemName"`
+						FoodCourtName string `json:"foodCourtName"`
+						Status        string `json:"status"`
+						UpdatedAt     string `json:"updatedAt"`
+					}{
+						ItemName:      item.Name,
+						FoodCourtName: foodCourtName,
+						Status:        fci.Status,
+						UpdatedAt:     fci.UpdatedAt.Time().Format(time.RFC3339),
+					})
+				}
+			}
+		}
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Dashboard stats retrieved successfully", response)
+}
+
+func SingleFoodCourtItems(c *gin.Context, db *mongo.Database) {
+    foodCourtID := c.Param("id")
+    userID, exists := c.Get("userID")
+    if !exists {
+        utils.RespondError(c, http.StatusUnauthorized, "User authentication required")
+        return
+    }
+
+    foodCourtObjID, err := primitive.ObjectIDFromHex(foodCourtID)
+    userObjID, err2 := primitive.ObjectIDFromHex(userID.(string))
+    if err != nil || err2 != nil {
+        utils.RespondError(c, http.StatusBadRequest, "Invalid ID format")
+        return
+    }
+
+    ctx := context.TODO()
+    
+    // 1. Get the Vendor ID from the User ID
+    var vendor models.Vendor
+    err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+    if err != nil {
+        utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
+        return
+    }
+
+    // 2. Refined Pipeline
+    pipeline := []bson.M{
+        // First match only by Food Court
+        {"$match": bson.M{"foodcourt_id": foodCourtObjID}},
+        
+        // Join with Items to get Vendor details
+        {"$lookup": bson.M{
+            "from":         "items",
+            "localField":   "item_id",
+            "foreignField": "_id",
+            "as":           "item_details",
+        }},
+        {"$unwind": "$item_details"},
+
+        // NOW filter by Vendor ID (since it exists in item_details)
+        {"$match": bson.M{"item_details.vendor_id": vendor.ID}},
+
+        // Project the final shape for your React frontend
+        {"$project": bson.M{
+            "id":          "$_id",
+            "item_id":     "$item_id",
+            "name":        "$item_details.name",
+            "category":    "$item_details.category",
+            "description": "$item_details.description",
+            "basePrice":   "$item_details.basePrice",
+            "price":       "$price", // This is the FC specific price
+            "status":      "$status",
+            "isActive":    "$isActive",
+            "timeSlot":    "$timeSlot",
+            "isVeg":       "$item_details.isVeg",
+        }},
+    }
+
+    cursor, err := db.Collection("itemfoodcourts").Aggregate(ctx, pipeline)
+    if err != nil {
+        utils.RespondError(c, http.StatusInternalServerError, "Aggregation failed")
+        return
+    }
+    defer cursor.Close(ctx)
+
+    var results []bson.M = []bson.M{} // Initialize as empty slice to avoid null in JSON
+    if err := cursor.All(ctx, &results); err != nil {
+        utils.RespondError(c, http.StatusInternalServerError, "Decoding failed")
+        return
+    }
+
+    utils.RespondSuccess(c, http.StatusOK, "Items retrieved", results)
+}
+
+func GetVendorFoodCourtsForDisplay(c *gin.Context, db *mongo.Database) {
+    userID, exists := c.Get("userID")
+    if !exists {
+        utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
+        return
+    }
+
+    userObjID, _ := primitive.ObjectIDFromHex(userID.(string))
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    var vendor models.Vendor
+    err := db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+    if err != nil {
+        utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
+        return
+    }
+
+    pipeline := []bson.M{
+        {"$match": bson.M{"vendor_ids": vendor.ID}},
+        
+        // 1. Get all items for this food court
+        {"$lookup": bson.M{
+            "from": "itemfoodcourts",
+            "localField": "_id",
+            "foreignField": "foodcourt_id",
+            "as": "all_fc_items",
+        }},
+
+        // 2. Join with the master 'items' collection to find which items belong to THIS vendor
+        {"$lookup": bson.M{
+            "from": "items",
+            "localField": "all_fc_items.item_id",
+            "foreignField": "_id",
+            "as": "master_items",
+        }},
+
+        // 3. Project and Filter locally in the pipeline
+        {"$project": bson.M{
+            "id":       "$_id",
+            "name":     1,
+            "location": 1,
+            "isOpen":   1,
+            "timings":  1,
+            // Filter the junction items where the corresponding master item belongs to this vendor
+            "vendorItems": bson.M{
+                "$filter": bson.M{
+                    "input": "$all_fc_items",
+                    "as":    "fcItem",
+                    "cond": bson.M{"$in": []interface{}{
+                        "$$fcItem.item_id", 
+                        bson.M{
+                            "$map": bson.M{
+                                "input": bson.M{
+                                    "$filter": bson.M{
+                                        "input": "$master_items",
+                                        "as": "mItem",
+                                        "cond": bson.M{"$eq": []interface{}{"$$mItem.vendor_id", vendor.ID}},
+                                    },
+                                },
+                                "as": "filtered",
+                                "in": "$$filtered._id",
+                            },
+                        },
+                    }},
+                },
+            },
+        }},
+
+        // 4. Final Count Calculation
+        {"$project": bson.M{
+            "id":          1,
+            "name":        1,
+            "location":    1,
+            "isOpen":      1,
+            "timings":     1,
+            "totalItems":  bson.M{"$size": "$vendorItems"},
+            "activeItems": bson.M{
+                "$size": bson.M{
+                    "$filter": bson.M{
+                        "input": "$vendorItems",
+                        "as":    "vi",
+                        "cond":  bson.M{"$eq": []interface{}{"$$vi.isActive", true}},
+                    },
+                },
+            },
+        }},
+        {"$sort": bson.M{"name": 1}},
+    }
+
+    cursor, err := db.Collection("foodcourts").Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to aggregate food court data")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M = []bson.M{}
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to decode results")
+		return
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Vendor food courts retrieved successfully", results)
+}

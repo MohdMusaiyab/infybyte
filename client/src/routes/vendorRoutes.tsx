@@ -9,6 +9,8 @@ import ItemFoodCourt from "../pages/vendor/ItemFoodCourt";
 import VendorManagers from "../pages/vendor/VendorManagers";
 import CreateManager from "../pages/vendor/CreateManager";
 import EditManager from "../pages/vendor/EditManager";
+import FoodCourtItems from "../pages/vendor/FoodCourtItems";
+import VendorFoodCourts from "../pages/vendor/VendorFoodCourt";
 
 const VendorRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["vendor"]} />}>
@@ -21,6 +23,8 @@ const VendorRoutes = () => (
       <Route path="/vendor/managers" element={<VendorManagers />} />
       <Route path="/vendor/managers/create" element={<CreateManager />} />
       <Route path="vendor/managers/edit/:id" element={<EditManager />} />
+      <Route path="/vendor/foodcourt/:foodCourtId/items" element={<FoodCourtItems></FoodCourtItems>} />
+      <Route path="/vendor/foodcourt" element={<VendorFoodCourts />} />
     </Route>
   </Route>
 );
