@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../../utils/axiosInstance";
-import type { FoodCourt } from "../../types/auth";
+import type { FoodCourt } from "../../types/type";
 import axios from "axios";
 import { 
   MapPin, 

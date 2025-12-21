@@ -4,7 +4,7 @@ import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Save, RotateCcw, DollarSign } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
-import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
+
 
 interface FoodCourt {
   id: string;
