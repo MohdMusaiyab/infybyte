@@ -8,6 +8,7 @@ import AllVendors from "../pages/admin/AllVendors";
 import VendorDetails from "../pages/admin/VendorDetails";
 import AllFoodCourts from "../pages/admin/AllFoodCourts";
 import SingleFoodCourtDetails from "../pages/admin/SingleFoodCourtDetails";
+import AllManagers from "../pages/admin/AllManagers";
 
 const AdminRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["admin"]} />}>
@@ -15,6 +16,7 @@ const AdminRoutes = () => (
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/all-users" element={<AllUsers />} />
       <Route path="/admin/all-vendors" element={<AllVendors />} />
+      <Route path="/admin/all-managers" element={<AllManagers />} />
       <Route path="/admin/vendor/:id" element={<VendorDetails />} />
       <Route path="/admin/profile" element={<Profile />} />
 

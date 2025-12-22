@@ -1,82 +1,74 @@
-import { useEffect, useState, type ComponentType,  type SVGProps } from "react"
-import axiosInstance from "../../utils/axiosInstance"
-import { Users, ShoppingBag, TrendingUp, DollarSign, Clock, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { useEffect, useState, type ComponentType, type SVGProps } from "react";
+import { Link } from "react-router-dom";
+import axiosInstance from "../../utils/axiosInstance";
+import {
+  Users,
+  ShoppingBag,
+  TrendingUp,
+  Store,
+  ArrowUpRight,
+  Clock,
+  UtensilsCrossed,
+} from "lucide-react";
 
-interface DashboardStats {
-  totalUsers: number
-  totalVendors: number
-  totalOrders: number
-  revenue: number
-  activeUsers: number
-  conversionRate: number
+// Matches the JSON structure from your Go controller
+interface DashboardData {
+  stats: {
+    totalVendors: number;
+    totalManagers: number;
+    totalItems: number;
+  };
+  openFoodCourts: Array<{
+    id: string;
+    name: string;
+    location: string;
+  }>;
+  recentItems: Array<{
+    id: string;
+    name: string;
+    price: number;
+    foodCourtName: string;
+    createdAt: string;
+  }>;
 }
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 0,
-    totalVendors: 0,
-    totalOrders: 0,
-    revenue: 0,
-    activeUsers: 0,
-    conversionRate: 0
-  })
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axiosInstance.get("/admin/profile")
-        console.log(response.data)
-        
-        // Mock data - replace with actual API response
-        setStats({
-          totalUsers: 1247,
-          totalVendors: 42,
-          totalOrders: 3289,
-          revenue: 125640,
-          activeUsers: 847,
-          conversionRate: 12.5
-        })
+        const response = await axiosInstance.get("/admin/dashboard-stats");
+        setData(response.data.data);
       } catch (error) {
-        console.error("Error fetching admin dashboard data:", error)
+        console.error("Error fetching dashboard stats:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    icon: Icon, 
-    trend, 
-    change, 
-    loading 
-  }: { 
-    title: string
-    value: string | number
-    icon: ComponentType<SVGProps<SVGSVGElement>>
-    trend?: 'up' | 'down'
-    change?: string
-    loading: boolean
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    loading,
+  }: {
+    title: string;
+    value: string | number;
+    icon: ComponentType<SVGProps<SVGSVGElement>>;
+    loading: boolean;
   }) => (
-    <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all duration-300">
+    <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-md transition-all">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
+          <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
           {loading ? (
-            <div className="h-8 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="h-8 w-16 bg-gray-100 rounded animate-pulse" />
           ) : (
             <p className="text-2xl font-bold text-black">{value}</p>
-          )}
-          {change && (
-            <div className={`flex items-center gap-1 mt-2 text-sm ${
-              trend === 'up' ? 'text-green-600' : 'text-red-600'
-            }`}>
-              {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-              <span>{change}</span>
-            </div>
           )}
         </div>
         <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center">
@@ -84,116 +76,42 @@ const AdminDashboard = () => {
         </div>
       </div>
     </div>
-  )
+  );
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-black mb-2">Dashboard Overview</h1>
-          <p className="text-gray-600">Loading analytics data...</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200">
-              <div className="h-8 w-20 bg-gray-200 rounded-lg animate-pulse mb-2"></div>
-              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <div className="p-10 text-center">Loading Dashboard...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-black mb-2">Dashboard Overview</h1>
-        <p className="text-gray-600">Welcome back! Here's what's happening with your platform today.</p>
+        <h1 className="text-3xl font-bold text-black mb-1">Admin Dashboard</h1>
+        <p className="text-gray-500 text-sm">Real-time platform overview and system health.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Total Users"
-          value={stats.totalUsers.toLocaleString()}
-          icon={Users}
-          trend="up"
-          change="+12% from last month"
-          loading={loading}
-        />
-        
-        <StatCard
-          title="Active Vendors"
-          value={stats.totalVendors}
-          icon={ShoppingBag}
-          trend="up"
-          change="+3 new this week"
-          loading={loading}
-        />
-        
-        <StatCard
-          title="Total Orders"
-          value={stats.totalOrders.toLocaleString()}
-          icon={TrendingUp}
-          trend="up"
-          change="+8% from last month"
-          loading={loading}
-        />
-        
-        <StatCard
-          title="Revenue"
-          value={`₹${stats.revenue.toLocaleString()}`}
-          icon={DollarSign}
-          trend="up"
-          change="+15% growth"
-          loading={loading}
-        />
-        
-        <StatCard
-          title="Active Users"
-          value={stats.activeUsers}
-          icon={Clock}
-          trend="up"
-          change="+5% online now"
-          loading={loading}
-        />
-        
-        <StatCard
-          title="Conversion Rate"
-          value={`${stats.conversionRate}%`}
-          icon={TrendingUp}
-          trend="up"
-          change="+2.1% improved"
-          loading={loading}
-        />
+      {/* Top Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard title="Total Vendors" value={data?.stats.totalVendors || 0} icon={ShoppingBag} loading={loading} />
+        <StatCard title="Total Managers" value={data?.stats.totalManagers || 0} icon={Users} loading={loading} />
+        <StatCard title="Menu Items" value={data?.stats.totalItems || 0} icon={UtensilsCrossed} loading={loading} />
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Orders */}
-        <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-xl font-bold text-black mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {[
-              { user: "John Doe", action: "placed an order", time: "2 min ago", type: "order" },
-              { user: "Sarah Wilson", action: "signed up", time: "5 min ago", type: "signup" },
-              { user: "Mike's Pizza", action: "updated menu", time: "10 min ago", type: "update" },
-              { user: "Alex Chen", action: "completed order", time: "15 min ago", type: "order" }
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                <div className={`w-2 h-2 rounded-full ${
-                  activity.type === 'order' ? 'bg-green-500' : 
-                  activity.type === 'signup' ? 'bg-blue-500' : 'bg-orange-500'
-                }`}></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-black">
-                    <span className="font-semibold">{activity.user}</span> {activity.action}
-                  </p>
-                  <p className="text-xs text-gray-500">{activity.time}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Open Food Courts List */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Store className="w-5 h-5" /> Open Food Courts
+            </h3>
+            <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">LIVE</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {data?.openFoodCourts.map((fc) => (
+              <div key={fc.id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-gray-900">{fc.name}</p>
+                  <p className="text-xs text-gray-500">{fc.location}</p>
                 </div>
+                <ArrowUpRight className="w-4 h-4 text-gray-400" />
               </div>
             ))}
           </div>
@@ -201,29 +119,52 @@ const AdminDashboard = () => {
 
         {/* Quick Actions */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
-          <h3 className="text-xl font-bold text-black mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Manage Users", icon: Users, color: "bg-blue-500" },
-              { label: "View Vendors", icon: ShoppingBag, color: "bg-green-500" },
-              { label: "Analytics", icon: TrendingUp, color: "bg-purple-500" },
-              { label: "Settings", icon: DollarSign, color: "bg-orange-500" }
-            ].map((action, index) => (
-              <button
-                key={index}
-                className="flex flex-col items-center justify-center p-4 border-2 border-gray-200 rounded-xl hover:border-black hover:bg-gray-50 transition-all duration-200 group"
-              >
-                <div className={`w-12 h-12 ${action.color} rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform`}>
-                  <action.icon className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-sm font-medium text-black text-center">{action.label}</span>
-              </button>
-            ))}
+          <h3 className="text-lg font-bold text-black mb-6">Quick Actions</h3>
+          <div className="space-y-3">
+            <Link to="/admin/all-users" className="flex items-center gap-3 p-3 w-full border border-gray-100 rounded-xl hover:bg-gray-50 transition-all font-medium text-sm">
+               <Users className="w-4 h-4 text-blue-600" /> Manage Users
+            </Link>
+            <Link to="/admin/food-courts" className="flex items-center gap-3 p-3 w-full border border-gray-100 rounded-xl hover:bg-gray-50 transition-all font-medium text-sm">
+               <TrendingUp className="w-4 h-4 text-purple-600" /> Manage FoodCourts
+            </Link>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
 
-export default AdminDashboard
+      {/* Recently Added Items Table */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <Clock className="w-5 h-5" /> Recently Added Menu Items
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Item Name</th>
+                <th className="px-6 py-4">Food Court</th>
+                <th className="px-6 py-4">Price</th>
+                <th className="px-6 py-4">Added On</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {data?.recentItems.map((item) => (
+                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-bold text-gray-900">{item.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{item.foodCourtName}</td>
+                  <td className="px-6 py-4 text-sm font-medium">₹{item.price}</td>
+                  <td className="px-6 py-4 text-xs text-gray-400">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;

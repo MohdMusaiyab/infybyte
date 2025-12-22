@@ -4,79 +4,70 @@ import {
   Home,
   Users,
   User,
-  Settings,
   LogOut,
   Menu,
   X,
   ChevronDown,
-  BarChart3,
   Shield,
   ChevronRight,
+  BookDashed,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import ConfirmModal from "../general/ConfirmModel";
+
 const SideBar: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout, isLoading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isUsersOpen, setIsUsersOpen] = useState(false);
+
+  // 1. Added state for Logout Modal
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const location = useLocation();
 
   const menuItems = [
-    {
-      name: "Dashboard",
-      path: "/admin/dashboard",
-      icon: Home,
-      exact: true,
-    },
+    { name: "Dashboard", path: "/admin/dashboard", icon: BookDashed, exact: true },
+    { name: "Home", path: "/", icon: Home, exact: true },
     {
       name: "Users",
-      path: "/admin/users",
+      path: "/admin/all-users",
       icon: Users,
       children: [
         { name: "All Users", path: "/admin/all-users" },
-        { name: "User Roles", path: "/admin/user-roles" },
-        { name: "Activity Log", path: "/admin/activity-log" },
+        { name: "All Vendors", path: "/admin/all-vendors" },
+        { name: "All Managers", path: "/admin/all-managers" },
       ],
     },
     {
-      name: "Profile",
-      path: "/admin/profile",
+      name: "Food Courts",
+      path: "/admin/food-courts",
       icon: User,
-    },
-    {
-      name: "Analytics",
-      path: "/admin/analytics",
-      icon: BarChart3,
-    },
-    {
-      name: "Security",
-      path: "/admin/security",
-      icon: Shield,
-    },
-    {
-      name: "Settings",
-      path: "/admin/settings",
-      icon: Settings,
     },
   ];
 
   const isActive = (path: string, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
+    if (exact) return location.pathname === path;
     return location.pathname.startsWith(path);
   };
-  const handleLogout = async () => {
-    const confirmed = window.confirm("Are you sure you want to logout?");
-    if (!confirmed) return;
 
+  // 2. Updated HandleLogout to trigger Modal
+  const handleLogoutTrigger = () => {
+    setShowLogoutModal(true);
+  };
+
+  // 3. Logic for confirming logout
+  const handleConfirmLogout = async () => {
     try {
       await logout();
+      setShowLogoutModal(false);
       navigate("/login");
     } catch (error) {
       console.error("Logout failed:", error);
+      setShowLogoutModal(false);
     }
   };
+
   const NavItem: React.FC<{
     item: (typeof menuItems)[0];
     onItemClick: () => void;
@@ -147,24 +138,21 @@ const SideBar: React.FC = () => {
       <button
         onClick={() => setIsOpen(true)}
         className="lg:hidden fixed bottom-6 right-6 z-30 p-4 bg-black text-white rounded-full shadow-2xl hover:bg-gray-800 hover:scale-110 transition-all duration-200 active:scale-95"
-        aria-label="Open menu"
       >
         <Menu className="w-6 h-6" />
       </button>
+
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsOpen(false)}
         />
       )}
+
       <aside
-        className={`
-        fixed lg:static inset-y-0 left-0 z-50
-        w-80 bg-white border-r border-gray-200
-        transform transition-transform duration-300 ease-in-out
-        flex flex-col
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-      `}
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out flex flex-col ${
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -176,11 +164,7 @@ const SideBar: React.FC = () => {
               <p className="text-sm text-gray-500">Administrator</p>
             </div>
           </div>
-
-          <button
-            onClick={() => setIsOpen(false)}
-            className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
+          <button onClick={() => setIsOpen(false)} className="lg:hidden p-2">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -199,37 +183,45 @@ const SideBar: React.FC = () => {
 
         <div className="p-6 border-t border-gray-200">
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutTrigger} // Use the trigger here
             disabled={isLoading}
-            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all duration-200 mt-4"
+            className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 mt-4"
           >
             <LogOut className={`w-5 h-5 ${isLoading ? "animate-pulse" : ""}`} />
             <span className="font-medium">
               {isLoading ? "Logging out..." : "Logout"}
             </span>
           </button>
+
           <div className="mt-4 pt-4 border-t border-gray-200">
             <Link to="/user/profile">
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-black truncate">
-                    {user?.name || "User Name"}
+                    {user?.name}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {user?.email || "useremail@gmail.com"}
+                    {user?.email}
                   </p>
                 </div>
-
                 <ChevronRight className="w-4 h-4 text-gray-400" />
               </div>
             </Link>
           </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-xs text-gray-500">v1.0.0 • Infybite Admin</p>
-          </div>
         </div>
       </aside>
+
+      {/* 4. Implement the ConfirmModal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Admin Logout"
+        message="Are you sure you want to exit the Admin Panel? Session data will be cleared."
+        confirmText="Yes, Logout"
+        cancelText="Cancel"
+        isLoading={isLoading}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutModal(false)}
+      />
     </>
   );
 };

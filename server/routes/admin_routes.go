@@ -18,13 +18,15 @@ func AdminRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		admin.PUT("/users/:id/make-user", func(c *gin.Context) { controllers.MakeUser(c, db) })
 		admin.DELETE("/users/:id", func(c *gin.Context) { controllers.DeleteUser(c, db) })
 
+
 		// Vendor Management
 		admin.GET("/vendors", func(c *gin.Context) { controllers.GetAllVendors(c, db) })
 		admin.GET("/vendors/:id", func(c *gin.Context) { controllers.GetVendorDetails(c, db) })
-
+		admin.GET("/managers", func(c *gin.Context) { controllers.GetAllManagers(c, db) })
 		// Admin Profile
 		admin.GET("/profile", func(c *gin.Context) { controllers.GetAdminProfile(c, db) })
 		admin.PUT("/profile", func(c *gin.Context) { controllers.UpdateAdminProfile(c, db) })
+		admin.GET("/dashboard-stats", func(c *gin.Context) { controllers.GetAdminDashboardStats(c, db) })
 
 		//Food Court Management
 		admin.GET("/my-food-courts", func(c *gin.Context) { controllers.GetAllFoodCourtsAdmin(c, db) })

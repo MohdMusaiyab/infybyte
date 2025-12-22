@@ -1108,3 +1108,181 @@ func GetFoodCourtDetailsAdmin(c *gin.Context, db *mongo.Database) {
 		"vendors":   vendorList,
 	})
 }
+
+func GetAllManagers(c *gin.Context, db *mongo.Database) {
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "50")
+	// Search by name usually requires joining first, then matching
+	searchName := c.Query("name") 
+
+	page, _ := strconv.Atoi(pageStr)
+	limit, _ := strconv.Atoi(limitStr)
+	if page < 1 { page = 1 }
+	skip := (page - 1) * limit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	pipeline := []bson.M{
+		// 1. Join with Users to get the Manager's Name and Email
+		{"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "user_id",
+			"foreignField": "_id",
+			"as":           "user_info",
+		}},
+		{"$unwind": "$user_info"},
+
+		// 2. Filter by Name if search query is provided (Post-Lookup Match)
+		{"$match": bson.M{
+			"user_info.name": bson.M{"$regex": searchName, "$options": "i"},
+		}},
+
+		// 3. Join with FoodCourts to get the Venue Name
+		{"$lookup": bson.M{
+			"from":         "foodcourts",
+			"localField":   "foodcourt_id",
+			"foreignField": "_id",
+			"as":           "fc_info",
+		}},
+		{"$unwind": bson.M{"path": "$fc_info", "preserveNullAndEmptyArrays": true}},
+
+		// 4. Join with Vendors to get the Shop Name
+		{"$lookup": bson.M{
+			"from":         "vendors",
+			"localField":   "vendor_id",
+			"foreignField": "_id",
+			"as":           "vendor_info",
+		}},
+		{"$unwind": bson.M{"path": "$vendor_info", "preserveNullAndEmptyArrays": true}},
+
+		// 5. Project the specific format for the frontend
+		// Replace your current "$project" block with this one:
+{"$project": bson.M{
+    "id":         "$_id",
+    "name":       "$user_info.name",
+    "email":      "$user_info.email",
+    "contactNo":  "$contact_no",
+    "isActive":   "$isActive",
+    "createdAt":  1,
+    "foodCourt": bson.M{
+        "id":   "$fc_info._id",
+        "name": "$fc_info.name",
+    },
+    // Change this part to include the Vendor ID
+    "vendorId": "$vendor_info.user_id",          // <-- ADD THIS LINE
+    "vendors":  []string{"$vendor_info.shopName"}, 
+    // If you want the ID inside the vendor object instead:
+    "vendor": bson.M{
+        "id":   "$vendor_info._id",      // <-- OR ADD THIS
+        "name": "$vendor_info.shopName",
+    },
+}},
+
+		// 6. Pagination
+		{"$sort": bson.M{"createdAt": -1}},
+		{"$skip": int64(skip)},
+		{"$limit": int64(limit)},
+	}
+
+	cursor, err := db.Collection("managers").Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.RespondError(c, 500, "Failed to fetch managers data")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M = []bson.M{}
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, 500, "Decoding error")
+		return
+	}
+
+	// For total count, we match the managers collection
+	total, _ := db.Collection("managers").CountDocuments(ctx, bson.M{})
+
+	utils.RespondSuccess(c, 200, "Managers fetched successfully", gin.H{
+		"managers": results,
+		"meta": gin.H{
+			"page":  page,
+			"limit": limit,
+			"total": total,
+			"pages": (total + int64(limit) - 1) / int64(limit),
+		},
+	})
+}
+
+func GetAdminDashboardStats(c *gin.Context, db *mongo.Database) {
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
+
+    // 1. Get List of Open Food Courts
+    fcCollection := db.Collection("foodcourts")
+    fcCursor, err := fcCollection.Find(ctx, bson.M{"isOpen": true}, options.Find().SetLimit(10))
+    
+    var openFoodCourts []bson.M = []bson.M{}
+    if err == nil {
+        fcCursor.All(ctx, &openFoodCourts)
+    }
+
+    // 2. Get 5 Recently Linked Food Court Items with Names
+    itemLinkCollection := db.Collection("itemfoodcourts")
+    
+    itemPipeline := []bson.M{
+        {"$sort": bson.M{"createdAt": -1}}, // Newest first
+        {"$limit": 5},
+        
+        // JOIN 1: Get the actual Item details (Name, Category, etc.)
+        {"$lookup": bson.M{
+            "from":         "items",
+            "localField":   "item_id",
+            "foreignField": "_id",
+            "as":           "item_details",
+        }},
+        {"$unwind": "$item_details"},
+
+        // JOIN 2: Get the FoodCourt name
+        {"$lookup": bson.M{
+            "from":         "foodcourts",
+            "localField":   "foodcourt_id",
+            "foreignField": "_id",
+            "as":           "fc",
+        }},
+        {"$unwind": "$fc"},
+
+        // Final Projection
+        {"$project": bson.M{
+            "id":            "$_id",
+            "name":          "$item_details.name", // Pulling name from joined Item
+            "isVeg":         "$item_details.isVeg",
+            "category":      "$item_details.category",
+            "price":         "$price",             // Price from the link table (specific to location)
+            "status":        1,
+            "createdAt":     1,
+            "foodCourtName": "$fc.name",
+        }},
+    }
+
+    itemCursor, err := itemLinkCollection.Aggregate(ctx, itemPipeline)
+    var recentItems []bson.M = []bson.M{}
+    if err == nil {
+        itemCursor.All(ctx, &recentItems)
+    }
+
+    // 3. Quick Global Counts
+    totalVendors, _ := db.Collection("vendors").CountDocuments(ctx, bson.M{})
+    totalManagers, _ := db.Collection("managers").CountDocuments(ctx, bson.M{})
+    // Count items from the main items collection
+    totalItems, _ := db.Collection("items").CountDocuments(ctx, bson.M{})
+
+    // 4. Response
+    utils.RespondSuccess(c, 200, "Dashboard stats retrieved", gin.H{
+        "stats": gin.H{
+            "totalVendors":  totalVendors,
+            "totalManagers": totalManagers,
+            "totalItems":    totalItems,
+        },
+        "openFoodCourts": openFoodCourts,
+        "recentItems":    recentItems,
+    })
+}
