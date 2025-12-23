@@ -13,6 +13,7 @@ import {
   Store,
   X
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const AllFoodCourts = () => {
   const [foodCourts, setFoodCourts] = useState<FoodCourt[]>([]);
@@ -266,9 +267,11 @@ const AllFoodCourts = () => {
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
+                    <Link to={`/admin/food-courts/${fc.id}`}>
                     <h3 className="text-base md:text-lg font-bold text-gray-900 break-words mb-2">
                       {fc.name}
                     </h3>
+                    </Link>
                     
                     <div className="space-y-2">
                       <div className="flex items-start gap-2 text-xs md:text-sm text-gray-600">

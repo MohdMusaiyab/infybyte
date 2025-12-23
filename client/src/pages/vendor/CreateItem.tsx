@@ -80,7 +80,7 @@ const CreateItem: React.FC = () => {
         isSpecial: formData.isSpecial,
       };
 
-      await axiosInstance.post("/vendor/items-management", submitData);
+      await axiosInstance.post("/vendor/items", submitData);
 
       navigate("/vendor/items-management");
     } catch (err: unknown) {

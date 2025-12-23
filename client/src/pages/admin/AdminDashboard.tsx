@@ -11,7 +11,6 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 
-// Matches the JSON structure from your Go controller
 interface DashboardData {
   stats: {
     totalVendors: number;
@@ -19,7 +18,7 @@ interface DashboardData {
     totalItems: number;
   };
   openFoodCourts: Array<{
-    id: string;
+    _id: string;
     name: string;
     location: string;
   }>;
@@ -82,13 +81,13 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Header */}
+      
       <div>
         <h1 className="text-3xl font-bold text-black mb-1">Admin Dashboard</h1>
         <p className="text-gray-500 text-sm">Real-time platform overview and system health.</p>
       </div>
 
-      {/* Top Stats Cards */}
+    
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard title="Total Vendors" value={data?.stats.totalVendors || 0} icon={ShoppingBag} loading={loading} />
         <StatCard title="Total Managers" value={data?.stats.totalManagers || 0} icon={Users} loading={loading} />
@@ -96,7 +95,7 @@ const AdminDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Open Food Courts List */}
+        
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold flex items-center gap-2">
@@ -106,9 +105,9 @@ const AdminDashboard = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data?.openFoodCourts.map((fc) => (
-              <div key={fc.id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 flex items-center justify-between">
+              <div key={fc._id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-gray-900">{fc.name}</p>
+                  <Link to={`/admin/food-courts/${fc._id}`}  className="font-bold text-gray-900">{fc.name}</Link>
                   <p className="text-xs text-gray-500">{fc.location}</p>
                 </div>
                 <ArrowUpRight className="w-4 h-4 text-gray-400" />
@@ -117,7 +116,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <h3 className="text-lg font-bold text-black mb-6">Quick Actions</h3>
           <div className="space-y-3">
@@ -131,7 +129,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Recently Added Items Table */}
       <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
           <h3 className="text-lg font-bold flex items-center gap-2">

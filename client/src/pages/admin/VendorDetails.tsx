@@ -3,16 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import axios from "axios";
 import type { ApiResponse } from "../../types/auth";
-import { 
-  ArrowLeft, 
-  Store, 
-  Calendar, 
-  Hash, 
-  Package, 
+import {
+  ArrowLeft,
+  Store,
+  Calendar,
+  Hash,
+  Package,
   Shield,
-  Edit,
   Eye,
-  X
+  X,
+  AlertTriangle,
+  UserMinus,
 } from "lucide-react";
 
 interface VendorDetails {
@@ -33,6 +34,7 @@ const VendorDetails = () => {
   const [vendor, setVendor] = useState<VendorDetails | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const fetchVendorDetails = async () => {
@@ -98,13 +100,13 @@ const VendorDetails = () => {
     return (
       <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
         <button
-          onClick={() => navigate("/admin/vendors")}
+          onClick={() => navigate("/admin/all-vendors")}
           className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-black transition-colors font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Vendors
         </button>
-        
+
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 flex items-start gap-3">
           <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
             <X className="w-3 h-3 text-white" />
@@ -116,12 +118,33 @@ const VendorDetails = () => {
       </div>
     );
   }
+  const handleDemoteToUser = async () => {
+    if (!vendor) return;
 
+    const confirmMessage = `Are you sure you want to demote "${vendor.shopName}" to a regular User?\n\nThis will PERMANENTLY delete:\n- The Vendor Profile\n- All Menu Items\n- All Food Court Assignments\n- All Manager Links`;
+
+    if (window.confirm(confirmMessage)) {
+      try {
+        setIsUpdating(true);
+        // We use vendor.id (User ID) because the backend route uses the User ID parameter
+        await axiosInstance.patch(`/admin/vendors/${vendor.id}/status`, {
+          role: "user",
+        });
+
+        alert("Vendor demoted successfully. Redirecting...");
+        navigate("/admin/all-vendors");
+      } catch (err: unknown) {
+        alert(err?.response?.data?.message || "Failed to update vendor status");
+      } finally {
+        setIsUpdating(false);
+      }
+    }
+  };
   return (
     <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
       {/* Back Button */}
       <button
-        onClick={() => navigate("/admin/vendors")}
+        onClick={() => navigate("/admin/all-vendors")}
         className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-xl transition-all font-medium"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -144,10 +167,6 @@ const VendorDetails = () => {
             </p>
           </div>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-purple-100 text-purple-800 rounded-xl w-fit font-semibold text-sm md:text-base">
-          <Shield className="w-4 h-4" />
-          {vendor.role.toUpperCase()}
-        </div>
       </div>
 
       {/* Main Information Card */}
@@ -155,7 +174,7 @@ const VendorDetails = () => {
         <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6">
           Vendor Information
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           {/* Shop Name */}
           <div className="space-y-2">
@@ -178,7 +197,9 @@ const VendorDetails = () => {
               <span className="text-2xl md:text-3xl font-bold text-black">
                 {vendor.itemCount}
               </span>
-              <span className="text-sm md:text-base text-gray-600">items listed</span>
+              <span className="text-sm md:text-base text-gray-600">
+                items listed
+              </span>
             </div>
           </div>
 
@@ -259,12 +280,12 @@ const VendorDetails = () => {
                 Account Role
               </div>
               <div className="text-2xl md:text-3xl font-bold uppercase break-words">
-                {vendor.role}
+                Vendor
               </div>
             </div>
           </div>
           <div className="text-xs md:text-sm text-purple-200">
-            Access level permission
+            Vendor and Manager Level Access
           </div>
         </div>
       </div>
@@ -278,13 +299,41 @@ const VendorDetails = () => {
           <Eye className="w-4 h-4 md:w-5 md:h-5" />
           View Items
         </button>
-        <button
-          onClick={() => navigate(`/admin/vendors/${vendor.id}/edit`)}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all font-medium text-sm md:text-base"
-        >
-          <Edit className="w-4 h-4 md:w-5 md:h-5" />
-          Edit Vendor
-        </button>
+      </div>
+      {/* NEW: Danger Zone Section */}
+      <div className="mt-12 pt-6 border-t border-red-100">
+        <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
+            <h3 className="text-lg font-bold text-red-900">Danger Zone</h3>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-bold text-red-800">
+                Demote to Regular User
+              </p>
+              <p className="text-sm text-red-600 mt-1">
+                Removing vendor status will clear all shop data, menu items, and
+                managers associated with this account. This action cannot be
+                undone.
+              </p>
+            </div>
+
+            <button
+              onClick={handleDemoteToUser}
+              disabled={isUpdating}
+              className={`inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold transition-all shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isUpdating ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <UserMinus className="w-5 h-5" />
+              )}
+              {isUpdating ? "Processing..." : "Demote to User"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

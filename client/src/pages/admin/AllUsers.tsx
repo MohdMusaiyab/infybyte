@@ -30,11 +30,11 @@ const AllUsers = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
-  // Search state
+  
   const [searchEmail, setSearchEmail] = useState<string>("");
   const [searchInput, setSearchInput] = useState<string>("");
 
-  // Fetch all users with pagination and search
+
   const fetchUsers = async (page: number = 1, limit: number = 50, email: string = "") => {
     try {
       setLoading(true);
@@ -78,21 +78,21 @@ const AllUsers = () => {
     fetchUsers(meta.page, meta.limit, searchEmail);
   }, [meta.page, meta.limit, searchEmail]);
 
-  // Handle search
+  
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchEmail(searchInput);
     fetchUsers(1, meta.limit, searchInput);
   };
 
-  // Handle clear search
+  
   const handleClearSearch = () => {
     setSearchInput("");
     setSearchEmail("");
     fetchUsers(1, meta.limit, "");
   };
 
-  // Handle role change
+  
   const handleRoleChange = async (userId: string, currentRole: string, newRole: string) => {
     if (currentRole === newRole) return;
 
@@ -132,7 +132,7 @@ const AllUsers = () => {
     }
   };
 
-  // Handle user deletion
+
   const handleDeleteUser = async (userId: string, userName: string) => {
     if (!window.confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
       return;
@@ -167,7 +167,6 @@ const AllUsers = () => {
     }
   };
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > meta.pages) return;
     fetchUsers(newPage, meta.limit, searchEmail);
@@ -186,7 +185,7 @@ const AllUsers = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
-      {/* Header Section */}
+      
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 md:w-12 md:h-12 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
@@ -204,8 +203,6 @@ const AllUsers = () => {
           <span className="text-base md:text-lg font-bold text-black">{meta.total}</span>
         </div>
       </div>
-
-      {/* Search Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
         <form onSubmit={handleSearch} className="flex flex-col gap-3">
           <div className="relative">
@@ -247,8 +244,6 @@ const AllUsers = () => {
           </div>
         )}
       </div>
-
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 md:p-4 flex items-start gap-2 md:gap-3">
           <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -257,8 +252,6 @@ const AllUsers = () => {
           <p className="text-red-700 text-xs md:text-sm break-words">{error}</p>
         </div>
       )}
-
-      {/* Mobile Card View */}
       <div className="block md:hidden space-y-3">
         {loading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
@@ -325,8 +318,6 @@ const AllUsers = () => {
           ))
         )}
       </div>
-
-      {/* Desktop Table View */}
       <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -426,8 +417,6 @@ const AllUsers = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination Controls */}
       {meta.pages > 1 && (
         <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">

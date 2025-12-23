@@ -4,7 +4,15 @@ import axiosInstance from "../../utils/axiosInstance";
 import type { Vendor } from "../../types/type";
 import type { ApiResponse } from "../../types/auth";
 import axios from "axios";
-import { Search, X, Store, Eye, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import {
+  Search,
+  X,
+  Store,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+} from "lucide-react";
 
 interface PaginationMeta {
   page: number;
@@ -32,13 +40,11 @@ const AllVendors = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search state
   const [searchEmail, setSearchEmail] = useState<string>("");
   const [searchName, setSearchName] = useState<string>("");
   const [searchInputEmail, setSearchInputEmail] = useState<string>("");
   const [searchInputName, setSearchInputName] = useState<string>("");
 
-  // Fetch all vendors with pagination and search
   const fetchVendors = async (
     page: number = 1,
     limit: number = 50,
@@ -90,7 +96,6 @@ const AllVendors = () => {
     fetchVendors(meta.page, meta.limit, searchEmail, searchName);
   }, [meta.page, meta.limit, searchEmail, searchName]);
 
-  // Handle search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearchEmail(searchInputEmail);
@@ -98,7 +103,6 @@ const AllVendors = () => {
     fetchVendors(1, meta.limit, searchInputEmail, searchInputName);
   };
 
-  // Handle clear search
   const handleClearSearch = () => {
     setSearchInputEmail("");
     setSearchInputName("");
@@ -107,18 +111,15 @@ const AllVendors = () => {
     fetchVendors(1, meta.limit, "", "");
   };
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > meta.pages) return;
     fetchVendors(newPage, meta.limit, searchEmail, searchName);
   };
 
-  // Handle view details
   const handleViewDetails = (vendorId: string) => {
     navigate(`/admin/vendor/${vendorId}`);
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -140,14 +141,15 @@ const AllVendors = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
-      {/* Header Section */}
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 md:w-12 md:h-12 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
             <Store className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">All Vendors</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">
+              All Vendors
+            </h1>
             <p className="text-xs md:text-sm text-gray-500 mt-1">
               Manage vendor accounts and shops
             </p>
@@ -155,11 +157,12 @@ const AllVendors = () => {
         </div>
         <div className="flex items-center gap-2 px-3 py-2 md:px-4 bg-gray-100 rounded-xl w-fit">
           <span className="text-xs md:text-sm text-gray-600">Total:</span>
-          <span className="text-base md:text-lg font-bold text-black">{meta.total}</span>
+          <span className="text-base md:text-lg font-bold text-black">
+            {meta.total}
+          </span>
         </div>
       </div>
 
-      {/* Search Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow-sm">
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
@@ -227,11 +230,15 @@ const AllVendors = () => {
               <p className="text-xs md:text-sm text-gray-600 break-words">
                 Searching for:{" "}
                 {searchEmail && (
-                  <span className="font-semibold text-gray-900">Email: {searchEmail}</span>
+                  <span className="font-semibold text-gray-900">
+                    Email: {searchEmail}
+                  </span>
                 )}
                 {searchEmail && searchName && <span> | </span>}
                 {searchName && (
-                  <span className="font-semibold text-gray-900">Name: {searchName}</span>
+                  <span className="font-semibold text-gray-900">
+                    Name: {searchName}
+                  </span>
                 )}
               </p>
             </div>
@@ -239,7 +246,6 @@ const AllVendors = () => {
         </form>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 md:p-4 flex items-start gap-2 md:gap-3">
           <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -249,7 +255,6 @@ const AllVendors = () => {
         </div>
       )}
 
-      {/* Mobile Card View */}
       <div className="block md:hidden space-y-3">
         {loading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
@@ -277,17 +282,24 @@ const AllVendors = () => {
           </div>
         ) : (
           vendors.map((vendor) => (
-            <div key={vendor.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <div
+              key={vendor.id}
+              className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
+            >
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                   {vendor.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 break-words">{vendor.name}</h3>
-                  <p className="text-sm text-gray-600 break-all">{vendor.email}</p>
+                  <h3 className="font-semibold text-gray-900 break-words">
+                    {vendor.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 break-all">
+                    {vendor.email}
+                  </p>
                 </div>
               </div>
-              
+
               <div className="space-y-2 mb-3">
                 <div className="flex items-center gap-2 text-sm">
                   <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -304,7 +316,7 @@ const AllVendors = () => {
                   </span>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => handleViewDetails(vendor.id)}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-medium text-sm"
@@ -317,7 +329,6 @@ const AllVendors = () => {
         )}
       </div>
 
-      {/* Desktop Table View */}
       <div className="hidden md:block bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -328,9 +339,6 @@ const AllVendors = () => {
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Email
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                  Shop Name
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Created At
@@ -346,7 +354,9 @@ const AllVendors = () => {
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mb-3"></div>
-                      <p className="text-sm text-gray-500">Loading vendors...</p>
+                      <p className="text-sm text-gray-500">
+                        Loading vendors...
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -375,7 +385,10 @@ const AllVendors = () => {
                 </tr>
               ) : (
                 vendors.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={vendor.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white font-semibold">
@@ -387,16 +400,11 @@ const AllVendors = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-600">{vendor.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-900">
-                          {vendor.shopName || "N/A"}
-                        </span>
+                      <div className="text-sm text-gray-600">
+                        {vendor.email}
                       </div>
                     </td>
+
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-600">
                         {formatDate(vendor.createdAt)}
@@ -418,8 +426,6 @@ const AllVendors = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination Controls */}
       {meta.pages > 1 && (
         <div className="bg-white rounded-xl border border-gray-200 p-3 md:p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">

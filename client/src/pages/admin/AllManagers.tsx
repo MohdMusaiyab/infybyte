@@ -9,8 +9,6 @@ import {
   Mail,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// Matches the BSON.M projection from your Go controller
 interface Manager {
   id: string;
   name: string;
@@ -22,7 +20,7 @@ interface Manager {
     id: string;
     name: string;
   };
-  vendorId: string; // <--- ADD THIS
+  vendorId: string;
   vendors: string[];
 }
 
@@ -44,7 +42,6 @@ const AllManagers = () => {
   const [loading, setLoading] = useState(true);
   const [, setError] = useState("");
 
-  // Search States
   const [emailQuery, setEmailQuery] = useState("");
   const [nameQuery, setNameQuery] = useState("");
 
@@ -85,7 +82,6 @@ const AllManagers = () => {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-black rounded-2xl">
@@ -108,7 +104,6 @@ const AllManagers = () => {
         </div>
       </div>
 
-      {/* Search Bar */}
       <form
         onSubmit={handleSearch}
         className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm"
@@ -139,7 +134,6 @@ const AllManagers = () => {
         </button>
       </form>
 
-      {/* Desktop Table View */}
       <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -227,8 +221,6 @@ const AllManagers = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination */}
       {meta.pages > 1 && (
         <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-200">
           <p className="text-sm text-gray-500">

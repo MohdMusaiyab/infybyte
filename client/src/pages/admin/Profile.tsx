@@ -13,8 +13,9 @@ import {
   CheckCircle2,
   Store,
   MapPin,
-  Clock
+  Clock,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface FoodCourtSummary {
   id: string;
@@ -41,13 +42,11 @@ const Profile = () => {
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Form state
   const [formData, setFormData] = useState({
     name: "",
     email: "",
   });
 
-  // Fetch admin profile
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -83,7 +82,6 @@ const Profile = () => {
     fetchProfile();
   }, []);
 
-  // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -92,7 +90,6 @@ const Profile = () => {
     }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdateLoading(true);
@@ -122,7 +119,6 @@ const Profile = () => {
     }
   };
 
-  // Handle cancel edit
   const handleCancelEdit = () => {
     if (profile) {
       setFormData({
@@ -134,7 +130,6 @@ const Profile = () => {
     setError(null);
   };
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -186,15 +181,14 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Success Message */}
       {successMessage && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-3 md:p-4 flex items-start gap-2 md:gap-3">
           <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-          <p className="text-green-700 text-xs md:text-sm break-words">{successMessage}</p>
+          <p className="text-green-700 text-xs md:text-sm break-words">
+            {successMessage}
+          </p>
         </div>
       )}
-
-      {/* Error Message */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-3 md:p-4 flex items-start gap-2 md:gap-3">
           <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -204,9 +198,7 @@ const Profile = () => {
         </div>
       )}
 
-      {/* Profile Card with Avatar */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Header with gradient */}
         <div className="bg-gradient-to-r from-black to-gray-800 p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
             <div className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center text-black font-bold text-3xl md:text-4xl flex-shrink-0">
@@ -227,7 +219,6 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 md:mb-6">
             <h3 className="text-lg md:text-xl font-bold text-gray-900">
@@ -353,7 +344,6 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Food Courts Section */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6">
         <div className="flex items-center gap-2 mb-4 md:mb-6">
           <Store className="w-5 h-5 md:w-6 md:h-6 text-black" />
@@ -371,9 +361,11 @@ const Profile = () => {
               >
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div className="flex-1 min-w-0">
+                    <Link to={`/admin/food-courts/${foodcourt.id}`}>
                     <h3 className="font-bold text-base md:text-lg text-gray-900 break-words mb-2">
                       {foodcourt.name}
                     </h3>
+                    </Link>
                     <div className="flex items-start gap-2 text-xs md:text-sm text-gray-600">
                       <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       <span className="break-words">{foodcourt.location}</span>
@@ -407,8 +399,12 @@ const Profile = () => {
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
               <Store className="w-8 h-8 text-gray-400" />
             </div>
-            <p className="text-gray-600 font-medium">No food courts created yet</p>
-            <p className="text-sm text-gray-500 mt-1">Create your first food court to get started</p>
+            <p className="text-gray-600 font-medium">
+              No food courts created yet
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Create your first food court to get started
+            </p>
           </div>
         )}
       </div>
