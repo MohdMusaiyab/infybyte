@@ -23,6 +23,8 @@ func AdminRoutes(router *gin.RouterGroup, db *mongo.Database) {
 		admin.GET("/vendors", func(c *gin.Context) { controllers.GetAllVendors(c, db) })
 		admin.GET("/vendors/:id", func(c *gin.Context) { controllers.GetVendorDetails(c, db) })
 		admin.GET("/managers", func(c *gin.Context) { controllers.GetAllManagers(c, db) })
+		admin.PATCH("/vendors/:id/status", func(c *gin.Context) { controllers.UpdateVendorStatus(c, db) })
+
 		// Admin Profile
 		admin.GET("/profile", func(c *gin.Context) { controllers.GetAdminProfile(c, db) })
 		admin.PUT("/profile", func(c *gin.Context) { controllers.UpdateAdminProfile(c, db) })

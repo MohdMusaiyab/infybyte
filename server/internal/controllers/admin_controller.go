@@ -517,53 +517,60 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// GetVendorDetails fetches detailed information about a specific vendor
 func GetVendorDetails(c *gin.Context, db *mongo.Database) {
-	vendorID := c.Param("id")
-	objID, err := primitive.ObjectIDFromHex(vendorID)
-	if err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "Invalid vendor ID")
-		return
-	}
+    vendorID := c.Param("id")
+    objID, err := primitive.ObjectIDFromHex(vendorID)
+    if err != nil {
+        utils.RespondError(c, http.StatusBadRequest, "Invalid vendor ID")
+        return
+    }
 
-	usersCollection := db.Collection("users")
-	vendorsCollection := db.Collection("vendors")
-	itemsCollection := db.Collection("items")
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	// Find user with vendor role
-	var user models.User
-	err = usersCollection.FindOne(context.TODO(), bson.M{"_id": objID, "role": "vendor"}).Decode(&user)
-	if err == mongo.ErrNoDocuments {
-		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
-		return
-	} else if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Database error")
-		return
-	}
+    // 1. Find User (Role Check)
+    var user models.User
+    err = db.Collection("users").FindOne(ctx, bson.M{"_id": objID, "role": "vendor"}).Decode(&user)
+    if err != nil {
+        if err == mongo.ErrNoDocuments {
+            utils.RespondError(c, http.StatusNotFound, "Vendor user not found")
+        } else {
+            utils.RespondError(c, http.StatusInternalServerError, "Database error")
+        }
+        return
+    }
 
-	// Find vendor profile
-	var vendor models.Vendor
-	err = vendorsCollection.FindOne(context.TODO(), bson.M{"userId": user.ID}).Decode(&vendor)
-	if err != nil && err != mongo.ErrNoDocuments {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendor profile")
-		return
-	}
+    // 2. Find Vendor Profile 
+    // CRITICAL: Ensure the field name matches your model's BSON tag (user_id)
+    var vendor models.Vendor
+    err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": user.ID}).Decode(&vendor)
+    if err != nil {
+        if err == mongo.ErrNoDocuments {
+            utils.RespondError(c, http.StatusNotFound, "Vendor profile not found for this user")
+        } else {
+            utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch profile")
+        }
+        return
+    }
 
-	// Count items by this vendor
-	itemCount, _ := itemsCollection.CountDocuments(context.TODO(), bson.M{"vendor_id": user.ID})
+    // 3. Count Items
+    // Use the Vendor Profile ID (vendor.ID), not the User ID (user.ID)
+    itemCount, err := db.Collection("items").CountDocuments(ctx, bson.M{"vendor_id": vendor.ID})
+    if err != nil {
+        itemCount = 0
+    }
 
-	// Prepare response
-	utils.RespondSuccess(c, http.StatusOK, "Vendor details fetched", gin.H{
-		"id":        user.ID.Hex(),
-		"name":      user.Name,
-		"email":     user.Email,
-		"role":      user.Role,
-		"shopName":  vendor.ShopName,
-		"vendorId":  vendor.ID.Hex(),
-		"itemCount": itemCount,
-		"createdAt": user.CreatedAt,
+    // 4. Prepare Response
+    utils.RespondSuccess(c, http.StatusOK, "Vendor details fetched", gin.H{
+        "id":        user.ID.Hex(),        // User ID
+        "vendorId":  vendor.ID.Hex(),      // Actual Vendor Profile ID
+        "name":      user.Name,
+        "email":     user.Email,
+        "shopName":  vendor.ShopName,
+        "itemCount": itemCount,
+        "createdAt": user.CreatedAt,
 		"updatedAt": user.UpdatedAt,
-	})
+    })
 }
 
 // Getting all the Food Courts With ALL Information, even the Private Information
@@ -1285,4 +1292,74 @@ func GetAdminDashboardStats(c *gin.Context, db *mongo.Database) {
         "openFoodCourts": openFoodCourts,
         "recentItems":    recentItems,
     })
+}
+
+func UpdateVendorStatus(c *gin.Context, db *mongo.Database) {
+	userID := c.Param("id")
+	objID, err := primitive.ObjectIDFromHex(userID)
+	if err != nil {
+		utils.RespondError(c, 400, "Invalid User ID")
+		return
+	}
+
+	// Define the new role from request body
+	var input struct {
+		Role string `json:"role" binding:"required,oneof=user vendor"`
+	}
+	if err := c.ShouldBindJSON(&input); err != nil {
+		utils.RespondError(c, 400, "Role must be 'user' or 'vendor'")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	// 1. Get the Vendor Profile ID first (we need this to clean up items)
+	var vendor models.Vendor
+	err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": objID}).Decode(&vendor)
+	
+	// If changing from vendor -> user
+	if input.Role == "user" && err == nil {
+		// --- CASCADING CLEANUP START ---
+
+		// A. Delete all Food Court Item Links (ItemFoodCourt)
+		// We first find all items belonging to this vendor
+		itemCursor, _ := db.Collection("items").Find(ctx, bson.M{"vendor_id": vendor.ID})
+		var items []models.Item
+		itemCursor.All(ctx, &items)
+		
+		var itemIDs []primitive.ObjectID
+		for _, item := range items {
+			itemIDs = append(itemIDs, item.ID)
+		}
+
+		if len(itemIDs) > 0 {
+			// Remove these items from all Food Courts
+			db.Collection("itemfoodcourts").DeleteMany(ctx, bson.M{"item_id": bson.M{"$in": itemIDs}})
+			// Delete actual Items
+			db.Collection("items").DeleteMany(ctx, bson.M{"_id": bson.M{"$in": itemIDs}})
+		}
+
+		// B. Remove Managers associated with this Vendor
+		db.Collection("managers").DeleteMany(ctx, bson.M{"vendor_id": vendor.ID})
+
+		// C. Delete the Vendor Profile itself
+		db.Collection("vendors").DeleteOne(ctx, bson.M{"_id": vendor.ID})
+
+		// --- CASCADING CLEANUP END ---
+	}
+
+	// 2. Update the User Role
+	result, err := db.Collection("users").UpdateOne(
+		ctx,
+		bson.M{"_id": objID},
+		bson.M{"$set": bson.M{"role": input.Role, "updatedAt": time.Now()}},
+	)
+
+	if err != nil || result.MatchedCount == 0 {
+		utils.RespondError(c, 500, "Failed to update user role")
+		return
+	}
+
+	utils.RespondSuccess(c, 200, "Status updated and related data cleaned", nil)
 }
