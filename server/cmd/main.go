@@ -39,14 +39,19 @@ func main() {
 	wsHandler := handlers.NewWebSocketHandler(wsHub)
 
 	router := gin.Default()
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
 	router.Use(cors.New(cors.Config{
-	AllowOrigins:     []string{"http://localhost:5173"},
-	AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
-	AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions"},
-	ExposeHeaders:    []string{"Content-Length"},
-	AllowCredentials: true,
-	AllowWebSockets:  true, 
-}))
+		AllowOrigins:     []string{frontendURL},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
+		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowWebSockets:  true,
+	}))
 
 	routes.InitRoutes(router, db, wsHandler)
 
