@@ -1688,6 +1688,7 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	// This is the specific assignment ID from the URL
 	managerID := c.Param("id")
 	managerObjID, err := primitive.ObjectIDFromHex(managerID)
 	if err != nil {
@@ -1696,7 +1697,7 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 	}
 
 	var updateData struct {
-		ContactNo   *string             `json:"contactNo,omitempty" validate:"omitempty,e164"`
+		ContactNo   *string             `json:"contactNo,omitempty"`
 		IsActive    *bool               `json:"isActive,omitempty"`
 		FoodCourtID *primitive.ObjectID `json:"foodCourtId,omitempty"`
 	}
@@ -1706,88 +1707,76 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
-	collections := struct {
-		vendors    *mongo.Collection
-		managers   *mongo.Collection
-		foodCourts *mongo.Collection
-	}{
-		vendors:    db.Collection("vendors"),
-		managers:   db.Collection("managers"),
-		foodCourts: db.Collection("foodcourts"),
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// Get vendor ID from user ID
+	// 1. Get the Vendor ID of the logged-in user
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
-	err = collections.vendors.FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+	err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
 		return
 	}
 
-	// Verify food court if provided
-	if updateData.FoodCourtID != nil {
-		var foodCourt struct {
-			VendorIDs []primitive.ObjectID `bson:"vendor_ids"`
-		}
-		err = collections.foodCourts.FindOne(ctx, bson.M{"_id": *updateData.FoodCourtID}).Decode(&foodCourt)
-		if err != nil {
-			utils.RespondError(c, http.StatusNotFound, "Food court not found")
-			return
-		}
+	// 2. Security & Validation
+	updateFields := bson.M{"updatedAt": time.Now()}
 
-		// Check if vendor is part of this food court
-		vendorInFoodCourt := false
-		for _, vid := range foodCourt.VendorIDs {
-			if vid == vendor.ID {
-				vendorInFoodCourt = true
-				break
-			}
-		}
-		if !vendorInFoodCourt {
-			utils.RespondError(c, http.StatusForbidden, "Vendor is not part of this food court")
-			return
-		}
-	}
-
-	// Build update fields
-	updateFields := bson.M{}
 	if updateData.ContactNo != nil {
 		updateFields["contact_no"] = *updateData.ContactNo
 	}
 	if updateData.IsActive != nil {
 		updateFields["isActive"] = *updateData.IsActive
 	}
+
+	// 3. If changing the food court, verify the vendor has access to the new one
 	if updateData.FoodCourtID != nil {
+		var foodCourt struct {
+			VendorIDs []primitive.ObjectID `bson:"vendor_ids"`
+		}
+		err = db.Collection("foodcourts").FindOne(ctx, bson.M{"_id": *updateData.FoodCourtID}).Decode(&foodCourt)
+		if err != nil {
+			utils.RespondError(c, http.StatusNotFound, "Target food court not found")
+			return
+		}
+
+		// Check if this vendor is allowed in the target food court
+		isAuthorized := false
+		for _, vID := range foodCourt.VendorIDs {
+			if vID == vendor.ID {
+				isAuthorized = true
+				break
+			}
+		}
+
+		if !isAuthorized {
+			utils.RespondError(c, http.StatusForbidden, "You are not authorized to assign managers to this food court")
+			return
+		}
+
 		updateFields["foodcourt_id"] = *updateData.FoodCourtID
 	}
 
-	if len(updateFields) == 0 {
-		utils.RespondError(c, http.StatusBadRequest, "No valid fields to update")
-		return
-	}
-
-	updateFields["updatedAt"] = primitive.NewDateTimeFromTime(time.Now())
-
-	// Update manager only if it belongs to this vendor
-	result, err := collections.managers.UpdateOne(
+	// 4. Perform the update
+	// We filter by managerObjID AND vendor.ID to ensure a vendor can't update someone else's manager
+	result, err := db.Collection("managers").UpdateOne(
 		ctx,
 		bson.M{"_id": managerObjID, "vendor_id": vendor.ID},
 		bson.M{"$set": updateFields},
 	)
+
 	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to update manager")
+		utils.RespondError(c, http.StatusInternalServerError, "Database error during update")
 		return
 	}
 
 	if result.MatchedCount == 0 {
-		utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
+		utils.RespondError(c, http.StatusNotFound, "Manager record not found or access denied")
 		return
 	}
 
-	utils.RespondSuccess(c, http.StatusOK, "Manager updated successfully", nil)
+	utils.RespondSuccess(c, http.StatusOK, "Manager assignment updated successfully", nil)
 }
 
 func RemoveManager(c *gin.Context, db *mongo.Database) {
@@ -1970,98 +1959,103 @@ func GetAllUsersForManager(c *gin.Context, db *mongo.Database) {
 }
 
 func GetVendorManager(c *gin.Context, db *mongo.Database) {
-	userID, exists := c.Get("userID")
-	if !exists {
-		utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
-		return
-	}
+    userID, exists := c.Get("userID")
+    if !exists {
+        utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
+        return
+    }
 
-	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-	if err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "Invalid user ID")
-		return
-	}
+    userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+    if err != nil {
+        utils.RespondError(c, http.StatusBadRequest, "Invalid user ID")
+        return
+    }
 
-	managerID := c.Param("id")
-	managerObjID, err := primitive.ObjectIDFromHex(managerID)
-	if err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "Invalid manager ID")
-		return
-	}
+    managerID := c.Param("id")
+    managerObjID, err := primitive.ObjectIDFromHex(managerID)
+    if err != nil {
+        utils.RespondError(c, http.StatusBadRequest, "Invalid manager ID")
+        return
+    }
 
-	ctx := context.Background()
-	collections := struct {
-		vendors  *mongo.Collection
-		managers *mongo.Collection
-		users    *mongo.Collection
-	}{
-		vendors:  db.Collection("vendors"),
-		managers: db.Collection("managers"),
-		users:    db.Collection("users"),
-	}
+    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+    defer cancel()
 
-	// Get vendor ID from user ID
-	var vendor struct {
-		ID primitive.ObjectID `bson:"_id"`
-	}
-	err = collections.vendors.FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
-	if err != nil {
-		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
-		return
-	}
+    // 1. Get the Vendor ID associated with the logged-in user
+    var vendor struct {
+        ID primitive.ObjectID `bson:"_id"`
+    }
+    err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+    if err != nil {
+        utils.RespondError(c, http.StatusNotFound, "Vendor not found")
+        return
+    }
 
-	// Get manager with user details and food court info
-	pipeline := []bson.M{
-		{"$match": bson.M{"_id": managerObjID, "vendor_id": vendor.ID}},
-		{"$lookup": bson.M{
-			"from":         "users",
-			"localField":   "user_id",
-			"foreignField": "_id",
-			"as":           "user",
-		}},
-		{"$unwind": "$user"},
-		{"$lookup": bson.M{
-			"from":         "foodcourts",
-			"localField":   "foodcourt_id",
-			"foreignField": "_id",
-			"as":           "foodcourt",
-		}},
-		{"$unwind": bson.M{"path": "$foodcourt", "preserveNullAndEmptyArrays": true}},
-		{"$project": bson.M{
-			"id":            "$_id",
-			"_id":           0,
-			"user_id":       1,
-			"userName":      "$user.name",
-			"userEmail":     "$user.email",
-			"contact_no":    1,
-			"isActive":      1,
-			"foodCourtId":   "$foodcourt._id",
-			"foodCourtName": "$foodcourt.name",
-			"location":      "$foodcourt.location",
-			"createdAt":     1,
-			"updatedAt":     1,
-		}},
-	}
+    // 2. Aggregate to get Manager info + Array of Food Courts
+    pipeline := []bson.M{
+        // Security Check: Match Manager ID AND ensure they belong to this Vendor
+        {"$match": bson.M{"_id": managerObjID, "vendor_id": vendor.ID}},
+        
+        // Join with Users to get Manager's Name/Email
+        {"$lookup": bson.M{
+            "from":         "users",
+            "localField":   "user_id",
+            "foreignField": "_id",
+            "as":           "user_info",
+        }},
+        {"$unwind": "$user_info"},
 
-	cursor, err := collections.managers.Aggregate(ctx, pipeline)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch manager")
-		return
-	}
-	defer cursor.Close(ctx)
+        // JOIN: Get ALL Food Courts linked to this manager
+        // Note: We search the "managers" collection for the same user_id to find all assignments
+        {"$lookup": bson.M{
+            "from": "managers",
+            "let":  bson.M{"m_user_id": "$user_id"},
+            "pipeline": []bson.M{
+                {"$match": bson.M{"$expr": bson.M{"$eq": []string{"$user_id", "$$m_user_id"}}}},
+                {"$lookup": bson.M{
+                    "from":         "foodcourts",
+                    "localField":   "foodcourt_id",
+                    "foreignField": "_id",
+                    "as":           "details",
+                }},
+                {"$unwind": "$details"},
+                {"$replaceRoot": bson.M{"newRoot": "$details"}},
+            },
+            "as": "assigned_food_courts",
+        }},
 
-	var results []bson.M
-	if err := cursor.All(ctx, &results); err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to process manager data")
-		return
-	}
+        {"$project": bson.M{
+            "id":          "$_id",
+            "user_id":     1,
+            "userName":    "$user_info.name",
+            "userEmail":   "$user_info.email",
+            "contact_no":  1,
+            "isActive":    1,
+            "foodCourts":  "$assigned_food_courts", // Now returns an array [{}, {}]
+            "createdAt":   1,
+            "updatedAt":   1,
+        }},
+    }
 
-	if len(results) == 0 {
-		utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
-		return
-	}
+    cursor, err := db.Collection("managers").Aggregate(ctx, pipeline)
+    if err != nil {
+        utils.RespondError(c, 500, "Failed to fetch manager data")
+        return
+    }
+    defer cursor.Close(ctx)
 
-	utils.RespondSuccess(c, http.StatusOK, "Manager retrieved successfully", results[0])
+    var results []bson.M
+    if err := cursor.All(ctx, &results); err != nil {
+        utils.RespondError(c, 500, "Error processing results")
+        return
+    }
+
+    if len(results) == 0 {
+        utils.RespondError(c, 404, "Manager not found")
+        return
+    }
+
+    utils.RespondSuccess(c, 200, "Manager details with food courts fetched", results[0])
 }
 
 

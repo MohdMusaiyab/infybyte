@@ -19,8 +19,6 @@ const AdminRoutes = () => (
       <Route path="/admin/all-managers" element={<AllManagers />} />
       <Route path="/admin/vendor/:id" element={<VendorDetails />} />
       <Route path="/admin/profile" element={<Profile />} />
-
-      {/* ===============Food Court Related========================== */}
       <Route path="/admin/food-courts" element={<AllFoodCourts />} />
       <Route
         path="/admin/food-courts/:id"

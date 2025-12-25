@@ -12,6 +12,9 @@ import DemoDashboard from "../pages/general/DemoDashboard";
 import NotFound from "../pages/general/NotFound";
 import { PrivateRoute } from "../components/auth/ProtectedRoute";
 import Profile from "../pages/user/Profile";
+import PrivacyPolicy from "../pages/general/PrivacyPolicy";
+import TermsOfService from "../pages/general/TermsOfService";
+import CookiePolicy from "../pages/general/CookiePolicy";
 
 const AppRoutes = () => (
   <Routes>
@@ -46,7 +49,9 @@ const AppRoutes = () => (
     {VendorRoutes()}
     {AdminRoutes()}
     {ManagerRoutes()}
-  
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/terms-of-service" element={<TermsOfService />} />
+      <Route path="/cookie-policy" element={<CookiePolicy />} />
     <Route path="/unauthorized" element={<Unauthorized />} />
     <Route path="*" element={<NotFound />} />
   </Routes>

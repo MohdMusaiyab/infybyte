@@ -75,7 +75,7 @@ const Footer: React.FC = () => {
               {['Privacy Policy', 'Terms of Service', 'Cookie Policy'].map((item) => (
                 <a 
                   key={item} 
-                  href="#" 
+                  href={'/' + item.toLowerCase().replace(/\s+/g, '-')} 
                   className="text-gray-400 hover:text-white transition-colors whitespace-nowrap"
                 >
                   {item}

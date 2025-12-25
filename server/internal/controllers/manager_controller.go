@@ -1717,3 +1717,72 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager profile updated successfully", response)
 }
+
+
+func GetManagerFoodCourts(c *gin.Context, db *mongo.Database) {
+	// 1. Get UserID from the authentication middleware
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.RespondError(c, 401, "User not authenticated")
+		return
+	}
+
+	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		utils.RespondError(c, 400, "Invalid manager ID")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 2. Aggregate to find all Food Courts linked to this Manager
+	pipeline := []bson.M{
+		// Match the manager record for this specific user
+		{"$match": bson.M{"user_id": userObjID}},
+		
+		// Join with the foodcourts collection
+		{"$lookup": bson.M{
+			"from":         "foodcourts",
+			"localField":   "foodcourt_id",
+			"foreignField": "_id",
+			"as":           "fc_details",
+		}},
+		
+		// Flatten the joined array
+		{"$unwind": "$fc_details"},
+		
+		// Project clean data for the UI
+		{"$project": bson.M{
+			"id":        "$fc_details._id",
+			"name":      "$fc_details.name",
+			"location":  "$fc_details.location",
+			"isOpen":    "$fc_details.isOpen",
+			"timings":   "$fc_details.timings",
+			"weekends":  "$fc_details.weekends",
+			"weekdays":  "$fc_details.weekdays",
+			"assignedAt": "$createdAt", // Date when manager was assigned to this court
+		}},
+	}
+
+	cursor, err := db.Collection("managers").Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.RespondError(c, 500, "Failed to retrieve assigned food courts")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M = []bson.M{}
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, 500, "Data decoding error")
+		return
+	}
+
+	// 3. Handle empty list case gracefully
+	if len(results) == 0 {
+		utils.RespondSuccess(c, 200, "No food courts assigned yet", []interface{}{})
+		return
+	}
+
+	utils.RespondSuccess(c, 200, "Assigned food courts fetched", results)
+}

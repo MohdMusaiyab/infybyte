@@ -20,26 +20,6 @@ const AdminLayout: React.FC = () => {
               <p className="text-gray-600 text-sm">
                 © 2025 Infybite Admin. All rights reserved.
               </p>
-              <div className="flex gap-4 mt-2 sm:mt-0">
-                <a
-                  href="#"
-                  className="text-gray-500 hover:text-black text-sm transition-colors"
-                >
-                  Privacy
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-500 hover:text-black text-sm transition-colors"
-                >
-                  Terms
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-500 hover:text-black text-sm transition-colors"
-                >
-                  Support
-                </a>
-              </div>
             </div>
           </footer>
         </div>

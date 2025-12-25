@@ -8,22 +8,22 @@ import (
 	"github.com/MohdMusaiyab/infybyte/server/internal/middlewares"
 )
 
-// VendorRoutes defines all vendor-related routes
+
 func VendorRoutes(router *gin.RouterGroup, db *mongo.Database) {
 	vendor := router.Group("/vendor")
 	vendor.Use(middlewares.AuthMiddleware(), middlewares.VendorMiddleware())
 	{
-		// Vendor dashboard or profile routes
+
 		vendor.GET("/profile", func(c *gin.Context) { controllers.GetVendorProfile(c, db) })
 		vendor.PUT("/profile", func(c *gin.Context) { controllers.UpdateVendorProfile(c, db) })
 		vendor.GET("/profile/:id", func(c *gin.Context) { controllers.GetVendorProfileByID(c, db) })
 
-		//Dashboard Route
+
 		vendor.GET("/dashboard", func(c *gin.Context) { controllers.GetVendorDashboardStats(c, db) })
-		// In VendorRoutes function, add this line:
+
 		vendor.GET("/foodcourts/:id/items", func(c *gin.Context) { controllers.SingleFoodCourtItems(c, db) })
 
-		//Vendor Item Management
+
 		vendor.GET("/items", func(c *gin.Context) { controllers.GetVendorItems(c, db) })
 		vendor.POST("/items", func(c *gin.Context) { controllers.CreateItem(c, db) })
 		vendor.GET("/items/:id", func(c *gin.Context) { controllers.GetVendorItem(c, db) })

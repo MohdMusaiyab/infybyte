@@ -94,7 +94,6 @@ const Profile: React.FC = () => {
         const data = response.data.data;
         setProfileData(data);
         
-        // Initialize form data
         setFormData({
           name: data.user.name,
           email: data.user.email,
@@ -131,7 +130,6 @@ const Profile: React.FC = () => {
       }>;
       const updateData: UpdateData = {};
       
-      // Only include changed fields
       if (formData.name !== profileData.user.name) {
         updateData.name = formData.name;
       }
@@ -145,7 +143,7 @@ const Profile: React.FC = () => {
         updateData.isActive = formData.isActive;
       }
 
-      // Only send request if there are changes
+      
       if (Object.keys(updateData).length > 0) {
         const response = await axiosInstance.put("/manager/profile", updateData);
         setProfileData({
@@ -228,13 +226,13 @@ const Profile: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+      
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-black mb-2">Manager Profile</h1>
           <p className="text-gray-600">Manage your profile information and settings</p>
         </div>
 
-        {/* Success Message */}
+      
         {successMessage && (
           <div className="mb-6 bg-green-100 border-2 border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-center gap-2">
             <Check className="w-5 h-5" />
@@ -242,7 +240,6 @@ const Profile: React.FC = () => {
           </div>
         )}
 
-        {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-100 border-2 border-red-200 text-red-800 px-4 py-3 rounded-xl">
             {error}
@@ -250,9 +247,9 @@ const Profile: React.FC = () => {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Profile Information */}
+
           <div className="lg:col-span-2 space-y-6">
-            {/* Personal Information Card */}
+
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-black">Personal Information</h2>
@@ -290,7 +287,7 @@ const Profile: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name Field */}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <User className="w-4 h-4" />
@@ -308,8 +305,6 @@ const Profile: React.FC = () => {
                     <div className="text-black font-medium">{profileData.user.name}</div>
                   )}
                 </div>
-
-                {/* Email Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Mail className="w-4 h-4" />
@@ -327,8 +322,6 @@ const Profile: React.FC = () => {
                     <div className="text-black font-medium">{profileData.user.email}</div>
                   )}
                 </div>
-
-                {/* Contact Number */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Phone className="w-4 h-4" />
@@ -349,7 +342,6 @@ const Profile: React.FC = () => {
                   )}
                 </div>
 
-                {/* Active Status */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                     <Shield className="w-4 h-4" />
@@ -385,8 +377,6 @@ const Profile: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {/* Read-only Information */}
               {!editing && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
                   <div>
@@ -405,8 +395,6 @@ const Profile: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Vendor Information Card */}
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <h2 className="text-xl font-bold text-black mb-6 flex items-center gap-2">
                 <Store className="w-5 h-5" />
@@ -427,8 +415,6 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Food Courts Card */}
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <h2 className="text-xl font-bold text-black mb-6 flex items-center gap-2">
                 <Building className="w-5 h-5" />
@@ -436,7 +422,6 @@ const Profile: React.FC = () => {
               </h2>
               
               <div className="space-y-4">
-                {/* Primary Food Court */}
                 <div className="border-2 border-green-200 rounded-xl p-4 bg-green-50">
                   <div className="flex items-center justify-between">
                     <div>
@@ -466,7 +451,6 @@ const Profile: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Other Food Courts */}
                 {profileData.otherFoodCourts?.map((fc) => (
                   <div key={fc.id} className="border-2 border-gray-200 rounded-xl p-4">
                     <div className="flex items-center justify-between">
@@ -496,10 +480,7 @@ const Profile: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Right Column - Stats */}
           <div className="space-y-6">
-            {/* Stats Card */}
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <h2 className="text-xl font-bold text-black mb-6">Quick Stats</h2>
               
@@ -535,7 +516,7 @@ const Profile: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Actions */}
+              
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-medium text-gray-700 mb-3">Quick Actions</h3>
                 <div className="space-y-2">

@@ -15,6 +15,7 @@ func ManagerRoutes(router *gin.RouterGroup, db *mongo.Database) {
 	{
 		// Read-only routes - accessible to all managers (active/inactive)
 		manager.GET("/dashboard", func(c *gin.Context) { controllers.GetManagerDashboard(c, db) })
+		manager.GET("/foodcourts", func(c *gin.Context) { controllers.GetManagerFoodCourts(c, db) })
 		manager.GET("/foodcourts/:id", func(c *gin.Context) { controllers.GetManagerFoodCourtWithItems(c, db) })
 		manager.GET("/foodcourts/:id/items/:itemId", func(c *gin.Context) { controllers.GetManagerFoodCourtItem(c, db) })
 		manager.GET("/items/:itemId", func(c *gin.Context) { controllers.GetManagerItemWithFCAssignments(c, db) })
