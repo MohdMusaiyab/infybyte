@@ -134,7 +134,8 @@ const VendorDetails = () => {
         alert("Vendor demoted successfully. Redirecting...");
         navigate("/admin/all-vendors");
       } catch (err: unknown) {
-        alert(err?.response?.data?.message || "Failed to update vendor status");
+        console.error(err);
+        alert( "Failed to update vendor status");
       } finally {
         setIsUpdating(false);
       }
