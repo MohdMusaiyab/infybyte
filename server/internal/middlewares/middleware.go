@@ -86,11 +86,10 @@ func ActiveManagerMiddleware(db *mongo.Database) gin.HandlerFunc {
 			return
 		}
 
-		// Get manager's active status from database
 		var manager struct {
 			IsActive bool `bson:"isActive"`
 		}
-		
+
 		err = db.Collection("managers").FindOne(context.Background(), bson.M{
 			"user_id": userObjID,
 		}).Decode(&manager)

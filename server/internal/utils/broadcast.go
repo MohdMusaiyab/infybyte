@@ -6,15 +6,14 @@ import (
 
 	"github.com/MohdMusaiyab/infybyte/server/internal/models"
 	"github.com/MohdMusaiyab/infybyte/server/internal/websocket"
-
 )
 
-var websocketHub *websocket.Hub // This will be set during initialization
+var websocketHub *websocket.Hub
 
 type BroadcastMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
-	Action  string      `json:"action"` // create, update, delete
+	Action  string      `json:"action"`
 }
 
 func SetWebSocketHub(hub *websocket.Hub) {
@@ -39,7 +38,6 @@ func BroadcastItemFoodCourtUpdate(itemFoodCourt models.ItemFoodCourt, action str
 		return
 	}
 
-	// Broadcast to all connected clients
 	websocketHub.Broadcast <- messageBytes
 	log.Printf("Broadcasted ItemFoodCourt update: %s (ID: %s)", action, itemFoodCourt.ID.Hex())
 }

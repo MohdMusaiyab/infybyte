@@ -36,24 +36,24 @@ func (h *Hub) Run() {
 			h.mutex.Lock()
 			if _, exists := h.Clients[client]; exists {
 				delete(h.Clients, client)
-				client.SafeClose() // Close only here
+				client.SafeClose()
 			}
 			h.mutex.Unlock()
 			log.Printf("WebSocket client unregistered: %s", client.ID)
 
 		case message := <-h.Broadcast:
-			// Safe broadcast
+
 			h.mutex.RLock()
 			for client := range h.Clients {
 				select {
 				case client.Send <- message:
-					// sent successfully
+
 				default:
-					// buffer full → unregister the client
+
 					log.Printf("Removing slow client: %s", client.ID)
-					h.mutex.RUnlock()        // Unlock before modifying maps
-					h.Unregister <- client   // ALWAYS unregister, never close directly
-					h.mutex.RLock()          // Re-acquire read lock
+					h.mutex.RUnlock()
+					h.Unregister <- client
+					h.mutex.RLock()
 				}
 			}
 			h.mutex.RUnlock()
@@ -61,7 +61,6 @@ func (h *Hub) Run() {
 	}
 }
 
-// Utility: get online client count
 func (h *Hub) GetConnectedClientsCount() int {
 	h.mutex.RLock()
 	defer h.mutex.RUnlock()
