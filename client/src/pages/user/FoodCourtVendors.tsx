@@ -177,7 +177,7 @@ const FoodCourtVendors: React.FC = () => {
     .map((vendor) => ({
       ...vendor,
       items: vendor.items
-        .filter(
+        ?.filter(
           (item) =>
             item?.name?.toLowerCase().includes(searchTerm?.toLowerCase()) ||
             item?.description
@@ -185,16 +185,16 @@ const FoodCourtVendors: React.FC = () => {
               .includes(searchTerm?.toLowerCase()) ||
             vendor?.shopName?.toLowerCase().includes(searchTerm?.toLowerCase())
         )
-        .filter(
+        ?.filter(
           (item) =>
             selectedCategory === "all" || item.category === selectedCategory
         )
-        .filter(
+        ?.filter(
           (item) =>
             selectedTimeSlot === "all" || item.timeSlot === selectedTimeSlot
         ),
     }))
-    .filter((vendor) => vendor.items.length > 0);
+    ?.filter((vendor) => vendor.items.length > 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {

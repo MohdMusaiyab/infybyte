@@ -48,7 +48,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
     const [showPassword, setShowPassword] = React.useState(false);
     const hasError = !!error;
 
-    // Base styles - removed flex, added w-full
+    
     const baseStyles = 'w-full transition-all duration-200 font-medium rounded-md focus:outline-none bg-transparent';
 
     const sizeStyles = {

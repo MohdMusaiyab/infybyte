@@ -23,11 +23,10 @@ func setRefreshCookie(c *gin.Context, token string, maxAge int) {
 		"/",
 		"localhost",
 		secure,
-		true, // HttpOnly
+		true,
 	)
 }
 
-// --------------------------- REGISTER ---------------------------
 func Register(c *gin.Context, db *mongo.Database) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -83,7 +82,6 @@ func Register(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// --------------------------- LOGIN ---------------------------
 func Login(c *gin.Context, db *mongo.Database) {
 	var creds struct {
 		Email    string `json:"email" binding:"required,email"`
@@ -118,7 +116,7 @@ func Login(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, 500, "Failed to generate refresh token")
 		return
 	}
-	setRefreshCookie(c, refreshToken, 7*24*60*60) // 7 days
+	setRefreshCookie(c, refreshToken, 7*24*60*60)
 
 	utils.RespondSuccess(c, 200, "Login successful", gin.H{
 		"access_token": accessToken,
@@ -131,7 +129,6 @@ func Login(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// --------------------------- REFRESH ---------------------------
 func Refresh(c *gin.Context, db *mongo.Database) {
 	var req struct{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -145,14 +142,12 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Validate refresh token
 	claims, err := utils.ValidateRefreshToken(cookie)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "Invalid or expired refresh token")
 		return
 	}
 
-	// Create new access token
 	accessToken, err := utils.GenerateAccessToken(claims.UserID, claims.Role)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Could not generate token")
@@ -168,7 +163,7 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "User not found")
-		
+
 		return
 	}
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
@@ -182,9 +177,8 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 	})
 }
 
-// --------------------------- LOGOUT ---------------------------
 func Logout(c *gin.Context, db *mongo.Database) {
-	// Clear cookie
+
 	setRefreshCookie(c, "", -1)
 	utils.RespondSuccess(c, 200, "Logged out successfully", nil)
 }

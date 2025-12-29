@@ -11,7 +11,6 @@ import ManagerRoutes from "./managerRoutes";
 import DemoDashboard from "../pages/general/DemoDashboard";
 import NotFound from "../pages/general/NotFound";
 import { PrivateRoute } from "../components/auth/ProtectedRoute";
-import Profile from "../pages/user/Profile";
 import PrivacyPolicy from "../pages/general/PrivacyPolicy";
 import TermsOfService from "../pages/general/TermsOfService";
 import CookiePolicy from "../pages/general/CookiePolicy";
@@ -43,7 +42,7 @@ const AppRoutes = () => (
         />
       }
     >
-      <Route path="/user/profile" element={<Profile/>} />
+      
     </Route>
     {UserRoutes()}
     {VendorRoutes()}

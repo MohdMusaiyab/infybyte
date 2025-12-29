@@ -162,7 +162,7 @@ const DemoDashboard: React.FC = () => {
             onActiveToggle={handleActiveToggle} 
           />
         ) : (
-          <UserView items={items.filter(i => i.isActive)} /> 
+          <UserView items={items?.filter(i => i.isActive)} /> 
         )}
       </main>
     </div>

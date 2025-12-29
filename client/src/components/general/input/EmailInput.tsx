@@ -55,11 +55,9 @@ const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
     const hasError = !!error;
     const isDisabled = disabled || loading;
 
-    // Base styles - removed flex items-center, added w-full
     const baseStyles =
       "w-full transition-all duration-200 font-medium rounded-md focus:outline-none bg-transparent";
 
-    // Size styles
     const sizeStyles: Record<InputSize, string> = {
       sm: "px-3 py-1.5 text-sm",
       md: "px-4 py-2 text-sm",
@@ -67,7 +65,6 @@ const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
       xl: "px-4 py-3 text-lg",
     };
 
-    // Variant styles
     const variantStyles: Record<InputVariant, string> = {
       outline: "border focus:ring-2 focus:ring-offset-1",
       filled: "border-0 bg-gray-100 focus:bg-white focus:ring-2 focus:border",
@@ -75,7 +72,6 @@ const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
       unstyled: "border-0 focus:ring-0 px-0",
     };
 
-    // Theme and state combinations
     const getThemeStyles = (): string => {
       if (hasError) {
         const errorStyles: Record<InputVariant, string> = {

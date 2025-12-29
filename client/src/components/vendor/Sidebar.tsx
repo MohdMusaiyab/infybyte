@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link,  useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Home,
   LogOut,
@@ -8,11 +8,11 @@ import {
   MapPin,
   ChevronRight,
   LayoutDashboard,
-  UtensilsCrossed, // Added
-  PlusCircle, // Added
-  Users, // Added
-  UserPlus, // Added
-  Store, // Added
+  UtensilsCrossed,
+  PlusCircle,
+  Users,
+  UserPlus,
+  Store,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmModal from "../general/ConfirmModel";
@@ -50,37 +50,36 @@ const Sidebar: React.FC = () => {
     {
       name: "Items Management",
       path: "/vendor/items-management",
-      icon: UtensilsCrossed, // More relevant than Dashboard
+      icon: UtensilsCrossed,
       exact: true,
     },
     {
       name: "Create Item",
       path: "/vendor/items/create",
-      icon: PlusCircle, // Visual cue for "Add"
+      icon: PlusCircle,
       exact: true,
     },
     {
       name: "View Your Food Courts",
       path: "/vendor/foodcourt",
-      icon: Store, // Represents the physical location better
-      exact: false, // Set to false so /vendor/foodcourt/:id keeps this active
+      icon: Store,
+      exact: false,
     },
     {
       name: "Manage Managers",
       path: "/vendor/managers",
-      icon: Users, // Represents staff management
+      icon: Users,
       exact: false,
     },
     {
       name: "Create Manager",
       path: "/vendor/managers/create",
-      icon: UserPlus, // Visual cue for adding staff
+      icon: UserPlus,
       exact: true,
     },
   ];
 
   const handleLogout = () => {
-    // Show modal instead of window.confirm
     setShowLogoutModal(true);
   };
 
@@ -212,7 +211,7 @@ const Sidebar: React.FC = () => {
           </button>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <Link to="/user/profile">
+            <Link to="/vendor/profile">
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors duration-200">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-black truncate">
@@ -230,7 +229,6 @@ const Sidebar: React.FC = () => {
         </div>
       </aside>
 
-      {/* Custom Logout Confirmation Modal */}
       <ConfirmModal
         isOpen={showLogoutModal}
         title="Logout Confirmation"

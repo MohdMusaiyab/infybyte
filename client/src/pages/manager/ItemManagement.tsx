@@ -372,7 +372,7 @@ const ItemManagement: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header with WebSocket status */}
+        
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}

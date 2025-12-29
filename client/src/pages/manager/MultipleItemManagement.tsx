@@ -158,7 +158,7 @@ const MultipleItemManagement: React.FC = () => {
     }
   };
 
-  const filteredItems = data?.items.filter((item) => {
+  const filteredItems = data?.items?.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -267,7 +267,7 @@ const MultipleItemManagement: React.FC = () => {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-black">
-                  {data?.items.filter((item) =>
+                  {data?.items?.filter((item) =>
                     item.foodCourtStatus.some((status) => status.isInFoodCourt)
                   ).length || 0}
                 </div>

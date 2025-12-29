@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// User represents all types of users: admin, vendor, customer
+
 type User struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 	Name      string             `bson:"name" json:"name" validate:"required,min=2,max=50"`
@@ -17,7 +17,7 @@ type User struct {
 	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
 
-// UserValidationMessages maps validator tags to friendly messages
+
 var UserValidationMessages = map[string]string{
 	"Name.required":     "Name is required",
 	"Name.min":          "Name must be at least 2 characters",

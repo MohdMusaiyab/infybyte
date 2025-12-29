@@ -114,7 +114,6 @@ const VendorDashboard: React.FC = () => {
     return (
       <div className="p-4 lg:p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header Skeleton */}
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
@@ -182,7 +181,6 @@ const VendorDashboard: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-black mb-2">
@@ -206,9 +204,7 @@ const VendorDashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-          {/* Total Items */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -223,7 +219,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Total Managers */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -238,7 +233,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Food Courts */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -253,7 +247,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Total in Food Courts */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -268,7 +261,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Active Items */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
@@ -295,7 +287,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Available Items */}
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -311,9 +302,7 @@ const VendorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Food Courts Section */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <div className="flex items-center justify-between mb-6">
@@ -368,7 +357,6 @@ const VendorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Recent Activity */}
           <div>
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <div className="flex items-center justify-between mb-6">
@@ -416,7 +404,6 @@ const VendorDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Quick Actions */}
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mt-6">
               <h2 className="text-xl font-bold text-black mb-4">
                 Quick Actions
@@ -431,7 +418,7 @@ const VendorDashboard: React.FC = () => {
                 <button className="w-full flex items-center gap-3 p-3 text-black hover:bg-gray-100 rounded-xl transition-colors duration-200 text-left">
                   <Store className="w-5 h-5" />
                   <Link to={`/vendor/foodcourt`}>
-                  <span className="font-medium">View Your Food Courts</span>
+                    <span className="font-medium">View Your Food Courts</span>
                   </Link>
                 </button>
                 <button className="w-full flex items-center gap-3 p-3 text-black hover:bg-gray-100 rounded-xl transition-colors duration-200 text-left">

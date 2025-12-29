@@ -106,7 +106,6 @@ const VendorItemsAvailability: React.FC = () => {
       const response = await axiosInstance.get(`/user/vendors/${id}/items`);
       setItems(response.data.data || []);
 
-      // Expand first item by default if items exist
       if (response.data.data && response.data.data.length > 0) {
         setExpandedItems(new Set([response.data.data[0].itemId]));
       }
@@ -126,7 +125,6 @@ const VendorItemsAvailability: React.FC = () => {
     }
   };
 
-  // Safe string methods
   const safeToLowerCase = (str: string | undefined): string => {
     return (str || "").toLowerCase();
   };
@@ -135,7 +133,6 @@ const VendorItemsAvailability: React.FC = () => {
     return safeToLowerCase(str || "").includes(safeToLowerCase(search));
   };
 
-  // Get unique food courts from all items
   const allFoodCourts = Array.from(
     new Set(
       items.flatMap((item) =>
@@ -149,7 +146,7 @@ const VendorItemsAvailability: React.FC = () => {
   );
 
   const filteredItems = items
-    .filter((item) => {
+    ?.filter((item) => {
       const matchesSearch =
         safeIncludes(item.name, searchTerm) ||
         safeIncludes(item.description, searchTerm);
@@ -170,7 +167,7 @@ const VendorItemsAvailability: React.FC = () => {
           selectedTimeSlot === "all" ||
           (fc.timeSlot && fc.timeSlot === selectedTimeSlot);
 
-        const isActive = fc.isActive !== false; // Default to true if undefined
+        const isActive = fc.isActive !== false;
 
         return matchesFoodCourt && matchesTimeSlot && isActive;
       }),
@@ -279,7 +276,6 @@ const VendorItemsAvailability: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header with WebSocket status */}
         <div className="mb-6">
           <button
             onClick={handleBack}
@@ -299,7 +295,7 @@ const VendorItemsAvailability: React.FC = () => {
                   See where each item is available across different food courts
                 </p>
               </div>
-              {/* WebSocket Status */}
+
               <div
                 className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
                   isConnected
@@ -318,10 +314,8 @@ const VendorItemsAvailability: React.FC = () => {
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            {/* Search */}
             <div className="lg:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -333,7 +327,6 @@ const VendorItemsAvailability: React.FC = () => {
               />
             </div>
 
-            {/* Category Filter */}
             <div>
               <select
                 value={selectedCategory}
@@ -350,7 +343,6 @@ const VendorItemsAvailability: React.FC = () => {
               </select>
             </div>
 
-            {/* Food Court Filter */}
             <div>
               <select
                 value={selectedFoodCourt}
@@ -368,7 +360,6 @@ const VendorItemsAvailability: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            {/* Time Slot Filter */}
             <div className="flex gap-2 overflow-x-auto">
               {timeSlots.map((slot) => (
                 <button
@@ -387,7 +378,6 @@ const VendorItemsAvailability: React.FC = () => {
               ))}
             </div>
 
-            {/* Expand/Collapse All */}
             <div className="flex gap-2">
               <button
                 onClick={expandAllItems}
@@ -405,7 +395,6 @@ const VendorItemsAvailability: React.FC = () => {
           </div>
         </div>
 
-        {/* Results Info */}
         <div className="flex items-center justify-between mb-6">
           <span className="text-gray-600">
             {filteredItems.length} item(s) •{" "}
@@ -433,7 +422,6 @@ const VendorItemsAvailability: React.FC = () => {
           )}
         </div>
 
-        {/* Items List */}
         {filteredItems.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -458,7 +446,6 @@ const VendorItemsAvailability: React.FC = () => {
                 key={item.itemId}
                 className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden"
               >
-                {/* Item Header */}
                 <button
                   onClick={() => toggleItem(item.itemId)}
                   className="w-full p-6 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
@@ -515,7 +502,6 @@ const VendorItemsAvailability: React.FC = () => {
                   </div>
                 </button>
 
-                {/* Food Court Availability */}
                 {expandedItems.has(item.itemId) &&
                   item.foodCourts &&
                   item.foodCourts.length > 0 && (

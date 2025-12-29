@@ -39,8 +39,7 @@ const Sidebar: React.FC = () => {
     if (exact) {
       return location.pathname === path;
     }
-    // For non-exact matches, ensure we're matching the full path segment
-    // This prevents "/" from matching "/manager/dashboard"
+    
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
@@ -79,7 +78,7 @@ const Sidebar: React.FC = () => {
 
   return (
     <>
-      {/* Custom Logout Confirmation Modal */}
+     
       {showLogoutModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
@@ -108,7 +107,7 @@ const Sidebar: React.FC = () => {
         </div>
       )}
 
-      {/* Mobile Header */}
+      
       {isMobile && (
         <header className="fixed top-0 inset-x-0 h-16 bg-white border-b border-gray-100 z-40 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -121,13 +120,13 @@ const Sidebar: React.FC = () => {
         </header>
       )}
 
-      {/* Overlay */}
+      
       {isMobile && isOpen && <div className="fixed inset-0 bg-black/40 z-30" onClick={() => setIsOpen(false)} />}
 
-      {/* Sidebar Container */}
+      
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ${isMobile ? (isOpen ? "translate-x-0 mt-16" : "-translate-x-full mt-16") : "translate-x-0"}`}>
         
-        {/* Clean Header - No Stats */}
+      
         <div className="p-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
@@ -140,16 +139,16 @@ const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation */}
+        
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-2">
           {menuItems.map((item) => (
             <NavItem key={item.path} item={item} onItemClick={() => isMobile && setIsOpen(false)} />
           ))}
         </nav>
 
-        {/* Bottom Section */}
+        
         <div className="p-4 border-t border-gray-100 space-y-2">
-          {/* Logout */}
+        
           <button
             onClick={() => setShowLogoutModal(true)}
             className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all font-medium"
@@ -158,8 +157,8 @@ const Sidebar: React.FC = () => {
             <span>Sign Out</span>
           </button>
 
-          {/* User Profile */}
-          <Link to="/user/profile" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
+          
+          <Link to="/manager/profile" className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors group">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-black truncate">{user?.name || "Manager Name"}</p>
               <p className="text-[10px] text-gray-400 truncate uppercase tracking-wider">{user?.email}</p>

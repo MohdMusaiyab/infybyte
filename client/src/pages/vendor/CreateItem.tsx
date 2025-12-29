@@ -6,10 +6,10 @@ import {
   ArrowLeft,
   Save,
   Utensils,
-  DollarSign,
   Tag,
   Leaf,
   Star,
+  IndianRupee,
 } from "lucide-react";
 
 const CreateItem: React.FC = () => {
@@ -174,7 +174,7 @@ const CreateItem: React.FC = () => {
                   Base Price (₹) *
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="number"
                     id="basePrice"

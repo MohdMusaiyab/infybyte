@@ -191,7 +191,7 @@ const Profile: React.FC = () => {
 
         {profile && (
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
-            {/* Profile Header */}
+            
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center">
@@ -234,9 +234,9 @@ const Profile: React.FC = () => {
               )}
             </div>
 
-            {/* Profile Details */}
+            
             <div className="space-y-6">
-              {/* Name Field */}
+            
               <div className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl">
                 <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
                   <User className="w-6 h-6 text-gray-600" />

@@ -40,16 +40,14 @@ interface ItemFoodCourtDetail {
   timeSlot: string;
   isActive?: boolean;
   updatedAt?: string;
-  
-  // Item details
+
   item_name: string;
   item_description?: string;
   item_basePrice: number;
   item_category: string;
   item_isVeg: boolean;
   item_isSpecial: boolean;
-  
-  // Food court details
+
   foodcourt_name: string;
   foodcourt_location: string;
   foodcourt_isOpen: boolean;
@@ -107,7 +105,6 @@ const VendorProfile: React.FC = () => {
     "combo",
   ];
 
-  // WebSocket real-time updates
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
       const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
@@ -116,16 +113,14 @@ const VendorProfile: React.FC = () => {
       setData((prev) => {
         if (!prev) return prev;
 
-        // Check if this vendor has this item-foodcourt combination
         const hasItemFoodCourt = prev.item_foodcourt_details.some(
-          (detail) => 
-            detail.item_id === update.item_id && 
+          (detail) =>
+            detail.item_id === update.item_id &&
             detail.foodcourt_id === update.foodcourt_id
         );
-        
+
         if (!hasItemFoodCourt) return prev;
 
-        // Update the specific item-foodcourt detail
         return {
           ...prev,
           item_foodcourt_details: prev.item_foodcourt_details.map((detail) =>
@@ -146,15 +141,12 @@ const VendorProfile: React.FC = () => {
     }
   }, [lastMessage]);
 
-  // Transform data into items display format when data changes
   useEffect(() => {
     if (data && data.item_foodcourt_details) {
-      // Group by item_id to create unique items
       const itemsMap = new Map<string, ItemDisplay>();
-      
+
       data.item_foodcourt_details.forEach((detail) => {
         if (!itemsMap.has(detail.item_id)) {
-          // Create new item entry
           itemsMap.set(detail.item_id, {
             id: detail.item_id,
             name: detail.item_name,
@@ -163,16 +155,15 @@ const VendorProfile: React.FC = () => {
             category: detail.item_category,
             isVeg: detail.item_isVeg,
             isSpecial: detail.item_isSpecial,
-            createdAt: "", // Not provided in new response
-            availability: [detail]
+            createdAt: "",
+            availability: [detail],
           });
         } else {
-          // Add to existing item's availability
           const existingItem = itemsMap.get(detail.item_id)!;
           existingItem.availability.push(detail);
         }
       });
-      
+
       setItemsDisplay(Array.from(itemsMap.values()));
     }
   }, [data]);
@@ -208,15 +199,16 @@ const VendorProfile: React.FC = () => {
   };
 
   const filteredItems =
-    itemsDisplay?.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .filter(
-      (item) =>
-        selectedCategory === "all" || item.category === selectedCategory
-    ) || [];
+    itemsDisplay
+      ?.filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      ?.filter(
+        (item) =>
+          selectedCategory === "all" || item.category === selectedCategory
+      ) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -248,9 +240,13 @@ const VendorProfile: React.FC = () => {
     }
   };
 
-  const getDisplayPrice = (item: ItemDisplay, availability: ItemFoodCourtDetail) => {
-    // Use foodcourt-specific price if available, otherwise use item base price
-    return availability.price !== undefined ? availability.price : item.basePrice;
+  const getDisplayPrice = (
+    item: ItemDisplay,
+    availability: ItemFoodCourtDetail
+  ) => {
+    return availability.price !== undefined
+      ? availability.price
+      : item.basePrice;
   };
 
   const handleBack = () => {
@@ -339,7 +335,6 @@ const VendorProfile: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header with WebSocket status */}
         <div className="mb-6">
           <button
             onClick={handleBack}
@@ -350,7 +345,6 @@ const VendorProfile: React.FC = () => {
           </button>
         </div>
 
-        {/* Vendor Header */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div className="flex items-start gap-4">
@@ -362,7 +356,7 @@ const VendorProfile: React.FC = () => {
                   <h1 className="text-3xl font-bold text-black">
                     {data.vendor.shopName}
                   </h1>
-                  {/* WebSocket Status */}
+
                   <div
                     className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
                       isConnected
@@ -420,7 +414,6 @@ const VendorProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-2xl p-2 border-2 border-gray-200 mb-6">
           <div className="flex gap-2">
             <button
@@ -446,13 +439,10 @@ const VendorProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Items Tab */}
         {activeTab === "items" && (
           <>
-            {/* Search and Filter */}
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Search */}
                 <div className="md:col-span-2 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -464,7 +454,6 @@ const VendorProfile: React.FC = () => {
                   />
                 </div>
 
-                {/* Category Filter */}
                 <div>
                   <select
                     value={selectedCategory}
@@ -484,7 +473,6 @@ const VendorProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Items Grid */}
             {filteredItems.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -501,7 +489,6 @@ const VendorProfile: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* Results Info */}
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-gray-600">
                     {filteredItems.length} item(s) found
@@ -519,30 +506,26 @@ const VendorProfile: React.FC = () => {
                   )}
                 </div>
 
-                {/* Items Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredItems.map((item) => (
                     <div
                       key={item.id}
                       className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
                     >
-                      {/* Header */}
                       <div className="flex items-start justify-between mb-3">
                         <Link to={`/user/item/${item.id}`}>
-                        <h3 className="font-bold text-black text-lg line-clamp-2">
-                          {item.name}
-                        </h3>
+                          <h3 className="font-bold text-black text-lg line-clamp-2">
+                            {item.name}
+                          </h3>
                         </Link>
                       </div>
 
-                      {/* Description */}
                       {item.description && (
                         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
                           {item.description}
                         </p>
                       )}
 
-                      {/* Tags */}
                       <div className="flex flex-wrap gap-2 mb-4">
                         <span
                           className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -564,7 +547,6 @@ const VendorProfile: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Availability */}
                       <div className="mb-4">
                         <div className="flex items-center gap-2 mb-2">
                           <MapPin className="w-4 h-4 text-gray-400" />
@@ -603,7 +585,6 @@ const VendorProfile: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Footer - Show base price */}
                       <div className="flex items-center justify-between">
                         <div className="text-sm text-gray-600">
                           Base price: ₹{item.basePrice}
@@ -622,7 +603,6 @@ const VendorProfile: React.FC = () => {
           </>
         )}
 
-        {/* Locations Tab */}
         {activeTab === "locations" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {data.foodCourts.map((foodCourt) => (
@@ -675,9 +655,12 @@ const VendorProfile: React.FC = () => {
                     Vendor items available here
                   </div>
                   <div className="text-xs text-gray-500">
-                    {data.item_foodcourt_details
-                      .filter(detail => detail.foodcourt_id === foodCourt.id)
-                      .length} items
+                    {
+                      data.item_foodcourt_details?.filter(
+                        (detail) => detail.foodcourt_id === foodCourt.id
+                      ).length
+                    }{" "}
+                    items
                   </div>
                 </div>
               </div>

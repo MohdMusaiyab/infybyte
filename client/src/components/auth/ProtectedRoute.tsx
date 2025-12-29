@@ -10,15 +10,12 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ allowedRoles }) => {
   const { user } = useAuthStore();
 
   if (!user) {
-    // Not logged in
     return <Navigate to="/login" replace />;
   }
 
   if (!allowedRoles.includes(user.role)) {
-    // Logged in but wrong role → forbidden
-    return <Navigate to={`/${user.role}/dashboard`} replace />;
+    return <Navigate to={`/unauthorized`} replace />;
   }
 
-  // Correct role → render children
   return <Outlet />;
 };

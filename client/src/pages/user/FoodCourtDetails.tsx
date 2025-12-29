@@ -2,18 +2,25 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ArrowLeft, MapPin, Clock, Search, ChefHat, Zap, Users, Tag } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Clock,
+  Search,
+  ChefHat,
+  Zap,
+  Users,
+  Tag,
+} from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
 import type { ItemFoodCourtUpdatePayload } from "../../types/websocket";
-import {type  FoodCourt,type FoodItem } from "../../types/type";
+import { type FoodCourt, type FoodItem } from "../../types/type";
 
 interface Vendor {
   id: string;
   shopName: string;
   gst?: string;
 }
-
-
 
 interface FoodCourtDetailsResponse {
   foodCourt: FoodCourt;
@@ -32,9 +39,20 @@ const FoodCourtDetails: React.FC = () => {
   const [selectedVendor, setSelectedVendor] = useState<string>("all");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("all");
 
-  const categories = ["all", "breakfast", "maincourse", "dessert", "beverage", "dosa", "northmeal", "paratha", "chinese", "combo"];
+  const categories = [
+    "all",
+    "breakfast",
+    "maincourse",
+    "dessert",
+    "beverage",
+    "dosa",
+    "northmeal",
+    "paratha",
+    "chinese",
+    "combo",
+  ];
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
-const { lastMessage, } = useWebSocketContext();
+  const { lastMessage } = useWebSocketContext();
   useEffect(() => {
     if (id) {
       fetchFoodCourtDetails();
@@ -49,8 +67,14 @@ const { lastMessage, } = useWebSocketContext();
       setData(response.data.data);
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
-        const responseData = err.response?.data as { message?: string } | undefined;
-        setError(responseData?.message ?? err.message ?? "Failed to load food court details");
+        const responseData = err.response?.data as
+          | { message?: string }
+          | undefined;
+        setError(
+          responseData?.message ??
+            err.message ??
+            "Failed to load food court details"
+        );
       } else {
         setError("An unexpected error occurred");
       }
@@ -59,61 +83,71 @@ const { lastMessage, } = useWebSocketContext();
     }
   };
 
-  const filteredItems = data?.items.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.shopName.toLowerCase().includes(searchTerm.toLowerCase())
-  ).filter(item => 
-    selectedCategory === "all" || item.category === selectedCategory
-  ).filter(item =>
-    selectedVendor === "all" || item.vendorId === selectedVendor
-  ).filter(item =>
-    selectedTimeSlot === "all" || item.timeSlot === selectedTimeSlot
-  ) || [];
+  const filteredItems =
+    data?.items
+      .filter(
+        (item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.shopName.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+      .filter(
+        (item) =>
+          selectedCategory === "all" || item.category === selectedCategory
+      )
+      .filter(
+        (item) => selectedVendor === "all" || item.vendorId === selectedVendor
+      )
+      .filter(
+        (item) =>
+          selectedTimeSlot === "all" || item.timeSlot === selectedTimeSlot
+      ) || [];
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "available": return "bg-green-100 text-green-800";
-      case "sellingfast": return "bg-orange-100 text-orange-800";
-      case "finishingsoon": return "bg-yellow-100 text-yellow-800";
-      case "notavailable": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "available":
+        return "bg-green-100 text-green-800";
+      case "sellingfast":
+        return "bg-orange-100 text-orange-800";
+      case "finishingsoon":
+        return "bg-yellow-100 text-yellow-800";
+      case "notavailable":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const handleBack = () => {
     navigate("/user/dashboard");
   };
-  // ✅ NEW: Handle real-time WebSocket updates
-// ✅ FIXED: Handle real-time WebSocket updates
-useEffect(() => {
-  if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-    const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
-    
-    console.log("🔄 Real-time update received in FoodCourtDetails:", update);
 
-    // Update the specific item in real-time
-    setData(prev => {
-      if (!prev) return prev;
-      
-      return {
-        ...prev,
-        items: prev.items.map(item => 
-          // Match by item_id (from WebSocket) to itemId (from your data)
-          item.itemId === update.item_id 
-            ? { 
-                ...item, 
-                status: update.status,
-                price: update.price,
-                timeSlot: update.timeSlot,
-                isActive: update.isActive
-              }
-            : item
-        )
-      };
-    });
-  }
-}, [lastMessage]);
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+
+      console.log("🔄 Real-time update received in FoodCourtDetails:", update);
+
+      setData((prev) => {
+        if (!prev) return prev;
+
+        return {
+          ...prev,
+          items: prev.items.map((item) =>
+            item.itemId === update.item_id
+              ? {
+                  ...item,
+                  status: update.status,
+                  price: update.price,
+                  timeSlot: update.timeSlot,
+                  isActive: update.isActive,
+                }
+              : item
+          ),
+        };
+      });
+    }
+  }, [lastMessage]);
 
   if (loading) {
     return (
@@ -128,7 +162,10 @@ useEffect(() => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 border-2 border-gray-200">
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 border-2 border-gray-200"
+                >
                   <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -148,13 +185,13 @@ useEffect(() => {
           <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
             <div className="text-black font-bold text-lg mb-2">Error</div>
             <div className="text-gray-600 mb-4">{error}</div>
-            <button 
+            <button
               onClick={fetchFoodCourtDetails}
               className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium mr-4"
             >
               Try Again
             </button>
-            <button 
+            <button
               onClick={handleBack}
               className="bg-white text-black px-6 py-3 rounded-xl border-2 border-black hover:bg-black hover:text-white transition-all duration-300 font-medium"
             >
@@ -172,7 +209,7 @@ useEffect(() => {
         <div className="max-w-7xl mx-auto">
           <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 text-center">
             <div className="text-gray-600">Food court not found</div>
-            <button 
+            <button
               onClick={handleBack}
               className="mt-4 bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium"
             >
@@ -187,9 +224,8 @@ useEffect(() => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
-          <button 
+          <button
             onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 hover:text-black mb-4 transition-colors group"
           >
@@ -198,7 +234,6 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Food Court Header */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="flex items-start gap-4">
@@ -206,20 +241,30 @@ useEffect(() => {
                 <MapPin className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-black mb-2">{data.foodCourt.name}</h1>
+                <h1 className="text-3xl font-bold text-black mb-2">
+                  {data.foodCourt.name}
+                </h1>
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{data.foodCourt.location}</span>
+                  <span className="text-gray-600">
+                    {data.foodCourt.location}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-gray-400" />
-                  <span className="text-gray-600">{data.foodCourt.timings}</span>
+                  <span className="text-gray-600">
+                    {data.foodCourt.timings}
+                  </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    data.foodCourt.isOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {data.foodCourt.isOpen ? 'Open Now' : 'Closed'}
+                  <span
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                      data.foodCourt.isOpen
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {data.foodCourt.isOpen ? "Open Now" : "Closed"}
                   </span>
                   {data.foodCourt.weekdays && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
@@ -233,37 +278,41 @@ useEffect(() => {
                   )}
                 </div>
                 <div>
-                  <Link to={`/user/foodcourt/${data.foodCourt.id}/vendors`} className="inline-block mt-4 text-black font-medium hover:underline">
-                  See Vendor Wise Items Here
+                  <Link
+                    to={`/user/foodcourt/${data.foodCourt.id}/vendors`}
+                    className="inline-block mt-4 text-black font-medium hover:underline"
+                  >
+                    See Vendor Wise Items Here
                   </Link>
                 </div>
               </div>
             </div>
-            
-            {/* Stats */}
+
             <div className="flex gap-4">
               <div className="text-center">
                 <div className="flex items-center gap-1 text-gray-600 mb-1">
                   <Users className="w-4 h-4" />
                   <span className="text-sm">Vendors</span>
                 </div>
-                <div className="text-2xl font-bold text-black">{data.vendors.length}</div>
+                <div className="text-2xl font-bold text-black">
+                  {data.vendors.length}
+                </div>
               </div>
               <div className="text-center">
                 <div className="flex items-center gap-1 text-gray-600 mb-1">
                   <Tag className="w-4 h-4" />
                   <span className="text-sm">Items</span>
                 </div>
-                <div className="text-2xl font-bold text-black">{data.items.length}</div>
+                <div className="text-2xl font-bold text-black">
+                  {data.items.length}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Search and Filters */}
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Search */}
             <div className="md:col-span-2 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -274,39 +323,40 @@ useEffect(() => {
                 className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
               />
             </div>
-            
-            {/* Category Filter */}
+
             <div>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {categories.map(category => (
+                {categories.map((category) => (
                   <option key={category} value={category}>
-                    {category === "all" ? "All Categories" : category.charAt(0).toUpperCase() + category.slice(1)}
+                    {category === "all"
+                      ? "All Categories"
+                      : category.charAt(0).toUpperCase() + category.slice(1)}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Time Slot Filter */}
             <div>
               <select
                 value={selectedTimeSlot}
                 onChange={(e) => setSelectedTimeSlot(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {timeSlots.map(slot => (
+                {timeSlots.map((slot) => (
                   <option key={slot} value={slot}>
-                    {slot === "all" ? "All Times" : slot.charAt(0).toUpperCase() + slot.slice(1)}
+                    {slot === "all"
+                      ? "All Times"
+                      : slot.charAt(0).toUpperCase() + slot.slice(1)}
                   </option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Vendor Filter */}
           {data.vendors.length > 0 && (
             <div className="mt-4">
               <div className="flex gap-2 overflow-x-auto">
@@ -314,20 +364,24 @@ useEffect(() => {
                   onClick={() => setSelectedVendor("all")}
                   className={`px-4 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                     selectedVendor === "all"
-                      ? 'bg-black text-white border-black'
-                      : 'bg-white text-black border-gray-200 hover:border-black'
+                      ? "bg-black text-white border-black"
+                      : "bg-white text-black border-gray-200 hover:border-black"
                   }`}
                 >
                   All Vendors
                 </button>
-                {data.vendors.map(vendor => (
+                {data.vendors.map((vendor) => (
                   <button
                     key={vendor.id}
-                    onClick={() => setSelectedVendor(vendor.id === selectedVendor ? "all" : vendor.id)}
+                    onClick={() =>
+                      setSelectedVendor(
+                        vendor.id === selectedVendor ? "all" : vendor.id
+                      )
+                    }
                     className={`px-4 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all duration-300 ${
                       selectedVendor === vendor.id
-                        ? 'bg-black text-white border-black'
-                        : 'bg-white text-black border-gray-200 hover:border-black'
+                        ? "bg-black text-white border-black"
+                        : "bg-white text-black border-gray-200 hover:border-black"
                     }`}
                   >
                     {vendor.shopName}
@@ -338,26 +392,34 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Items Grid */}
         {filteredItems.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ChefHat className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-bold text-black mb-2">No items found</h3>
+            <h3 className="text-lg font-bold text-black mb-2">
+              No items found
+            </h3>
             <p className="text-gray-600">
-              {searchTerm || selectedCategory !== "all" || selectedVendor !== "all" || selectedTimeSlot !== "all"
-                ? "Try adjusting your search or filter criteria" 
+              {searchTerm ||
+              selectedCategory !== "all" ||
+              selectedVendor !== "all" ||
+              selectedTimeSlot !== "all"
+                ? "Try adjusting your search or filter criteria"
                 : "No items available in this food court"}
             </p>
           </div>
         ) : (
           <>
-            {/* Results Info */}
             <div className="flex items-center justify-between mb-6">
-              <span className="text-gray-600">{filteredItems.length} item(s) found</span>
-              {(searchTerm || selectedCategory !== "all" || selectedVendor !== "all" || selectedTimeSlot !== "all") && (
-                <button 
+              <span className="text-gray-600">
+                {filteredItems.length} item(s) found
+              </span>
+              {(searchTerm ||
+                selectedCategory !== "all" ||
+                selectedVendor !== "all" ||
+                selectedTimeSlot !== "all") && (
+                <button
                   onClick={() => {
                     setSearchTerm("");
                     setSelectedCategory("all");
@@ -371,43 +433,55 @@ useEffect(() => {
               )}
             </div>
 
-            {/* Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.map((item) => (
                 <div
                   key={item.itemId}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
                 >
-                  {/* Header */}
-                  <Link to={`/user/item/${item.itemId}`} className="no-underline">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-bold text-black text-lg mb-1 line-clamp-2">{item.name}</h3>
-                      <div className="flex items-center gap-2 mb-2">
-                        <ChefHat className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">{item.shopName}</span>
+                  <Link
+                    to={`/user/item/${item.itemId}`}
+                    className="no-underline"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-bold text-black text-lg mb-1 line-clamp-2">
+                          {item.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <ChefHat className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-600">
+                            {item.shopName}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  
-                  </div>
                   </Link>
 
-                  {/* Description */}
                   {item.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{item.description}</p>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {item.description}
+                    </p>
                   )}
 
-                  {/* Tags */}
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      item.isVeg ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}>
-                      {item.isVeg ? 'Veg' : 'Non-Veg'}
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        item.isVeg
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {item.isVeg ? "Veg" : "Non-Veg"}
                     </span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 capitalize">
                       {item.category}
                     </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                    <span
+                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                        item.status
+                      )}`}
+                    >
                       {item.status}
                     </span>
                     {item.isSpecial && (
@@ -418,16 +492,21 @@ useEffect(() => {
                     )}
                   </div>
 
-                  {/* Footer */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600 capitalize">{item.timeSlot}</span>
+                      <span className="text-sm text-gray-600 capitalize">
+                        {item.timeSlot}
+                      </span>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-black text-lg">₹{item.price || item.basePrice}</div>
+                      <div className="font-bold text-black text-lg">
+                        ₹{item.price || item.basePrice}
+                      </div>
                       {item.price && item.price !== item.basePrice && (
-                        <div className="text-sm text-gray-500 line-through">₹{item.basePrice}</div>
+                        <div className="text-sm text-gray-500 line-through">
+                          ₹{item.basePrice}
+                        </div>
                       )}
                     </div>
                   </div>

@@ -11,7 +11,7 @@ import { ChefHat, ArrowRight, User } from "lucide-react";
 
 const Register = () => {
   const { register } = useAuth();
-  const navigate = useNavigate(); // Add this hook
+  const navigate = useNavigate(); 
 
   const [form, setForm] = useState<RegisterCredentials>({
     name: "",

@@ -21,13 +21,17 @@ const SideBar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isUsersOpen, setIsUsersOpen] = useState(false);
 
-  // 1. Added state for Logout Modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const location = useLocation();
 
   const menuItems = [
-    { name: "Dashboard", path: "/admin/dashboard", icon: BookDashed, exact: true },
+    {
+      name: "Dashboard",
+      path: "/admin/dashboard",
+      icon: BookDashed,
+      exact: true,
+    },
     { name: "Home", path: "/", icon: Home, exact: true },
     {
       name: "Users",
@@ -51,12 +55,10 @@ const SideBar: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  // 2. Updated HandleLogout to trigger Modal
   const handleLogoutTrigger = () => {
     setShowLogoutModal(true);
   };
 
-  // 3. Logic for confirming logout
   const handleConfirmLogout = async () => {
     try {
       await logout();
@@ -183,7 +185,7 @@ const SideBar: React.FC = () => {
 
         <div className="p-6 border-t border-gray-200">
           <button
-            onClick={handleLogoutTrigger} // Use the trigger here
+            onClick={handleLogoutTrigger}
             disabled={isLoading}
             className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200 mt-4"
           >
@@ -194,7 +196,7 @@ const SideBar: React.FC = () => {
           </button>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <Link to="/user/profile">
+            <Link to="/admin/profile">
               <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-black truncate">
@@ -211,7 +213,6 @@ const SideBar: React.FC = () => {
         </div>
       </aside>
 
-      {/* 4. Implement the ConfirmModal */}
       <ConfirmModal
         isOpen={showLogoutModal}
         title="Admin Logout"

@@ -73,7 +73,6 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 	ctx := context.Background()
 	usersCollection := db.Collection("users")
 
-	// Check if email already exists (if email is being updated)
 	if updateData.Email != nil {
 		var existingUser struct {
 			ID primitive.ObjectID `bson:"_id"`
@@ -81,19 +80,19 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 
 		err := usersCollection.FindOne(ctx, bson.M{
 			"email": *updateData.Email,
-			"_id":   bson.M{"$ne": userObjID}, // Exclude current user
+			"_id":   bson.M{"$ne": userObjID},
 		}).Decode(&existingUser)
 
 		if err == nil {
-			// Email already exists for another user
+
 			utils.RespondError(c, http.StatusConflict, "Email already exists")
 			return
 		} else if err != mongo.ErrNoDocuments {
-			// Some other database error occurred
+
 			utils.RespondError(c, http.StatusInternalServerError, "Failed to check email availability")
 			return
 		}
-		// If err is mongo.ErrNoDocuments, email is available (this is good)
+
 	}
 
 	updateFields := bson.M{}
@@ -124,7 +123,6 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "User profile updated successfully", nil)
 }
 
-// Getting all the Food Courts
 func GetAllFoodCourts(c *gin.Context, db *mongo.Database) {
 	ctx := context.Background()
 	foodCourtsCollection := db.Collection("foodcourts")
@@ -173,7 +171,7 @@ func GetFoodCourtByID(c *gin.Context, db *mongo.Database) {
 		vendors:        db.Collection("vendors"),
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
-	// Get Food Court basic info
+
 	var foodCourt struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name     string             `bson:"name" json:"name"`
@@ -189,7 +187,6 @@ func GetFoodCourtByID(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get Vendors in this food court
 	var vendors []struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		ShopName string             `bson:"shopName" json:"shopName"`
@@ -201,21 +198,20 @@ func GetFoodCourtByID(c *gin.Context, db *mongo.Database) {
 		vendorsCursor.All(ctx, &vendors)
 	}
 
-	// Get Items available in this food court with vendor info
 	var itemsWithVendors []struct {
-    ItemID      primitive.ObjectID `bson:"itemId" json:"itemId"`
-    Name        string             `bson:"name" json:"name"`
-    Description string             `bson:"description,omitempty" json:"description,omitempty"`
-    BasePrice   float64            `bson:"basePrice" json:"basePrice"`
-    Category    string             `bson:"category" json:"category"`
-    IsVeg       bool               `bson:"isVeg" json:"isVeg"`
-    IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
-    VendorID    primitive.ObjectID `bson:"vendorId" json:"vendorId"`
-    ShopName    string             `bson:"shopName" json:"shopName"`
-    Status      string             `bson:"status" json:"status"`
-    Price       *float64           `bson:"price,omitempty" json:"price,omitempty"`
-    TimeSlot    string             `bson:"timeSlot" json:"timeSlot"`
-}
+		ItemID      primitive.ObjectID `bson:"itemId" json:"itemId"`
+		Name        string             `bson:"name" json:"name"`
+		Description string             `bson:"description,omitempty" json:"description,omitempty"`
+		BasePrice   float64            `bson:"basePrice" json:"basePrice"`
+		Category    string             `bson:"category" json:"category"`
+		IsVeg       bool               `bson:"isVeg" json:"isVeg"`
+		IsSpecial   bool               `bson:"isSpecial" json:"isSpecial"`
+		VendorID    primitive.ObjectID `bson:"vendorId" json:"vendorId"`
+		ShopName    string             `bson:"shopName" json:"shopName"`
+		Status      string             `bson:"status" json:"status"`
+		Price       *float64           `bson:"price,omitempty" json:"price,omitempty"`
+		TimeSlot    string             `bson:"timeSlot" json:"timeSlot"`
+	}
 
 	pipeline := []bson.M{
 		{"$match": bson.M{"foodcourt_id": foodCourtObjID, "isActive": true}},
@@ -291,7 +287,6 @@ func GetFoodCourtItems(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Group items by vendor with food court specific details
 	var vendorItems []struct {
 		VendorID primitive.ObjectID `bson:"vendorId" json:"vendorId"`
 		ShopName string             `bson:"shopName" json:"shopName"`
@@ -370,7 +365,6 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 		items: db.Collection("items"),
 	}
 
-	// Get items with their food court availability
 	var itemsWithFoodCourts []struct {
 		ItemID      primitive.ObjectID `bson:"itemId" json:"itemId"`
 		Name        string             `bson:"name" json:"name"`
@@ -464,10 +458,9 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Filter out items with empty foodCourts arrays if needed
 	var filteredItems []interface{}
 	for _, item := range itemsWithFoodCourts {
-		// Only include items that have at least one food court
+
 		if len(item.FoodCourts) > 0 {
 			filteredItems = append(filteredItems, item)
 		}
@@ -475,7 +468,6 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 
 	utils.RespondSuccess(c, http.StatusOK, "Vendor items with food courts retrieved successfully", filteredItems)
 }
-
 
 func GetItemDetails(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("id")
@@ -497,8 +489,6 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		foodCourts:     db.Collection("foodcourts"),
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
-
-
 
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": itemObjID}},
@@ -542,12 +532,10 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get the item and vendor data
 	itemData := results[0]
 	item := itemData["item"]
 	vendor := itemData["vendor"]
 
-	// Get food court availability separately with a simpler query
 	var availability []bson.M
 	availabilityPipeline := []bson.M{
 		{"$match": bson.M{
@@ -586,10 +574,9 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		availabilityCursor.All(ctx, &availability)
 	}
 
-	// Construct the final response
 	response := bson.M{
-		"item":        item,
-		"vendor":      vendor,
+		"item":         item,
+		"vendor":       vendor,
 		"availability": availability,
 	}
 

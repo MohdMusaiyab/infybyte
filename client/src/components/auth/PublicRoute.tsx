@@ -10,10 +10,8 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
   const { user } = useAuth();
 
   if (user) {
-    // Already logged in → redirect to dashboard
     return <Navigate to={`/${user.role}/dashboard`} replace />;
   }
 
-  // Not logged in → show content
   return <>{children}</>;
 };

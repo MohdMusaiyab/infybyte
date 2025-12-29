@@ -547,7 +547,7 @@ const ItemFoodCourt: React.FC = () => {
               Available Food Courts (
               {availableFoodCourts.length - foodCourts.length})
             </h2>
-            {availableFoodCourts.filter(
+            {availableFoodCourts?.filter(
               (fc) => !foodCourtAssociationMap.has(fc.id)
             ).length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
@@ -564,8 +564,8 @@ const ItemFoodCourt: React.FC = () => {
             ) : (
               <div className="space-y-4">
                 {availableFoodCourts
-                  .filter((fc) => !foodCourtAssociationMap.has(fc.id))
-                  .map((fc) => (
+                  ?.filter((fc) => !foodCourtAssociationMap.has(fc.id))
+                  ?.map((fc) => (
                     <div
                       key={fc.id}
                       className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300"

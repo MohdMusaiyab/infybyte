@@ -80,7 +80,7 @@ const SingleFoodCourt: React.FC = () => {
         );
       } else if (action === "delete") {
         setItems((prev) =>
-          prev.filter(
+          prev?.filter(
             (item) =>
               !(
                 item._id === update.id ||

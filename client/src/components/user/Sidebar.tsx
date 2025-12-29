@@ -38,7 +38,7 @@ const Sidebar: React.FC = () => {
   ];
 
   const handleLogout = () => {
-    // Show modal instead of window.confirm
+    
     setShowLogoutModal(true);
   };
 
@@ -195,7 +195,7 @@ const Sidebar: React.FC = () => {
         </div>
       </aside>
 
-      {/* Custom Logout Confirmation Modal */}
+      
       <ConfirmModal
         isOpen={showLogoutModal}
         title="Logout Confirmation"

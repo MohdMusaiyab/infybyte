@@ -14,16 +14,14 @@ import {
   Package,
 } from "lucide-react";
 
-// 1. Interfaces based on our Aggregation Pipeline
-// Match these names to your Backend JSON exactly
 interface FoodCourtStats {
-  id: string; // mapped from _id in Go
+  id: string;
   name: string;
   location: string;
   isOpen: boolean;
   timings?: string;
-  totalItems: number; // Change from itemCount to totalItems
-  activeItems: number; // Change from activeCount to activeItems
+  totalItems: number;
+  activeItems: number;
 }
 
 interface ApiResponse {
@@ -38,7 +36,6 @@ const VendorFoodCourts: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [foodCourts, setFoodCourts] = useState<FoodCourtStats[]>([]);
 
-  // 2. Fetch Data
   const fetchMyFoodCourts = useCallback(async () => {
     try {
       setLoading(true);
@@ -72,7 +69,6 @@ const VendorFoodCourts: React.FC = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-black flex items-center gap-3">
           <Store className="w-8 h-8" />
@@ -90,7 +86,6 @@ const VendorFoodCourts: React.FC = () => {
         </div>
       )}
 
-      {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded-3xl border-2 border-gray-50 shadow-sm">
           <p className="text-gray-500 text-sm font-medium">Total Locations</p>
@@ -105,12 +100,11 @@ const VendorFoodCourts: React.FC = () => {
         <div className="bg-white p-6 rounded-3xl border-2 border-gray-50 shadow-sm">
           <p className="text-gray-500 text-sm font-medium">Open Now</p>
           <p className="text-3xl font-bold mt-1 text-blue-600">
-            {foodCourts.filter((fc) => fc.isOpen).length}
+            {foodCourts?.filter((fc) => fc.isOpen).length}
           </p>
         </div>
       </div>
 
-      {/* Grid of Food Courts */}
       {foodCourts.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed">
           <LayoutGrid className="w-12 h-12 text-gray-300 mx-auto mb-4" />
@@ -129,7 +123,6 @@ const VendorFoodCourts: React.FC = () => {
               onClick={() => navigate(`/vendor/foodcourt/${fc.id}/items`)}
               className="group bg-white border-2 border-gray-100 rounded-3xl p-6 hover:border-black transition-all cursor-pointer hover:shadow-xl relative overflow-hidden"
             >
-              {/* Status Badge */}
               <div className="flex justify-between items-start mb-6">
                 <div
                   className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
@@ -154,8 +147,6 @@ const VendorFoodCourts: React.FC = () => {
                 {fc.location}
               </div>
 
-              {/* Stats Row */}
-              {/* Stats Row */}
               <div className="grid grid-cols-2 gap-4 pt-6 border-t border-gray-50">
                 <div className="flex flex-col">
                   <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">
@@ -164,7 +155,6 @@ const VendorFoodCourts: React.FC = () => {
                   <div className="flex items-center gap-2 mt-1">
                     <Package className="w-4 h-4 text-gray-400" />
                     <span className="font-bold">{fc.totalItems}</span>{" "}
-                    {/* Updated name */}
                   </div>
                 </div>
                 <div className="flex flex-col">
@@ -176,7 +166,6 @@ const VendorFoodCourts: React.FC = () => {
                     <span className="font-bold text-green-600">
                       {fc.activeItems}
                     </span>{" "}
-                    {/* Updated name */}
                   </div>
                 </div>
               </div>

@@ -74,7 +74,6 @@ const VendorDetails = () => {
     fetchVendorDetails();
   }, [id]);
 
-  // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -126,7 +125,7 @@ const VendorDetails = () => {
     if (window.confirm(confirmMessage)) {
       try {
         setIsUpdating(true);
-        // We use vendor.id (User ID) because the backend route uses the User ID parameter
+
         await axiosInstance.patch(`/admin/vendors/${vendor.id}/status`, {
           role: "user",
         });
@@ -135,7 +134,7 @@ const VendorDetails = () => {
         navigate("/admin/all-vendors");
       } catch (err: unknown) {
         console.error(err);
-        alert( "Failed to update vendor status");
+        alert("Failed to update vendor status");
       } finally {
         setIsUpdating(false);
       }
@@ -143,7 +142,6 @@ const VendorDetails = () => {
   };
   return (
     <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
-      {/* Back Button */}
       <button
         onClick={() => navigate("/admin/all-vendors")}
         className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-xl transition-all font-medium"
@@ -153,7 +151,6 @@ const VendorDetails = () => {
         <span className="sm:hidden">Back</span>
       </button>
 
-      {/* Header Section */}
       <div className="flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 md:w-16 md:h-16 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
@@ -170,14 +167,12 @@ const VendorDetails = () => {
         </div>
       </div>
 
-      {/* Main Information Card */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6">
         <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6">
           Vendor Information
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          {/* Shop Name */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Store className="w-4 h-4" />
@@ -188,7 +183,6 @@ const VendorDetails = () => {
             </p>
           </div>
 
-          {/* Total Items */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Package className="w-4 h-4" />
@@ -204,7 +198,6 @@ const VendorDetails = () => {
             </div>
           </div>
 
-          {/* Vendor ID */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Hash className="w-4 h-4" />
@@ -215,7 +208,6 @@ const VendorDetails = () => {
             </p>
           </div>
 
-          {/* User ID */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Hash className="w-4 h-4" />
@@ -226,7 +218,6 @@ const VendorDetails = () => {
             </p>
           </div>
 
-          {/* Created At */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Calendar className="w-4 h-4" />
@@ -237,7 +228,6 @@ const VendorDetails = () => {
             </p>
           </div>
 
-          {/* Updated At */}
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
               <Calendar className="w-4 h-4" />
@@ -250,7 +240,6 @@ const VendorDetails = () => {
         </div>
       </div>
 
-      {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
         <div className="bg-gradient-to-br from-black to-gray-800 rounded-xl p-4 md:p-6 text-white shadow-lg">
           <div className="flex items-center gap-3 mb-3">
@@ -291,7 +280,6 @@ const VendorDetails = () => {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={() => navigate(`/admin/vendors/${vendor.id}/items`)}
@@ -301,7 +289,7 @@ const VendorDetails = () => {
           View Items
         </button>
       </div>
-      {/* NEW: Danger Zone Section */}
+
       <div className="mt-12 pt-6 border-t border-red-100">
         <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
           <div className="flex items-center gap-3 mb-4">

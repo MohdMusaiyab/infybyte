@@ -202,7 +202,7 @@ const AllManagers = () => {
                             manager.vendors.map((v, i) => (
                               <Link
                                 key={i}
-                                to={`/admin/vendor/${manager.vendorId}`} // <--- USE THE NEW ID HERE
+                                to={`/admin/vendor/${manager.vendorId}`} 
                                 className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200 hover:bg-black hover:text-white transition-colors cursor-pointer"
                               >
                                 {v}

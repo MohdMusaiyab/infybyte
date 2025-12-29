@@ -40,12 +40,12 @@ const UserDashboard: React.FC = () => {
   };
 
   const filteredFoodCourts = foodCourts
-    .filter(
+    ?.filter(
       (fc) =>
         fc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         fc.location.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .filter((fc) => !filterOpen || fc.isOpen);
+    ?.filter((fc) => !filterOpen || fc.isOpen);
 
   const handleFoodCourtClick = (foodCourtId: string) => {
     navigate(`/user/foodcourt/${foodCourtId}`);

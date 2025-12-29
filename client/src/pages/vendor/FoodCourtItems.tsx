@@ -16,9 +16,8 @@ import {
 } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
 
-// 1. Precise Interface matching your Go Aggregation $project
 interface FoodCourtItem {
-  id: string; // The ObjectID from itemfoodcourts
+  id: string;
   item_id: string;
   name: string;
   category: string;
@@ -31,7 +30,6 @@ interface FoodCourtItem {
   isVeg: boolean;
 }
 
-// Interface for the standardized API response
 interface ApiResponse<T> {
   success: boolean;
   message: string;
@@ -56,7 +54,6 @@ const FoodCourtItems: React.FC = () => {
     { value: "finishingsoon", label: "Finishing Soon" },
   ];
 
-  // 2. Strongly Typed Fetch
   const fetchItems = useCallback(async () => {
     if (!foodCourtId) return;
     try {
@@ -83,25 +80,19 @@ const FoodCourtItems: React.FC = () => {
     fetchItems();
   }, [fetchItems]);
 
-  // 3. Typed WebSocket Updates
-  // 3. Typed WebSocket Updates
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-      // The payload coming from Mongo Change Streams or WS usually uses _id
       const update = lastMessage.payload as any;
 
-      // Safety check: Ensure this update belongs to the current food court
       if (update.foodcourt_id === foodCourtId) {
         setItems((prev) =>
           prev.map((item) => {
-            // Check if this is the item being updated
-            // We check both .id and ._id for robustness
             const isMatch = item.id === update._id || item.id === update.id;
 
             if (isMatch) {
               return {
                 ...item,
-                // Update only the fields present in the junction table update
+
                 status: update.status ?? item.status,
                 price: update.price ?? item.price,
                 isActive:
@@ -109,8 +100,6 @@ const FoodCourtItems: React.FC = () => {
                     ? update.isActive
                     : item.isActive,
                 timeSlot: update.timeSlot ?? item.timeSlot,
-                // DO NOT spread the whole 'update' object here,
-                // or you might lose 'name', 'category', etc.
               };
             }
             return item;
@@ -120,7 +109,6 @@ const FoodCourtItems: React.FC = () => {
     }
   }, [lastMessage, foodCourtId]);
 
-  // 4. Standardized Update Handler
   const handleUpdate = async (
     id: string,
     field: keyof FoodCourtItem,
@@ -134,7 +122,6 @@ const FoodCourtItems: React.FC = () => {
         [field]: value,
       });
 
-      // Optimistic Update
       setItems((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, [field]: value } : item
@@ -144,13 +131,13 @@ const FoodCourtItems: React.FC = () => {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.message || "Update failed");
       }
-      fetchItems(); // Rollback on error
+      fetchItems();
     } finally {
       setUpdating(null);
     }
   };
 
-  const filteredItems = items.filter((item) =>
+  const filteredItems = items?.filter((item) =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -243,7 +230,10 @@ const FoodCourtItems: React.FC = () => {
                     {item.category}
                   </span>
                 </div>
-                <Link to={`/vendor/items/edit/${item.item_id}`} className="text-lg font-bold text-black group-hover:text-blue-600 transition-colors">
+                <Link
+                  to={`/vendor/items/edit/${item.item_id}`}
+                  className="text-lg font-bold text-black group-hover:text-blue-600 transition-colors"
+                >
                   {item.name}
                 </Link>
               </div>
@@ -271,11 +261,10 @@ const FoodCourtItems: React.FC = () => {
                 <input
                   type="number"
                   step="0.01"
-                  // Use 'value' instead of 'defaultValue' for real-time updates
                   value={item.price ?? ""}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const val = e.target.value;
-                    // Update local state immediately so the user can type
+
                     setItems((prev) =>
                       prev.map((i) =>
                         i.id === item.id ? { ...i, price: parseFloat(val) } : i

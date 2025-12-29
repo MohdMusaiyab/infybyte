@@ -11,6 +11,7 @@ import CreateManager from "../pages/vendor/CreateManager";
 import EditManager from "../pages/vendor/EditManager";
 import FoodCourtItems from "../pages/vendor/FoodCourtItems";
 import VendorFoodCourts from "../pages/vendor/VendorFoodCourt";
+import Profile from "../pages/user/Profile";
 
 const VendorRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["vendor"]} />}>
@@ -25,6 +26,7 @@ const VendorRoutes = () => (
       <Route path="vendor/managers/edit/:id" element={<EditManager />} />
       <Route path="/vendor/foodcourt/:foodCourtId/items" element={<FoodCourtItems></FoodCourtItems>} />
       <Route path="/vendor/foodcourt" element={<VendorFoodCourts />} />
+      <Route path="/vendor/profile" element={<Profile/>}></Route>
     </Route>
   </Route>
 );

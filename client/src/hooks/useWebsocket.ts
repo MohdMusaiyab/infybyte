@@ -31,7 +31,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
       isInternalCloseRef.current = true;
       ws.current.close(1000, "Manual disconnect");
       ws.current = null;
-      isInternalCloseRef.current = false; // Reset
+      isInternalCloseRef.current = false;
     }
 
     setIsConnected(false);

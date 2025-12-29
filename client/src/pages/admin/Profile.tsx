@@ -166,7 +166,6 @@ const Profile = () => {
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
-      {/* Header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 md:w-12 md:h-12 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
           <User className="w-5 h-5 md:w-6 md:h-6 text-white" />
@@ -362,9 +361,9 @@ const Profile = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <Link to={`/admin/food-courts/${foodcourt.id}`}>
-                    <h3 className="font-bold text-base md:text-lg text-gray-900 break-words mb-2">
-                      {foodcourt.name}
-                    </h3>
+                      <h3 className="font-bold text-base md:text-lg text-gray-900 break-words mb-2">
+                        {foodcourt.name}
+                      </h3>
                     </Link>
                     <div className="flex items-start gap-2 text-xs md:text-sm text-gray-600">
                       <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />

@@ -143,7 +143,7 @@ const AllUsers = () => {
       setError(null);
       await axiosInstance.delete(`/admin/users/${userId}`);
       
-      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== userId));
+      setUsers((prevUsers) => prevUsers?.filter((u) => u.id !== userId));
       
       setMeta((prevMeta) => ({
         ...prevMeta,

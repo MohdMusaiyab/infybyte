@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -57,7 +56,6 @@ func GetVendorProfile(c *gin.Context, db *mongo.Database) {
 
 	var response VendorProfileResponse
 
-	// Fetch User Profile
 	var user struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name      string             `bson:"name" json:"name"`
@@ -72,7 +70,6 @@ func GetVendorProfile(c *gin.Context, db *mongo.Database) {
 	}
 	response.User = user
 
-	// Fetch Vendor Details
 	var vendor struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		UserID    primitive.ObjectID `bson:"user_id" json:"user_id"`
@@ -87,14 +84,12 @@ func GetVendorProfile(c *gin.Context, db *mongo.Database) {
 	}
 	response.Vendor = vendor
 
-	// Fetch All Items for this Vendor
 	itemsCursor, err := collections.items.Find(ctx, bson.M{"vendor_id": vendor.ID})
 	if err == nil {
 		defer itemsCursor.Close(ctx)
 		itemsCursor.All(ctx, &response.Items)
 	}
 
-	// Fetch Food Courts the Vendor is part of
 	var foodCourtIDs []primitive.ObjectID
 	foodCourtsCursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendor.ID})
 	if err == nil {
@@ -116,7 +111,6 @@ func GetVendorProfile(c *gin.Context, db *mongo.Database) {
 		response.FoodCourts = foodCourts
 	}
 
-	// Fetch Managers for this Vendor
 	managersCursor, err := collections.managers.Find(ctx, bson.M{"vendor_id": vendor.ID})
 	if err == nil {
 		defer managersCursor.Close(ctx)
@@ -135,7 +129,6 @@ func GetVendorProfile(c *gin.Context, db *mongo.Database) {
 		response.Managers = managers
 	}
 
-	// Fetch Food Court Items for this Vendor's Items
 	if len(response.Items) > 0 {
 		var itemIDs []primitive.ObjectID
 		for _, item := range response.Items {
@@ -197,7 +190,6 @@ func UpdateVendorProfile(c *gin.Context, db *mongo.Database) {
 		vendors: db.Collection("vendors"),
 	}
 
-	// Update User fields if provided
 	if updateData.Name != nil || updateData.Email != nil {
 		userUpdate := bson.M{}
 		if updateData.Name != nil {
@@ -219,7 +211,6 @@ func UpdateVendorProfile(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Update Vendor fields if provided
 	if updateData.ShopName != nil || updateData.GST != nil {
 		vendorUpdate := bson.M{}
 		if updateData.ShopName != nil {
@@ -265,7 +256,6 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Define response structure with enriched data
 	type ItemFoodCourtDetail struct {
 		ItemFoodCourtID primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		ItemID          primitive.ObjectID `bson:"item_id" json:"item_id"`
@@ -275,20 +265,18 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		TimeSlot        string             `bson:"timeSlot" json:"timeSlot"`
 		IsActive        bool               `bson:"isActive" json:"isActive"`
 		UpdatedAt       primitive.DateTime `bson:"updatedAt" json:"updatedAt"`
-		
-		// Item Details (joined)
-		ItemName        string             `json:"item_name"`
-		ItemDescription string             `json:"item_description,omitempty"`
-		ItemBasePrice   float64            `json:"item_basePrice"`
-		ItemCategory    string             `json:"item_category"`
-		ItemIsVeg       bool               `json:"item_isVeg"`
-		ItemIsSpecial   bool               `json:"item_isSpecial"`
-		
-		// Food Court Details (joined)
-		FoodCourtName   string             `json:"foodcourt_name"`
-		FoodCourtLocation string           `json:"foodcourt_location"`
-		FoodCourtIsOpen bool               `json:"foodcourt_isOpen"`
-		FoodCourtTimings *string           `json:"foodcourt_timings,omitempty"`
+
+		ItemName        string  `json:"item_name"`
+		ItemDescription string  `json:"item_description,omitempty"`
+		ItemBasePrice   float64 `json:"item_basePrice"`
+		ItemCategory    string  `json:"item_category"`
+		ItemIsVeg       bool    `json:"item_isVeg"`
+		ItemIsSpecial   bool    `json:"item_isSpecial"`
+
+		FoodCourtName     string  `json:"foodcourt_name"`
+		FoodCourtLocation string  `json:"foodcourt_location"`
+		FoodCourtIsOpen   bool    `json:"foodcourt_isOpen"`
+		FoodCourtTimings  *string `json:"foodcourt_timings,omitempty"`
 	}
 
 	var response struct {
@@ -308,7 +296,6 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		} `json:"summary"`
 	}
 
-	// Fetch Vendor Details
 	var vendor struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		ShopName  string             `bson:"shopName" json:"shopName"`
@@ -322,7 +309,6 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 	}
 	response.Vendor = vendor
 
-	// Fetch Food Courts the Vendor is part of
 	var foodCourtIDs []primitive.ObjectID
 	var foodCourtMap = make(map[primitive.ObjectID]struct {
 		Name     string
@@ -330,17 +316,17 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		IsOpen   bool
 		Timings  *string
 	})
-	
+
 	foodCourtsCursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendorObjID})
 	if err == nil {
 		defer foodCourtsCursor.Close(ctx)
 		for foodCourtsCursor.Next(ctx) {
 			var foodCourt struct {
-				ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-				Name      string             `bson:"name" json:"name"`
-				Location  string             `bson:"location" json:"location"`
-				IsOpen    bool               `bson:"isOpen" json:"isOpen"`
-				Timings   *string            `bson:"timings,omitempty" json:"timings,omitempty"`
+				ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
+				Name     string             `bson:"name" json:"name"`
+				Location string             `bson:"location" json:"location"`
+				IsOpen   bool               `bson:"isOpen" json:"isOpen"`
+				Timings  *string            `bson:"timings,omitempty" json:"timings,omitempty"`
 			}
 			if err := foodCourtsCursor.Decode(&foodCourt); err == nil {
 				foodCourtIDs = append(foodCourtIDs, foodCourt.ID)
@@ -355,8 +341,7 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 					IsOpen:   foodCourt.IsOpen,
 					Timings:  foodCourt.Timings,
 				}
-				
-				// Add to response.FoodCourts
+
 				response.FoodCourts = append(response.FoodCourts, map[string]interface{}{
 					"id":       foodCourt.ID,
 					"name":     foodCourt.Name,
@@ -368,32 +353,27 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// If vendor has no food courts, return early
 	if len(foodCourtIDs) == 0 {
 		response.Summary.TotalLocations = 0
 		utils.RespondSuccess(c, http.StatusOK, "Vendor profile retrieved successfully", response)
 		return
 	}
 
-	// Fetch ALL item-foodcourt entries for this vendor's food courts
-	// This includes ALL items (not just vendor's items) available in these food courts
 	foodCourtItemsCursor, err := collections.foodCourtItems.Find(ctx, bson.M{
 		"foodcourt_id": bson.M{"$in": foodCourtIDs},
 	})
 	if err == nil {
 		defer foodCourtItemsCursor.Close(ctx)
-		
+
 		var itemIDs []primitive.ObjectID
 		var itemFoodCourtMap = make(map[primitive.ObjectID][]bson.M)
-		
-		// First pass: collect all item IDs
+
 		for foodCourtItemsCursor.Next(ctx) {
 			var fci bson.M
 			if err := foodCourtItemsCursor.Decode(&fci); err == nil {
 				if itemID, ok := fci["item_id"].(primitive.ObjectID); ok {
 					itemIDs = append(itemIDs, itemID)
-					
-					// Store the raw food court item data
+
 					if _, exists := itemFoodCourtMap[itemID]; !exists {
 						itemFoodCourtMap[itemID] = []bson.M{}
 					}
@@ -401,17 +381,16 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 				}
 			}
 		}
-		
-		// If we have items in food courts, fetch their details
+
 		if len(itemIDs) > 0 {
-			// Fetch items that belong to this vendor AND are in the itemIDs list
+
 			itemsCursor, err := collections.items.Find(ctx, bson.M{
 				"_id":       bson.M{"$in": itemIDs},
-				"vendor_id": vendorObjID, // Only items owned by this vendor
+				"vendor_id": vendorObjID,
 			})
 			if err == nil {
 				defer itemsCursor.Close(ctx)
-				
+
 				var itemMap = make(map[primitive.ObjectID]bson.M)
 				for itemsCursor.Next(ctx) {
 					var item bson.M
@@ -421,24 +400,21 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 						}
 					}
 				}
-				
-				// Now combine item details with food court item details
+
 				for itemID, itemDetails := range itemMap {
-					// Get all food court entries for this item
+
 					if fciList, exists := itemFoodCourtMap[itemID]; exists {
 						for _, fci := range fciList {
 							foodCourtID, ok := fci["foodcourt_id"].(primitive.ObjectID)
 							if !ok {
 								continue
 							}
-							
-							// Get food court details
+
 							fcDetails, fcExists := foodCourtMap[foodCourtID]
 							if !fcExists {
 								continue
 							}
-							
-							// Create enriched item-foodcourt detail
+
 							detail := ItemFoodCourtDetail{
 								ItemFoodCourtID: fci["_id"].(primitive.ObjectID),
 								ItemID:          itemID,
@@ -446,23 +422,19 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 								Status:          fci["status"].(string),
 								TimeSlot:        fci["timeSlot"].(string),
 							}
-							
-							// Add price if exists
+
 							if price, ok := fci["price"].(float64); ok {
 								detail.Price = &price
 							}
-							
-							// Add isActive if exists
+
 							if isActive, ok := fci["isActive"].(bool); ok {
 								detail.IsActive = isActive
 							}
-							
-							// Add updatedAt if exists
+
 							if updatedAt, ok := fci["updatedAt"].(primitive.DateTime); ok {
 								detail.UpdatedAt = updatedAt
 							}
-							
-							// Add item details
+
 							detail.ItemName = itemDetails["name"].(string)
 							if desc, ok := itemDetails["description"].(string); ok {
 								detail.ItemDescription = desc
@@ -471,16 +443,14 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 							detail.ItemCategory = itemDetails["category"].(string)
 							detail.ItemIsVeg = itemDetails["isVeg"].(bool)
 							detail.ItemIsSpecial = itemDetails["isSpecial"].(bool)
-							
-							// Add food court details
+
 							detail.FoodCourtName = fcDetails.Name
 							detail.FoodCourtLocation = fcDetails.Location
 							detail.FoodCourtIsOpen = fcDetails.IsOpen
 							detail.FoodCourtTimings = fcDetails.Timings
-							
+
 							response.ItemFoodCourtDetails = append(response.ItemFoodCourtDetails, detail)
-							
-							// Update summary counters
+
 							response.Summary.TotalItems++
 							if detail.Status == "available" {
 								response.Summary.AvailableItems++
@@ -493,13 +463,12 @@ func GetVendorProfileByID(c *gin.Context, db *mongo.Database) {
 			}
 		}
 	}
-	
-	// Set summary
+
 	response.Summary.TotalLocations = len(response.FoodCourts)
-	
+
 	utils.RespondSuccess(c, http.StatusOK, "Vendor profile retrieved successfully", response)
 }
-// =================================Vendor Item Management==================================
+
 func GetVendorItems(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -522,7 +491,6 @@ func GetVendorItems(c *gin.Context, db *mongo.Database) {
 		items:   db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -532,7 +500,6 @@ func GetVendorItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all items for this vendor
 	cursor, err := collections.items.Find(ctx, bson.M{"vendor_id": vendor.ID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch items")
@@ -596,7 +563,6 @@ func CreateItem(c *gin.Context, db *mongo.Database) {
 		items:   db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -606,7 +572,6 @@ func CreateItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Create item
 	item := bson.M{
 		"name":        itemData.Name,
 		"description": itemData.Description,
@@ -671,7 +636,6 @@ func UpdateItem(c *gin.Context, db *mongo.Database) {
 		items:   db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -681,7 +645,6 @@ func UpdateItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Build update fields
 	updateFields := bson.M{}
 	if updateData.Name != nil {
 		updateFields["name"] = *updateData.Name
@@ -709,7 +672,6 @@ func UpdateItem(c *gin.Context, db *mongo.Database) {
 
 	updateFields["updatedAt"] = primitive.NewDateTimeFromTime(time.Now())
 
-	// Update item only if it belongs to this vendor
 	result, err := collections.items.UpdateOne(
 		ctx,
 		bson.M{"_id": itemObjID, "vendor_id": vendor.ID},
@@ -757,7 +719,6 @@ func DeleteItem(c *gin.Context, db *mongo.Database) {
 		items:   db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -767,7 +728,6 @@ func DeleteItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete item only if it belongs to this vendor
 	result, err := collections.items.DeleteOne(
 		ctx,
 		bson.M{"_id": itemObjID, "vendor_id": vendor.ID},
@@ -814,7 +774,6 @@ func GetVendorItem(c *gin.Context, db *mongo.Database) {
 		items:   db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -824,7 +783,6 @@ func GetVendorItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get the specific item
 	var item struct {
 		ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name        string             `bson:"name" json:"name"`
@@ -850,7 +808,6 @@ func GetVendorItem(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Item retrieved successfully", item)
 }
 
-// ================================Food Court Items=======================
 func GetVendorFoodCourtItems(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -873,11 +830,8 @@ func GetVendorFoodCourtItems(c *gin.Context, db *mongo.Database) {
 	}{
 		vendors:        db.Collection("vendors"),
 		foodCourtItems: db.Collection("itemfoodcourts"),
-		// foodCourts:     db.Collection("foodcourts"),
-		// items:          db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -887,7 +841,6 @@ func GetVendorFoodCourtItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all food court items for this vendor's items
 	pipeline := []bson.M{
 		{"$lookup": bson.M{
 			"from":         "items",
@@ -975,7 +928,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -985,7 +937,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to vendor
 	var item struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -995,7 +946,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify food court exists and vendor is part of it
 	var foodCourt struct {
 		VendorIDs []primitive.ObjectID `bson:"vendor_ids"`
 	}
@@ -1005,7 +955,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if vendor is part of this food court
 	vendorInFoodCourt := false
 	for _, vid := range foodCourt.VendorIDs {
 		if vid == vendor.ID {
@@ -1018,7 +967,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if item already exists in this food court
 	existing, err := collections.foodCourtItems.CountDocuments(ctx, bson.M{
 		"item_id":      itemData.ItemID,
 		"foodcourt_id": itemData.FoodCourtID,
@@ -1028,7 +976,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Create food court item
 	foodCourtItem := bson.M{
 		"item_id":      itemData.ItemID,
 		"foodcourt_id": itemData.FoodCourtID,
@@ -1045,7 +992,7 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to add item to food court")
 		return
 	}
-	// ✅ NEW: Fetch the created document for broadcasting
+
 	var createdItemFoodCourt models.ItemFoodCourt
 	err = collections.foodCourtItems.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&createdItemFoodCourt)
 	if err != nil {
@@ -1053,7 +1000,6 @@ func CreateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the creation to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(createdItemFoodCourt, "create")
 
 	utils.RespondSuccess(c, http.StatusCreated, "Item added to food court successfully", bson.M{"id": result.InsertedID})
@@ -1102,7 +1048,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		items:          db.Collection("items"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1112,7 +1057,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Build update fields
 	updateFields := bson.M{}
 	if updateData.Status != nil {
 		updateFields["status"] = *updateData.Status
@@ -1134,7 +1078,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 
 	updateFields["updatedAt"] = primitive.NewDateTimeFromTime(time.Now())
 
-	// Update only if the item belongs to this vendor
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": foodCourtItemObjID}},
 		{"$lookup": bson.M{
@@ -1160,7 +1103,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Perform the update
 	result, err := collections.foodCourtItems.UpdateOne(
 		ctx,
 		bson.M{"_id": foodCourtItemObjID},
@@ -1176,7 +1118,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Fetch the updated document to broadcast
 	var updatedItem models.ItemFoodCourt
 	err = collections.foodCourtItems.FindOne(ctx, bson.M{"_id": foodCourtItemObjID}).Decode(&updatedItem)
 	if err != nil {
@@ -1184,7 +1125,6 @@ func UpdateFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the update to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(updatedItem, "update")
 
 	utils.RespondSuccess(c, http.StatusOK, "Food court item updated successfully", gin.H{
@@ -1238,7 +1178,6 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		foodCourts:     db.Collection("foodcourts"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1248,7 +1187,6 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify vendor owns the item AND is part of the food court
 	var item struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1267,7 +1205,6 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if vendor is part of this food court
 	vendorInFoodCourt := false
 	for _, vid := range foodCourt.VendorIDs {
 		if vid == vendor.ID {
@@ -1280,8 +1217,6 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete the food court item association
-	// ✅ NEW: Fetch the item to be deleted for broadcasting
 	var itemToDelete models.ItemFoodCourt
 	err = collections.foodCourtItems.FindOne(ctx, bson.M{
 		"item_id":      itemObjID,
@@ -1292,7 +1227,6 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete the food court item association
 	result, err := collections.foodCourtItems.DeleteOne(
 		ctx,
 		bson.M{
@@ -1310,11 +1244,11 @@ func DeleteFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the deletion to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(itemToDelete, "delete")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item removed from food court successfully", nil)
 }
+
 func GetVendorFoodCourts(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1337,7 +1271,6 @@ func GetVendorFoodCourts(c *gin.Context, db *mongo.Database) {
 		foodCourts: db.Collection("foodcourts"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1347,7 +1280,6 @@ func GetVendorFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all food courts this vendor is part of
 	cursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendor.ID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch food courts")
@@ -1406,7 +1338,6 @@ func GetItemFoodCourts(c *gin.Context, db *mongo.Database) {
 		foodCourts:     db.Collection("foodcourts"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1416,7 +1347,6 @@ func GetItemFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to vendor
 	var item struct {
 		ID   primitive.ObjectID `bson:"_id"`
 		Name string             `bson:"name"`
@@ -1427,7 +1357,6 @@ func GetItemFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all food court associations for this item
 	pipeline := []bson.M{
 		{"$match": bson.M{"item_id": itemObjID}},
 		{"$lookup": bson.M{
@@ -1481,7 +1410,6 @@ func GetItemFoodCourts(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Item food courts retrieved successfully", response)
 }
 
-// =============================Manager Management==============================
 func GetVendorManagers(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1503,10 +1431,8 @@ func GetVendorManagers(c *gin.Context, db *mongo.Database) {
 	}{
 		vendors:  db.Collection("vendors"),
 		managers: db.Collection("managers"),
-		// users:    db.Collection("users"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1516,7 +1442,6 @@ func GetVendorManagers(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all managers for this vendor with user details
 	pipeline := []bson.M{
 		{"$match": bson.M{"vendor_id": vendor.ID}},
 		{"$lookup": bson.M{
@@ -1591,7 +1516,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		foodCourts: db.Collection("foodcourts"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1601,7 +1525,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify user exists
 	var user struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1611,7 +1534,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify food court exists and vendor is part of it
 	var foodCourt struct {
 		VendorIDs []primitive.ObjectID `bson:"vendor_ids"`
 	}
@@ -1621,7 +1543,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if vendor is part of this food court
 	vendorInFoodCourt := false
 	for _, vid := range foodCourt.VendorIDs {
 		if vid == vendor.ID {
@@ -1634,7 +1555,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if manager already exists for this vendor
 	existing, err := collections.managers.CountDocuments(ctx, bson.M{
 		"user_id":   managerData.UserID,
 		"vendor_id": vendor.ID,
@@ -1644,7 +1564,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Create manager
 	manager := bson.M{
 		"user_id":      managerData.UserID,
 		"vendor_id":    vendor.ID,
@@ -1660,7 +1579,7 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to add manager")
 		return
 	}
-	// Update user role to manager
+
 	_, err = collections.users.UpdateOne(
 		ctx,
 		bson.M{"_id": managerData.UserID},
@@ -1688,7 +1607,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// This is the specific assignment ID from the URL
 	managerID := c.Param("id")
 	managerObjID, err := primitive.ObjectIDFromHex(managerID)
 	if err != nil {
@@ -1710,7 +1628,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 1. Get the Vendor ID of the logged-in user
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1720,7 +1637,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// 2. Security & Validation
 	updateFields := bson.M{"updatedAt": time.Now()}
 
 	if updateData.ContactNo != nil {
@@ -1730,7 +1646,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		updateFields["isActive"] = *updateData.IsActive
 	}
 
-	// 3. If changing the food court, verify the vendor has access to the new one
 	if updateData.FoodCourtID != nil {
 		var foodCourt struct {
 			VendorIDs []primitive.ObjectID `bson:"vendor_ids"`
@@ -1741,7 +1656,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 			return
 		}
 
-		// Check if this vendor is allowed in the target food court
 		isAuthorized := false
 		for _, vID := range foodCourt.VendorIDs {
 			if vID == vendor.ID {
@@ -1758,8 +1672,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 		updateFields["foodcourt_id"] = *updateData.FoodCourtID
 	}
 
-	// 4. Perform the update
-	// We filter by managerObjID AND vendor.ID to ensure a vendor can't update someone else's manager
 	result, err := db.Collection("managers").UpdateOne(
 		ctx,
 		bson.M{"_id": managerObjID, "vendor_id": vendor.ID},
@@ -1778,7 +1690,6 @@ func UpdateManager(c *gin.Context, db *mongo.Database) {
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager assignment updated successfully", nil)
 }
-
 func RemoveManager(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1808,7 +1719,6 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 		managers: db.Collection("managers"),
 	}
 
-	// Get vendor ID from user ID
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1818,7 +1728,6 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete manager only if it belongs to this vendor
 	result, err := collections.managers.DeleteOne(
 		ctx,
 		bson.M{"_id": managerObjID, "vendor_id": vendor.ID},
@@ -1832,13 +1741,13 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
 		return
 	}
-	// Get manager details to find the user ID
+
 	var manager struct {
 		UserID primitive.ObjectID `bson:"user_id"`
 	}
 	err = collections.managers.FindOne(ctx, bson.M{"_id": managerObjID}).Decode(&manager)
 	if err == nil {
-		// Update user role back to user
+
 		_, err = db.Collection("users").UpdateOne(
 			ctx,
 			bson.M{"_id": manager.UserID},
@@ -1857,7 +1766,55 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 }
 
 func GetAllUsersForManager(c *gin.Context, db *mongo.Database) {
-	// Get vendor info to ensure they're authenticated
+	userID, _ := c.Get("userID")
+	userObjID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	searchEmail := c.Query("email")
+
+	filter := bson.M{
+		"_id":  bson.M{"$ne": userObjID},
+		"role": bson.M{"$nin": []string{"admin", "vendor"}},
+	}
+
+	if searchEmail != "" {
+		filter["email"] = bson.M{
+			"$regex": primitive.Regex{Pattern: searchEmail, Options: "i"},
+		}
+	}
+
+	findOptions := options.Find().
+		SetLimit(100).
+		SetProjection(bson.M{"password": 0}).
+		SetSort(bson.M{"name": 1})
+
+	cursor, err := db.Collection("users").Find(ctx, filter, findOptions)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch users")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var users []struct {
+		ID        primitive.ObjectID `bson:"_id" json:"id"`
+		Name      string             `bson:"name" json:"name"`
+		Email     string             `bson:"email" json:"email"`
+		CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
+	}
+
+	if err := cursor.All(ctx, &users); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Error decoding users")
+		return
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Users fetched successfully", gin.H{
+		"users": users,
+	})
+}
+
+func GetVendorManager(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
 		utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
@@ -1870,197 +1827,91 @@ func GetAllUsersForManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify vendor exists
-	vendorCollection := db.Collection("vendors")
+	managerID := c.Param("id")
+	managerObjID, err := primitive.ObjectIDFromHex(managerID)
+	if err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid manager ID")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	var vendor struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
-	err = vendorCollection.FindOne(context.TODO(), bson.M{"user_id": userObjID}).Decode(&vendor)
+	err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
 		return
 	}
 
-	// pagination params
-	pageStr := c.DefaultQuery("page", "1")
-	limitStr := c.DefaultQuery("limit", "50")
-	searchEmail := c.Query("email")
+	pipeline := []bson.M{
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 1 {
-		page = 1
+		{"$match": bson.M{"_id": managerObjID, "vendor_id": vendor.ID}},
+
+		{"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "user_id",
+			"foreignField": "_id",
+			"as":           "user_info",
+		}},
+		{"$unwind": "$user_info"},
+
+		{"$lookup": bson.M{
+			"from": "managers",
+			"let":  bson.M{"m_user_id": "$user_id"},
+			"pipeline": []bson.M{
+				{"$match": bson.M{"$expr": bson.M{"$eq": []string{"$user_id", "$$m_user_id"}}}},
+				{"$lookup": bson.M{
+					"from":         "foodcourts",
+					"localField":   "foodcourt_id",
+					"foreignField": "_id",
+					"as":           "details",
+				}},
+				{"$unwind": "$details"},
+				{"$replaceRoot": bson.M{"newRoot": "$details"}},
+			},
+			"as": "assigned_food_courts",
+		}},
+
+		{"$project": bson.M{
+			"id":         "$_id",
+			"user_id":    1,
+			"userName":   "$user_info.name",
+			"userEmail":  "$user_info.email",
+			"contact_no": 1,
+			"isActive":   1,
+			"foodCourts": "$assigned_food_courts",
+
+			"createdAt": 1,
+			"updatedAt": 1,
+		}},
 	}
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit < 1 || limit > 100 {
-		limit = 50
-	}
 
-	skip := (page - 1) * limit
-
-	collection := db.Collection("users")
-
-	// Build filter query
-	filter := bson.M{}
-	if searchEmail != "" {
-		filter["email"] = bson.M{
-			"$regex":   searchEmail,
-			"$options": "i",
-		}
-	}
-
-	// projection (exclude password and sensitive fields)
-	findOptions := options.Find().
-		SetProjection(bson.M{
-			"password": 0,
-			"role":     0, // Exclude role for vendor access
-		}).
-		SetSkip(int64(skip)).
-		SetLimit(int64(limit)).
-		SetSort(bson.M{"createdAt": -1})
-
-	// fetch users with filter
-	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	cursor, err := db.Collection("managers").Aggregate(ctx, pipeline)
 	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch users")
+		utils.RespondError(c, 500, "Failed to fetch manager data")
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
-	var users []struct {
-		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-		Name      string             `bson:"name" json:"name"`
-		Email     string             `bson:"email" json:"email"`
-		CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	}
-
-	if err := cursor.All(context.TODO(), &users); err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Error decoding users")
+	var results []bson.M
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, 500, "Error processing results")
 		return
 	}
 
-	// count total docs with filter
-	total, err := collection.CountDocuments(context.TODO(), filter)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to count users")
+	if len(results) == 0 {
+		utils.RespondError(c, 404, "Manager not found")
 		return
 	}
 
-	// response
-	utils.RespondSuccess(c, http.StatusOK, "Users fetched successfully", gin.H{
-		"users": users,
-		"meta": gin.H{
-			"page":   page,
-			"limit":  limit,
-			"total":  total,
-			"pages":  (total + int64(limit) - 1) / int64(limit),
-			"search": searchEmail,
-		},
-	})
+	utils.RespondSuccess(c, 200, "Manager details with food courts fetched", results[0])
 }
-
-func GetVendorManager(c *gin.Context, db *mongo.Database) {
-    userID, exists := c.Get("userID")
-    if !exists {
-        utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
-        return
-    }
-
-    userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-    if err != nil {
-        utils.RespondError(c, http.StatusBadRequest, "Invalid user ID")
-        return
-    }
-
-    managerID := c.Param("id")
-    managerObjID, err := primitive.ObjectIDFromHex(managerID)
-    if err != nil {
-        utils.RespondError(c, http.StatusBadRequest, "Invalid manager ID")
-        return
-    }
-
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
-
-    // 1. Get the Vendor ID associated with the logged-in user
-    var vendor struct {
-        ID primitive.ObjectID `bson:"_id"`
-    }
-    err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
-    if err != nil {
-        utils.RespondError(c, http.StatusNotFound, "Vendor not found")
-        return
-    }
-
-    // 2. Aggregate to get Manager info + Array of Food Courts
-    pipeline := []bson.M{
-        // Security Check: Match Manager ID AND ensure they belong to this Vendor
-        {"$match": bson.M{"_id": managerObjID, "vendor_id": vendor.ID}},
-        
-        // Join with Users to get Manager's Name/Email
-        {"$lookup": bson.M{
-            "from":         "users",
-            "localField":   "user_id",
-            "foreignField": "_id",
-            "as":           "user_info",
-        }},
-        {"$unwind": "$user_info"},
-
-        // JOIN: Get ALL Food Courts linked to this manager
-        // Note: We search the "managers" collection for the same user_id to find all assignments
-        {"$lookup": bson.M{
-            "from": "managers",
-            "let":  bson.M{"m_user_id": "$user_id"},
-            "pipeline": []bson.M{
-                {"$match": bson.M{"$expr": bson.M{"$eq": []string{"$user_id", "$$m_user_id"}}}},
-                {"$lookup": bson.M{
-                    "from":         "foodcourts",
-                    "localField":   "foodcourt_id",
-                    "foreignField": "_id",
-                    "as":           "details",
-                }},
-                {"$unwind": "$details"},
-                {"$replaceRoot": bson.M{"newRoot": "$details"}},
-            },
-            "as": "assigned_food_courts",
-        }},
-
-        {"$project": bson.M{
-            "id":          "$_id",
-            "user_id":     1,
-            "userName":    "$user_info.name",
-            "userEmail":   "$user_info.email",
-            "contact_no":  1,
-            "isActive":    1,
-            "foodCourts":  "$assigned_food_courts", // Now returns an array [{}, {}]
-            "createdAt":   1,
-            "updatedAt":   1,
-        }},
-    }
-
-    cursor, err := db.Collection("managers").Aggregate(ctx, pipeline)
-    if err != nil {
-        utils.RespondError(c, 500, "Failed to fetch manager data")
-        return
-    }
-    defer cursor.Close(ctx)
-
-    var results []bson.M
-    if err := cursor.All(ctx, &results); err != nil {
-        utils.RespondError(c, 500, "Error processing results")
-        return
-    }
-
-    if len(results) == 0 {
-        utils.RespondError(c, 404, "Manager not found")
-        return
-    }
-
-    utils.RespondSuccess(c, 200, "Manager details with food courts fetched", results[0])
-}
-
 
 func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
-	// Get user ID from JWT context (as per your working code)
+
 	userID, exists := c.Get("userID")
 	if !exists {
 		utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
@@ -2088,7 +1939,6 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 		managers:       db.Collection("managers"),
 	}
 
-	// Get vendor ID from user ID (as per your working code)
 	var vendor struct {
 		ID       primitive.ObjectID `bson:"_id"`
 		ShopName string             `bson:"shopName"`
@@ -2100,22 +1950,19 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 	}
 	vendorObjID := vendor.ID
 
-	// Count total items for this vendor
 	totalItems, err := collections.items.CountDocuments(ctx, bson.M{"vendor_id": vendorObjID})
 	if err != nil {
 		totalItems = 0
 	}
 
-	// Count total managers for this vendor
 	totalManagers, err := collections.managers.CountDocuments(ctx, bson.M{"vendor_id": vendorObjID})
 	if err != nil {
 		totalManagers = 0
 	}
 
-	// Get food courts where vendor operates
 	var foodCourtIDs []primitive.ObjectID
 	var foodCourtMap = make(map[primitive.ObjectID]string)
-	
+
 	foodCourtsCursor, err := collections.foodCourts.Find(ctx, bson.M{"vendor_ids": vendorObjID})
 	if err == nil {
 		defer foodCourtsCursor.Close(ctx)
@@ -2132,7 +1979,6 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 	}
 	totalFoodCourts := len(foodCourtIDs)
 
-	// Get all item IDs for this vendor
 	var itemIDs []primitive.ObjectID
 	itemsCursor, err := collections.items.Find(ctx, bson.M{"vendor_id": vendorObjID})
 	if err == nil {
@@ -2147,27 +1993,23 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Initialize counters
 	totalFoodCourtItems := int64(0)
 	activeItems := int64(0)
 	availableItems := int64(0)
 
-	// Get stats if we have items and food courts
 	if len(itemIDs) > 0 && len(foodCourtIDs) > 0 {
-		// Count total food court items
+
 		totalFoodCourtItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
 			"item_id":      bson.M{"$in": itemIDs},
 			"foodcourt_id": bson.M{"$in": foodCourtIDs},
 		})
 
-		// Count active items
 		activeItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
 			"item_id":      bson.M{"$in": itemIDs},
 			"foodcourt_id": bson.M{"$in": foodCourtIDs},
 			"isActive":     true,
 		})
 
-		// Count available items
 		availableItems, _ = collections.foodCourtItems.CountDocuments(ctx, bson.M{
 			"item_id":      bson.M{"$in": itemIDs},
 			"foodcourt_id": bson.M{"$in": foodCourtIDs},
@@ -2175,20 +2017,19 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 		})
 	}
 
-	// Prepare response
 	response := struct {
 		VendorName string `json:"vendorName"`
 		TotalStats struct {
-			TotalItems         int64 `json:"totalItems"`
-			TotalManagers      int64 `json:"totalManagers"`
-			TotalFoodCourts    int   `json:"totalFoodCourts"`
+			TotalItems          int64 `json:"totalItems"`
+			TotalManagers       int64 `json:"totalManagers"`
+			TotalFoodCourts     int   `json:"totalFoodCourts"`
 			TotalFoodCourtItems int64 `json:"totalFoodCourtItems"`
-			ActiveItems        int64 `json:"activeItems"`
-			AvailableItems     int64 `json:"availableItems"`
+			ActiveItems         int64 `json:"activeItems"`
+			AvailableItems      int64 `json:"availableItems"`
 		} `json:"totalStats"`
 		FoodCourts []struct {
-			ID       string `json:"id"`
-			Name     string `json:"name"`
+			ID        string `json:"id"`
+			Name      string `json:"name"`
 			ItemCount int64  `json:"itemCount"`
 		} `json:"foodCourts,omitempty"`
 		RecentUpdates []struct {
@@ -2201,7 +2042,6 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 		VendorName: vendor.ShopName,
 	}
 
-	// Set total stats
 	response.TotalStats.TotalItems = totalItems
 	response.TotalStats.TotalManagers = totalManagers
 	response.TotalStats.TotalFoodCourts = totalFoodCourts
@@ -2209,31 +2049,29 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 	response.TotalStats.ActiveItems = activeItems
 	response.TotalStats.AvailableItems = availableItems
 
-	// Get item counts per food court
 	for foodCourtID, foodCourtName := range foodCourtMap {
 		itemCount, _ := collections.foodCourtItems.CountDocuments(ctx, bson.M{
 			"foodcourt_id": foodCourtID,
 			"item_id":      bson.M{"$in": itemIDs},
 		})
-		
+
 		response.FoodCourts = append(response.FoodCourts, struct {
-			ID       string `json:"id"`
-			Name     string `json:"name"`
+			ID        string `json:"id"`
+			Name      string `json:"name"`
 			ItemCount int64  `json:"itemCount"`
 		}{
-			ID:       foodCourtID.Hex(),
-			Name:     foodCourtName,
+			ID:        foodCourtID.Hex(),
+			Name:      foodCourtName,
 			ItemCount: itemCount,
 		})
 	}
 
-	// Get recent updates (last 5)
 	if len(itemIDs) > 0 && len(foodCourtIDs) > 0 {
 		cursor, err := collections.foodCourtItems.Find(ctx, bson.M{
 			"item_id":      bson.M{"$in": itemIDs},
 			"foodcourt_id": bson.M{"$in": foodCourtIDs},
 		}, options.Find().SetSort(bson.M{"updatedAt": -1}).SetLimit(5))
-		
+
 		if err == nil {
 			defer cursor.Close(ctx)
 			for cursor.Next(ctx) {
@@ -2244,15 +2082,14 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 					UpdatedAt   primitive.DateTime `bson:"updatedAt"`
 				}
 				if err := cursor.Decode(&fci); err == nil {
-					// Get item name
+
 					var item struct {
 						Name string `bson:"name"`
 					}
 					collections.items.FindOne(ctx, bson.M{"_id": fci.ItemID}).Decode(&item)
-					
-					// Get food court name
+
 					foodCourtName := foodCourtMap[fci.FoodCourtID]
-					
+
 					response.RecentUpdates = append(response.RecentUpdates, struct {
 						ItemName      string `json:"itemName"`
 						FoodCourtName string `json:"foodCourtName"`
@@ -2273,170 +2110,163 @@ func GetVendorDashboardStats(c *gin.Context, db *mongo.Database) {
 }
 
 func SingleFoodCourtItems(c *gin.Context, db *mongo.Database) {
-    foodCourtID := c.Param("id")
-    userID, exists := c.Get("userID")
-    if !exists {
-        utils.RespondError(c, http.StatusUnauthorized, "User authentication required")
-        return
-    }
+	foodCourtID := c.Param("id")
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.RespondError(c, http.StatusUnauthorized, "User authentication required")
+		return
+	}
 
-    foodCourtObjID, err := primitive.ObjectIDFromHex(foodCourtID)
-    userObjID, err2 := primitive.ObjectIDFromHex(userID.(string))
-    if err != nil || err2 != nil {
-        utils.RespondError(c, http.StatusBadRequest, "Invalid ID format")
-        return
-    }
+	foodCourtObjID, err := primitive.ObjectIDFromHex(foodCourtID)
+	userObjID, err2 := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil || err2 != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid ID format")
+		return
+	}
 
-    ctx := context.TODO()
-    
-    // 1. Get the Vendor ID from the User ID
-    var vendor models.Vendor
-    err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
-    if err != nil {
-        utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
-        return
-    }
+	ctx := context.TODO()
 
-    // 2. Refined Pipeline
-    pipeline := []bson.M{
-        // First match only by Food Court
-        {"$match": bson.M{"foodcourt_id": foodCourtObjID}},
-        
-        // Join with Items to get Vendor details
-        {"$lookup": bson.M{
-            "from":         "items",
-            "localField":   "item_id",
-            "foreignField": "_id",
-            "as":           "item_details",
-        }},
-        {"$unwind": "$item_details"},
+	var vendor models.Vendor
+	err = db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+	if err != nil {
+		utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
+		return
+	}
 
-        // NOW filter by Vendor ID (since it exists in item_details)
-        {"$match": bson.M{"item_details.vendor_id": vendor.ID}},
+	pipeline := []bson.M{
 
-        // Project the final shape for your React frontend
-        {"$project": bson.M{
-            "id":          "$_id",
-            "item_id":     "$item_id",
-            "name":        "$item_details.name",
-            "category":    "$item_details.category",
-            "description": "$item_details.description",
-            "basePrice":   "$item_details.basePrice",
-            "price":       "$price", // This is the FC specific price
-            "status":      "$status",
-            "isActive":    "$isActive",
-            "timeSlot":    "$timeSlot",
-            "isVeg":       "$item_details.isVeg",
-        }},
-    }
+		{"$match": bson.M{"foodcourt_id": foodCourtObjID}},
 
-    cursor, err := db.Collection("itemfoodcourts").Aggregate(ctx, pipeline)
-    if err != nil {
-        utils.RespondError(c, http.StatusInternalServerError, "Aggregation failed")
-        return
-    }
-    defer cursor.Close(ctx)
+		{"$lookup": bson.M{
+			"from":         "items",
+			"localField":   "item_id",
+			"foreignField": "_id",
+			"as":           "item_details",
+		}},
+		{"$unwind": "$item_details"},
 
-    var results []bson.M = []bson.M{} // Initialize as empty slice to avoid null in JSON
-    if err := cursor.All(ctx, &results); err != nil {
-        utils.RespondError(c, http.StatusInternalServerError, "Decoding failed")
-        return
-    }
+		{"$match": bson.M{"item_details.vendor_id": vendor.ID}},
 
-    utils.RespondSuccess(c, http.StatusOK, "Items retrieved", results)
+		{"$project": bson.M{
+			"id":          "$_id",
+			"item_id":     "$item_id",
+			"name":        "$item_details.name",
+			"category":    "$item_details.category",
+			"description": "$item_details.description",
+			"basePrice":   "$item_details.basePrice",
+			"price":       "$price",
+
+			"status":   "$status",
+			"isActive": "$isActive",
+			"timeSlot": "$timeSlot",
+			"isVeg":    "$item_details.isVeg",
+		}},
+	}
+
+	cursor, err := db.Collection("itemfoodcourts").Aggregate(ctx, pipeline)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Aggregation failed")
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var results []bson.M = []bson.M{}
+
+	if err := cursor.All(ctx, &results); err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Decoding failed")
+		return
+	}
+
+	utils.RespondSuccess(c, http.StatusOK, "Items retrieved", results)
 }
 
 func GetVendorFoodCourtsForDisplay(c *gin.Context, db *mongo.Database) {
-    userID, exists := c.Get("userID")
-    if !exists {
-        utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
-        return
-    }
+	userID, exists := c.Get("userID")
+	if !exists {
+		utils.RespondError(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
 
-    userObjID, _ := primitive.ObjectIDFromHex(userID.(string))
-    ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-    defer cancel()
+	userObjID, _ := primitive.ObjectIDFromHex(userID.(string))
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-    var vendor models.Vendor
-    err := db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
-    if err != nil {
-        utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
-        return
-    }
+	var vendor models.Vendor
+	err := db.Collection("vendors").FindOne(ctx, bson.M{"user_id": userObjID}).Decode(&vendor)
+	if err != nil {
+		utils.RespondError(c, http.StatusNotFound, "Vendor profile not found")
+		return
+	}
 
-    pipeline := []bson.M{
-        {"$match": bson.M{"vendor_ids": vendor.ID}},
-        
-        // 1. Get all items for this food court
-        {"$lookup": bson.M{
-            "from": "itemfoodcourts",
-            "localField": "_id",
-            "foreignField": "foodcourt_id",
-            "as": "all_fc_items",
-        }},
+	pipeline := []bson.M{
+		{"$match": bson.M{"vendor_ids": vendor.ID}},
 
-        // 2. Join with the master 'items' collection to find which items belong to THIS vendor
-        {"$lookup": bson.M{
-            "from": "items",
-            "localField": "all_fc_items.item_id",
-            "foreignField": "_id",
-            "as": "master_items",
-        }},
+		{"$lookup": bson.M{
+			"from":         "itemfoodcourts",
+			"localField":   "_id",
+			"foreignField": "foodcourt_id",
+			"as":           "all_fc_items",
+		}},
 
-        // 3. Project and Filter locally in the pipeline
-        {"$project": bson.M{
-            "id":       "$_id",
-            "name":     1,
-            "location": 1,
-            "isOpen":   1,
-            "timings":  1,
-            // Filter the junction items where the corresponding master item belongs to this vendor
-            "vendorItems": bson.M{
-                "$filter": bson.M{
-                    "input": "$all_fc_items",
-                    "as":    "fcItem",
-                    "cond": bson.M{"$in": []interface{}{
-                        "$$fcItem.item_id", 
-                        bson.M{
-                            "$map": bson.M{
-                                "input": bson.M{
-                                    "$filter": bson.M{
-                                        "input": "$master_items",
-                                        "as": "mItem",
-                                        "cond": bson.M{"$eq": []interface{}{"$$mItem.vendor_id", vendor.ID}},
-                                    },
-                                },
-                                "as": "filtered",
-                                "in": "$$filtered._id",
-                            },
-                        },
-                    }},
-                },
-            },
-        }},
+		{"$lookup": bson.M{
+			"from":         "items",
+			"localField":   "all_fc_items.item_id",
+			"foreignField": "_id",
+			"as":           "master_items",
+		}},
 
-        // 4. Final Count Calculation
-        {"$project": bson.M{
-            "id":          1,
-            "name":        1,
-            "location":    1,
-            "isOpen":      1,
-            "timings":     1,
-            "totalItems":  bson.M{"$size": "$vendorItems"},
-            "activeItems": bson.M{
-                "$size": bson.M{
-                    "$filter": bson.M{
-                        "input": "$vendorItems",
-                        "as":    "vi",
-                        "cond":  bson.M{"$eq": []interface{}{"$$vi.isActive", true}},
-                    },
-                },
-            },
-        }},
-        {"$sort": bson.M{"name": 1}},
-    }
+		{"$project": bson.M{
+			"id":       "$_id",
+			"name":     1,
+			"location": 1,
+			"isOpen":   1,
+			"timings":  1,
 
-    cursor, err := db.Collection("foodcourts").Aggregate(ctx, pipeline)
+			"vendorItems": bson.M{
+				"$filter": bson.M{
+					"input": "$all_fc_items",
+					"as":    "fcItem",
+					"cond": bson.M{"$in": []interface{}{
+						"$$fcItem.item_id",
+						bson.M{
+							"$map": bson.M{
+								"input": bson.M{
+									"$filter": bson.M{
+										"input": "$master_items",
+										"as":    "mItem",
+										"cond":  bson.M{"$eq": []interface{}{"$$mItem.vendor_id", vendor.ID}},
+									},
+								},
+								"as": "filtered",
+								"in": "$$filtered._id",
+							},
+						},
+					}},
+				},
+			},
+		}},
+
+		{"$project": bson.M{
+			"id":         1,
+			"name":       1,
+			"location":   1,
+			"isOpen":     1,
+			"timings":    1,
+			"totalItems": bson.M{"$size": "$vendorItems"},
+			"activeItems": bson.M{
+				"$size": bson.M{
+					"$filter": bson.M{
+						"input": "$vendorItems",
+						"as":    "vi",
+						"cond":  bson.M{"$eq": []interface{}{"$$vi.isActive", true}},
+					},
+				},
+			},
+		}},
+		{"$sort": bson.M{"name": 1}},
+	}
+
+	cursor, err := db.Collection("foodcourts").Aggregate(ctx, pipeline)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to aggregate food court data")
 		return

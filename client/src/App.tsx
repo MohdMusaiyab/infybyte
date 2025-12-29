@@ -11,13 +11,6 @@ function App() {
   const logout = useAuthStore((state) => state.logout);
   const [loading, setLoading] = useState(true);
 
-  const handleItemFoodCourtUpdate = (
-    update: ItemFoodCourtUpdatePayload,
-    action: string
-  ) => {
-    console.log(`Real-time update: Item ${action}`, update);
-  };
-
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -28,7 +21,7 @@ function App() {
         );
         const { access_token, user } = res.data.data;
         setAuth(user, access_token);
-      } catch {
+      } catch  {
         logout();
       } finally {
         setLoading(false);
@@ -38,14 +31,27 @@ function App() {
     initAuth();
   }, [setAuth, logout]);
 
-  if (loading) return <div>Loading...</div>;
+
+  const handleItemFoodCourtUpdate = (
+    update: ItemFoodCourtUpdatePayload,
+    action: string
+  ) => {
+    console.log(`Real-time update: Item ${action}`, update);
+  };
 
   return (
-    <WebSocketProvider onItemFoodCourtUpdate={handleItemFoodCourtUpdate}>
-      <Router>
-        <AppRoutes />
-      </Router>
-    </WebSocketProvider>
+    <Router>
+      {loading ? (
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+           <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin mb-4"></div>
+           <p className="text-black font-bold tracking-widest uppercase text-xs">Infybite</p>
+        </div>
+      ) : (
+        <WebSocketProvider onItemFoodCourtUpdate={handleItemFoodCourtUpdate}>
+          <AppRoutes />
+        </WebSocketProvider>
+      )}
+    </Router>
   );
 }
 

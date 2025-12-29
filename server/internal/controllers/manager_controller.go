@@ -59,10 +59,8 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 
 	var response ManagerDashboardResponse
 
-	// Initialize managers as empty array to prevent null
 	response.Managers = []interface{}{}
 
-	// Fetch User Profile
 	var user struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name      string             `bson:"name" json:"name"`
@@ -77,7 +75,6 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 	}
 	response.User = user
 
-	// Fetch Manager Details
 	var manager struct {
 		ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
@@ -94,7 +91,6 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 	}
 	response.Manager = manager
 
-	// Fetch Vendor Details (Owner)
 	var vendor struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		ShopName string             `bson:"shopName" json:"shopName"`
@@ -108,7 +104,6 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 	}
 	response.Vendor = vendor
 
-	// Fetch Assigned Food Court Details
 	var foodCourt struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name      string             `bson:"name" json:"name"`
@@ -125,7 +120,6 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Count items in this food court for this vendor
 	itemCount, err := collections.itemFoodCourts.CountDocuments(ctx, bson.M{
 		"foodcourt_id": manager.FoodCourtID,
 		"item_id":      bson.M{"$in": getVendorItemIDs(ctx, collections.items, manager.VendorID)},
@@ -134,14 +128,12 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 		itemCount = 0
 	}
 
-	// Prepare food courts array with item count
 	foodCourtDashboard := FoodCourtDashboard{
 		FoodCourt: foodCourt,
 		ItemCount: int(itemCount),
 	}
 	response.FoodCourts = []FoodCourtDashboard{foodCourtDashboard}
 
-	// Fetch Other Managers in same Food Court and same Vendor
 	managersCursor, err := collections.managers.Find(ctx, bson.M{
 		"foodcourt_id": manager.FoodCourtID,
 		"vendor_id":    manager.VendorID,
@@ -166,7 +158,6 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Manager dashboard retrieved successfully", response)
 }
 
-// Helper function to get vendor's item IDs
 func getVendorItemIDs(ctx context.Context, itemsCollection *mongo.Collection, vendorID primitive.ObjectID) []primitive.ObjectID {
 	var itemIDs []primitive.ObjectID
 	cursor, err := itemsCollection.Find(ctx, bson.M{"vendor_id": vendorID})
@@ -219,7 +210,6 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		items:          db.Collection("items"),
 	}
 
-	// Verify manager has access to this food court
 	var manager struct {
 		FoodCourtID primitive.ObjectID `bson:"foodcourt_id"`
 	}
@@ -232,7 +222,6 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get food court basic information
 	var foodCourt struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name     string             `bson:"name" json:"name"`
@@ -246,7 +235,6 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get manager details to get vendor ID
 	var managerDetails struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -256,7 +244,6 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get vendor's items in this food court
 	vendorItems, err := collections.items.Find(ctx, bson.M{"vendor_id": managerDetails.VendorID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendor items")
@@ -274,7 +261,6 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Get food court items with details using proper bson.D with keys
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.M{
 			"foodcourt_id": foodCourtObjID,
@@ -362,7 +348,6 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		items:          db.Collection("items"),
 	}
 
-	// Verify manager has access to this food court
 	var manager struct {
 		FoodCourtID primitive.ObjectID `bson:"foodcourt_id"`
 		VendorID    primitive.ObjectID `bson:"vendor_id"`
@@ -376,7 +361,6 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get food court basic information
 	var foodCourt struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name     string             `bson:"name" json:"name"`
@@ -388,7 +372,6 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to manager's vendor
 	var item struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -398,7 +381,6 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get food court item details using proper bson.D with keys
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.M{
 			"foodcourt_id": foodCourtObjID,
@@ -452,7 +434,6 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Food court item details retrieved successfully", response)
 }
 
-// UpdateFoodCourtItemStatus - Update only status of item in food court
 func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -469,7 +450,6 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// The itemID from parameter is the itemFoodCourts document ID, not the item ID
 	itemFoodCourtObjID, err := primitive.ObjectIDFromHex(itemID)
 	if err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid item ID")
@@ -493,7 +473,6 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		items:          db.Collection("items"),
 	}
 
-	// Get manager's food court and vendor
 	var manager struct {
 		FoodCourtID primitive.ObjectID `bson:"foodcourt_id"`
 		VendorID    primitive.ObjectID `bson:"vendor_id"`
@@ -504,22 +483,20 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// First, get the itemFoodCourts document to find the actual item_id
 	var itemFoodCourt struct {
 		ID       primitive.ObjectID `bson:"_id"`
 		ItemID   primitive.ObjectID `bson:"item_id"`
-		VendorID primitive.ObjectID `bson:"vendor_id,omitempty"` // if you have this field
+		VendorID primitive.ObjectID `bson:"vendor_id,omitempty"`
 	}
 	err = collections.itemFoodCourts.FindOne(ctx, bson.M{
 		"_id":          itemFoodCourtObjID,
-		"foodcourt_id": manager.FoodCourtID, // Ensure it's in manager's food court
+		"foodcourt_id": manager.FoodCourtID,
 	}).Decode(&itemFoodCourt)
 	if err != nil {
 		utils.RespondError(c, http.StatusForbidden, "Item not found in your food court")
 		return
 	}
 
-	// Verify the item belongs to manager's vendor through the items collection
 	var item struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -529,11 +506,11 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Update status
 	result, err := collections.itemFoodCourts.UpdateOne(
 		ctx,
 		bson.M{
-			"_id":          itemFoodCourtObjID, // Use the correct document ID
+			"_id": itemFoodCourtObjID,
+
 			"foodcourt_id": manager.FoodCourtID,
 		},
 		bson.M{
@@ -559,12 +536,10 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the update to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 	utils.RespondSuccess(c, http.StatusOK, "Item status updated successfully", nil)
 }
 
-// UpdateFoodCourtItem - Update all FC-specific item information
 func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -607,7 +582,6 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		items:          db.Collection("items"),
 	}
 
-	// Get manager's food court
 	var manager struct {
 		FoodCourtID primitive.ObjectID `bson:"foodcourt_id"`
 		VendorID    primitive.ObjectID `bson:"vendor_id"`
@@ -618,7 +592,6 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to manager's vendor
 	var item struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -628,7 +601,6 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Build update fields using time.Now()
 	updateFields := bson.M{
 		"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -645,7 +617,6 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		updateFields["timeSlot"] = request.TimeSlot
 	}
 
-	// Update food court item
 	result, err := collections.itemFoodCourts.UpdateOne(
 		ctx,
 		bson.M{
@@ -673,13 +644,11 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the update to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item updated successfully", nil)
 }
 
-// GetManagerItemWithFCAssignments - Get item details with FC assignment status across manager's FCs
 func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -713,7 +682,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get manager's vendor and all assigned food courts
 	var manager struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -723,7 +691,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all food courts where this manager is assigned
 	managerFCsCursor, err := collections.managers.Find(ctx, bson.M{"user_id": userObjID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch manager assignments")
@@ -743,7 +710,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Get food court details for manager's FCs
 	if len(managerFoodCourtIDs) > 0 {
 		fcCursor, err := collections.foodCourts.Find(ctx, bson.M{"_id": bson.M{"$in": managerFoodCourtIDs}})
 		if err == nil {
@@ -752,7 +718,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Verify item belongs to manager's vendor and get item details
 	var item struct {
 		ID          primitive.ObjectID `bson:"_id"`
 		Name        string             `bson:"name"`
@@ -769,13 +734,11 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Security check: item must belong to manager's vendor
 	if item.VendorID != manager.VendorID {
 		utils.RespondError(c, http.StatusForbidden, "Access denied to this item")
 		return
 	}
 
-	// Get current FC assignments for this item
 	fcItemsCursor, err := collections.foodCourtItems.Find(ctx, bson.M{"item_id": itemObjID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch FC assignments")
@@ -786,7 +749,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 	var currentFCItems []bson.M
 	fcItemsCursor.All(ctx, &currentFCItems)
 
-	// Create lookup for current assignments
 	currentFCAssignments := make(map[primitive.ObjectID]bson.M)
 	for _, fcItem := range currentFCItems {
 		if fcID, ok := fcItem["foodcourt_id"].(primitive.ObjectID); ok {
@@ -794,12 +756,10 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Categorize food courts
 	var currentAssignments []interface{}
 	var availableForAssignment []interface{}
 	var notAccessible []interface{}
 
-	// Get all food courts to check accessibility
 	allFCsCursor, err := collections.foodCourts.Find(ctx, bson.M{})
 	if err == nil {
 		defer allFCsCursor.Close(ctx)
@@ -817,7 +777,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 				"location":      location,
 			}
 
-			// Check if manager has access to this FC
 			managerHasAccess := false
 			for _, mgrFCID := range managerFoodCourtIDs {
 				if mgrFCID == fcID {
@@ -827,9 +786,9 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 			}
 
 			if managerHasAccess {
-				// Check if item is already in this FC
+
 				if fcItem, exists := currentFCAssignments[fcID]; exists {
-					// Item is in this FC - add to current assignments
+
 					assignment := bson.M{
 						"foodCourtId":   fcID,
 						"foodCourtName": fcName,
@@ -842,13 +801,13 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 					}
 					currentAssignments = append(currentAssignments, assignment)
 				} else {
-					// Item is not in this FC but manager has access - available for assignment
+
 					availableForAssignment = append(availableForAssignment, fcInfo)
 				}
 			} else {
-				// Manager doesn't have access to this FC
+
 				if _, exists := currentFCAssignments[fcID]; exists {
-					// Item is in this FC but manager doesn't have access
+
 					notAccessible = append(notAccessible, bson.M{
 						"foodCourtId":   fcID,
 						"foodCourtName": fcName,
@@ -884,7 +843,6 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Item FC assignments retrieved successfully", response)
 }
 
-// AddItemToManagerFoodCourt - Add item to a food court where manager has access
 func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -928,7 +886,6 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get manager's vendor
 	var manager struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -938,7 +895,6 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to manager's vendor
 	var item struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -948,7 +904,6 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify manager has access to the target food court
 	managerAccess, err := collections.managers.CountDocuments(ctx, bson.M{
 		"user_id":      userObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -958,7 +913,6 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Check if item already exists in this food court
 	existing, err := collections.foodCourtItems.CountDocuments(ctx, bson.M{
 		"item_id":      itemObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -968,7 +922,6 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Create food court item
 	foodCourtItem := bson.M{
 		"item_id":      itemObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -992,12 +945,10 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the creation to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(createdItemFoodCourt, "create")
 	utils.RespondSuccess(c, http.StatusCreated, "Item added to food court successfully", bson.M{"id": result.InsertedID})
 }
 
-// UpdateItemInManagerFoodCourt - Update FC-specific details for item
 func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -1042,7 +993,6 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get manager's vendor
 	var manager struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -1052,7 +1002,6 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to manager's vendor
 	var item struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1062,7 +1011,6 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify manager has access to the food court
 	managerAccess, err := collections.managers.CountDocuments(ctx, bson.M{
 		"user_id":      userObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -1072,7 +1020,6 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Build update fields
 	updateFields := bson.M{
 		"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
 	}
@@ -1089,12 +1036,12 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		updateFields["isActive"] = *request.IsActive
 	}
 
-	if len(updateFields) == 1 { // Only updatedAt was set
+	if len(updateFields) == 1 {
+
 		utils.RespondError(c, http.StatusBadRequest, "No valid fields to update")
 		return
 	}
 
-	// Update the food court item
 	result, err := collections.foodCourtItems.UpdateOne(
 		ctx,
 		bson.M{
@@ -1112,7 +1059,7 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusNotFound, "Item not found in this food court")
 		return
 	}
-	// ✅ NEW: Fetch the updated document for broadcasting
+
 	var updatedItemFoodCourt models.ItemFoodCourt
 	err = collections.foodCourtItems.FindOne(ctx, bson.M{
 		"item_id":      itemObjID,
@@ -1123,12 +1070,10 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the update to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(updatedItemFoodCourt, "update")
 	utils.RespondSuccess(c, http.StatusOK, "Item updated in food court successfully", nil)
 }
 
-// RemoveItemFromManagerFoodCourt - Remove item from a food court
 func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	itemID := c.Param("itemId")
 	userID, exists := c.Get("userID")
@@ -1169,7 +1114,6 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		foodCourtItems: db.Collection("itemfoodcourts"),
 	}
 
-	// Get manager's vendor
 	var manager struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -1179,7 +1123,6 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify item belongs to manager's vendor
 	var item struct {
 		ID primitive.ObjectID `bson:"_id"`
 	}
@@ -1189,7 +1132,6 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Verify manager has access to the food court
 	managerAccess, err := collections.managers.CountDocuments(ctx, bson.M{
 		"user_id":      userObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -1199,8 +1141,6 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete the food court item
-	// ✅ NEW: Fetch the item to be deleted for broadcasting
 	var itemToDelete models.ItemFoodCourt
 	err = collections.foodCourtItems.FindOne(ctx, bson.M{
 		"item_id":      itemObjID,
@@ -1211,7 +1151,6 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Delete the food court item
 	result, err := collections.foodCourtItems.DeleteOne(ctx, bson.M{
 		"item_id":      itemObjID,
 		"foodcourt_id": request.FoodCourtID,
@@ -1226,13 +1165,11 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// ✅ NEW: Broadcast the deletion to all connected clients
 	utils.BroadcastItemFoodCourtUpdate(itemToDelete, "delete")
 
 	utils.RespondSuccess(c, http.StatusOK, "Item removed from food court successfully", nil)
 }
 
-// GetVendorItemsForManager - Get all vendor items with quick FC status for manager
 func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1259,7 +1196,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		foodCourts:     db.Collection("foodcourts"),
 	}
 
-	// Get manager's vendor and food courts
 	var manager struct {
 		VendorID primitive.ObjectID `bson:"vendor_id"`
 	}
@@ -1269,7 +1205,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get all food courts where manager is assigned
 	managerFCsCursor, err := collections.managers.Find(ctx, bson.M{"user_id": userObjID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch manager assignments")
@@ -1289,7 +1224,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Get food court details
 	if len(managerFoodCourtIDs) > 0 {
 		fcCursor, err := collections.foodCourts.Find(ctx, bson.M{"_id": bson.M{"$in": managerFoodCourtIDs}})
 		if err == nil {
@@ -1298,7 +1232,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Get all vendor items
 	itemsCursor, err := collections.items.Find(ctx, bson.M{"vendor_id": manager.VendorID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendor items")
@@ -1312,7 +1245,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get items already in manager's food courts
 	var itemIDs []primitive.ObjectID
 	for _, item := range items {
 		if id, ok := item["_id"].(primitive.ObjectID); ok {
@@ -1333,20 +1265,18 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 	var fcItems []bson.M
 	fcItemsCursor.All(ctx, &fcItems)
 
-	// Create lookup for FC items
-	fcItemMap := make(map[string]bool) // key: "itemID_fcID"
+	fcItemMap := make(map[string]bool)
+
 	for _, fcItem := range fcItems {
 		itemID := fcItem["item_id"].(primitive.ObjectID).Hex()
 		fcID := fcItem["foodcourt_id"].(primitive.ObjectID).Hex()
 		fcItemMap[itemID+"_"+fcID] = true
 	}
 
-	// Enhance items with FC status
 	var enhancedItems []interface{}
 	for _, item := range items {
 		itemID := item["_id"].(primitive.ObjectID)
 
-		// Check FC status for each manager's food court
 		var fcStatus []interface{}
 		for _, fc := range managerFoodCourts {
 			fcID := fc["_id"].(primitive.ObjectID)
@@ -1388,8 +1318,6 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Vendor items with FC status retrieved", response)
 }
 
-// Profile Management
-// GetManagerProfile - Get manager profile with user and vendor details
 func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1416,7 +1344,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		foodCourts: db.Collection("foodcourts"),
 	}
 
-	// Get user details
 	var user struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name      string             `bson:"name" json:"name"`
@@ -1431,7 +1358,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get manager details
 	var manager struct {
 		ID          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
@@ -1448,7 +1374,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get vendor details
 	var vendor struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		ShopName string             `bson:"shopName" json:"shopName"`
@@ -1461,7 +1386,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get food court details
 	var foodCourt struct {
 		ID       primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name     string             `bson:"name" json:"name"`
@@ -1475,7 +1399,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get other food courts managed by this manager
 	otherFCsCursor, err := collections.managers.Find(ctx, bson.M{
 		"user_id":      userObjID,
 		"foodcourt_id": bson.M{"$ne": manager.FoodCourtID},
@@ -1503,20 +1426,16 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		}
 	}
 
-	// Get stats for dashboard
 	itemsCollection := db.Collection("items")
 	itemFoodCourtsCollection := db.Collection("itemfoodcourts")
 
-	// Count items in vendor's catalog
 	totalItems, _ := itemsCollection.CountDocuments(ctx, bson.M{"vendor_id": manager.VendorID})
 
-	// Count items in manager's primary food court
 	itemsInPrimaryFC, _ := itemFoodCourtsCollection.CountDocuments(ctx, bson.M{
 		"foodcourt_id": manager.FoodCourtID,
 		"item_id":      bson.M{"$in": getVendorItemIDs(ctx, itemsCollection, manager.VendorID)},
 	})
 
-	// Count total food courts managed
 	totalManagedFCs, _ := collections.managers.CountDocuments(ctx, bson.M{"user_id": userObjID})
 
 	response := gin.H{
@@ -1535,8 +1454,6 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Manager profile retrieved successfully", response)
 }
 
-// UpdateManagerProfile - Update manager profile (contact number and active status)
-// UpdateManagerProfile - Update manager profile including basic user information
 func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 	userID, exists := c.Get("userID")
 	if !exists {
@@ -1551,10 +1468,9 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 	}
 
 	var request struct {
-		// User fields
 		Name  *string `json:"name,omitempty" validate:"omitempty,min=2,max=50"`
 		Email *string `json:"email,omitempty" validate:"omitempty,email"`
-		// Manager fields
+
 		ContactNo *string `json:"contactNo,omitempty" validate:"omitempty,e164"`
 		IsActive  *bool   `json:"isActive,omitempty"`
 	}
@@ -1564,7 +1480,6 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Validate at least one field is provided
 	if request.Name == nil && request.Email == nil && request.ContactNo == nil && request.IsActive == nil {
 		utils.RespondError(c, http.StatusBadRequest, "No fields to update")
 		return
@@ -1579,7 +1494,6 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		managers: db.Collection("managers"),
 	}
 
-	// Start a session for transaction
 	session, err := db.Client().StartSession()
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to start database session")
@@ -1587,9 +1501,8 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 	}
 	defer session.EndSession(ctx)
 
-	// Use transaction to ensure data consistency
 	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
-		// Build user update fields
+
 		userUpdateFields := bson.M{
 			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -1599,7 +1512,7 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		}
 
 		if request.Email != nil {
-			// Check if email already exists for other users
+
 			existingUser, err := collections.users.CountDocuments(sessCtx, bson.M{
 				"email": *request.Email,
 				"_id":   bson.M{"$ne": userObjID},
@@ -1613,8 +1526,8 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 			userUpdateFields["email"] = *request.Email
 		}
 
-		// Update user if there are user fields to update
-		if len(userUpdateFields) > 1 { // More than just updatedAt
+		if len(userUpdateFields) > 1 {
+
 			result, err := collections.users.UpdateOne(
 				sessCtx,
 				bson.M{"_id": userObjID},
@@ -1628,7 +1541,6 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 			}
 		}
 
-		// Build manager update fields
 		managerUpdateFields := bson.M{
 			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
 		}
@@ -1641,8 +1553,8 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 			managerUpdateFields["isActive"] = *request.IsActive
 		}
 
-		// Update manager if there are manager fields to update
-		if len(managerUpdateFields) > 1 { // More than just updatedAt
+		if len(managerUpdateFields) > 1 {
+
 			result, err := collections.managers.UpdateOne(
 				sessCtx,
 				bson.M{"user_id": userObjID},
@@ -1659,7 +1571,6 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		return nil, nil
 	}
 
-	// Execute transaction
 	_, err = session.WithTransaction(ctx, callback)
 	if err != nil {
 		if err.Error() == "email already exists" {
@@ -1678,7 +1589,6 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// Get updated combined profile data
 	var updatedUser struct {
 		ID        primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
 		Name      string             `bson:"name" json:"name"`
@@ -1718,9 +1628,8 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 	utils.RespondSuccess(c, http.StatusOK, "Manager profile updated successfully", response)
 }
 
-
 func GetManagerFoodCourts(c *gin.Context, db *mongo.Database) {
-	// 1. Get UserID from the authentication middleware
+
 	userID, exists := c.Get("userID")
 	if !exists {
 		utils.RespondError(c, 401, "User not authenticated")
@@ -1736,32 +1645,28 @@ func GetManagerFoodCourts(c *gin.Context, db *mongo.Database) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// 2. Aggregate to find all Food Courts linked to this Manager
 	pipeline := []bson.M{
-		// Match the manager record for this specific user
+
 		{"$match": bson.M{"user_id": userObjID}},
-		
-		// Join with the foodcourts collection
+
 		{"$lookup": bson.M{
 			"from":         "foodcourts",
 			"localField":   "foodcourt_id",
 			"foreignField": "_id",
 			"as":           "fc_details",
 		}},
-		
-		// Flatten the joined array
+
 		{"$unwind": "$fc_details"},
-		
-		// Project clean data for the UI
+
 		{"$project": bson.M{
-			"id":        "$fc_details._id",
-			"name":      "$fc_details.name",
-			"location":  "$fc_details.location",
-			"isOpen":    "$fc_details.isOpen",
-			"timings":   "$fc_details.timings",
-			"weekends":  "$fc_details.weekends",
-			"weekdays":  "$fc_details.weekdays",
-			"assignedAt": "$createdAt", // Date when manager was assigned to this court
+			"id":         "$fc_details._id",
+			"name":       "$fc_details.name",
+			"location":   "$fc_details.location",
+			"isOpen":     "$fc_details.isOpen",
+			"timings":    "$fc_details.timings",
+			"weekends":   "$fc_details.weekends",
+			"weekdays":   "$fc_details.weekdays",
+			"assignedAt": "$createdAt",
 		}},
 	}
 
@@ -1778,7 +1683,6 @@ func GetManagerFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	// 3. Handle empty list case gracefully
 	if len(results) == 0 {
 		utils.RespondSuccess(c, 200, "No food courts assigned yet", []interface{}{})
 		return
