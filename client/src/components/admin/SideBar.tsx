@@ -74,7 +74,7 @@ const SideBar: React.FC = () => {
     item: (typeof menuItems)[0];
     onItemClick: () => void;
   }> = ({ item, onItemClick }) => {
-    const hasChildren = item.children && item.children.length > 0;
+    const hasChildren = item.children && item.children?.length > 0;
     const active = isActive(item.path, item.exact);
 
     if (hasChildren) {
@@ -99,7 +99,7 @@ const SideBar: React.FC = () => {
 
           {isUsersOpen && (
             <div className="ml-4 mt-2 space-y-1">
-              {item.children!.map((child) => (
+              {item.children!?.map((child) => (
                 <Link
                   key={child.path}
                   to={child.path}
@@ -173,7 +173,7 @@ const SideBar: React.FC = () => {
 
         <nav className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-1">
-            {menuItems.map((item) => (
+            {menuItems?.map((item) => (
               <NavItem
                 key={item.path}
                 item={item}

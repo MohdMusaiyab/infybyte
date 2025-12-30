@@ -141,7 +141,7 @@ const Sidebar: React.FC = () => {
 
         
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto mt-2">
-          {menuItems.map((item) => (
+          {menuItems?.map((item) => (
             <NavItem key={item.path} item={item} onItemClick={() => isMobile && setIsOpen(false)} />
           ))}
         </nav>

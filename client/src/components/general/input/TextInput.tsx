@@ -136,7 +136,7 @@ export interface TextInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
       getThemeStyles(),
       disabledStyle,
       className
-    ].filter(Boolean).join(' ');
+    ]?.filter(Boolean).join(' ');
 
     return (
       <div className={`${widthStyle} ${containerClassName}`}>

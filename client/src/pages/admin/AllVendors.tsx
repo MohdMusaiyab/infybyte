@@ -128,7 +128,7 @@ const AllVendors = () => {
     });
   };
 
-  if (loading && vendors.length === 0) {
+  if (loading && vendors?.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
@@ -261,7 +261,7 @@ const AllVendors = () => {
             <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-3"></div>
             <p className="text-sm text-gray-500">Loading vendors...</p>
           </div>
-        ) : vendors.length === 0 ? (
+        ) : vendors?.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Store className="w-8 h-8 text-gray-400" />
@@ -281,7 +281,7 @@ const AllVendors = () => {
             )}
           </div>
         ) : (
-          vendors.map((vendor) => (
+          vendors?.map((vendor) => (
             <div
               key={vendor.id}
               className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm"
@@ -360,7 +360,7 @@ const AllVendors = () => {
                     </div>
                   </td>
                 </tr>
-              ) : vendors.length === 0 ? (
+              ) : vendors?.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
@@ -384,7 +384,7 @@ const AllVendors = () => {
                   </td>
                 </tr>
               ) : (
-                vendors.map((vendor) => (
+                vendors?.map((vendor) => (
                   <tr
                     key={vendor.id}
                     className="hover:bg-gray-50 transition-colors"

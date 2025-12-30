@@ -99,13 +99,13 @@ const DemoDashboard: React.FC = () => {
   const [viewMode, setViewMode] = useState<'vendor' | 'user'>('vendor');
 
   const handleStatusChange = (id: string, newStatus: ItemFoodCourt['status']) => {
-    setItems(prev => prev.map(item => 
+    setItems(prev => prev?.map(item => 
       item.id === id ? { ...item, status: newStatus } : item
     ));
   };
 
   const handleActiveToggle = (id: string) => {
-    setItems(prev => prev.map(item => 
+    setItems(prev => prev?.map(item => 
       item.id === id ? { ...item, isActive: !item.isActive } : item
     ));
   };
@@ -179,7 +179,7 @@ const VendorView: React.FC<{
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h2 className="text-xl font-bold">Menu Management</h2>
         <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full self-start sm:self-auto">
-          {items.length} Items Total
+          {items?.length} Items Total
         </span>
       </div>
 
@@ -198,7 +198,7 @@ const VendorView: React.FC<{
         </div>
       </div>
       <div className="grid gap-4">
-        {items.map((item) => (
+        {items?.map((item) => (
           <div 
             key={item.id} 
             className={`bg-white rounded-xl border p-4 transition-all duration-300 ${!item.isActive ? 'border-gray-100 opacity-60 bg-gray-50' : 'border-gray-200 shadow-sm hover:border-black'}`}
@@ -300,7 +300,7 @@ const UserView: React.FC<{ items: ItemFoodCourt[] }> = ({ items }) => {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {items.map((item) => {
+        {items?.map((item) => {
             const isAvailable = item.status !== 'notavailable';
             
             return (

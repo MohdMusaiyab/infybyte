@@ -74,7 +74,7 @@ const ItemDetails: React.FC = () => {
         }
 
         if (prev.availability) {
-          const updatedAvailability = prev.availability.map((avail) =>
+          const updatedAvailability = prev.availability?.map((avail) =>
             avail.foodCourtId === update.foodcourt_id
               ? {
                   ...avail,
@@ -137,7 +137,7 @@ const ItemDetails: React.FC = () => {
     return Array.isArray(data.availability) ? data.availability : [];
   };
 
-  const filteredAvailability = getAvailabilityArray().filter(
+  const filteredAvailability = getAvailabilityArray()?.filter(
     (avail) => selectedTimeSlot === "all" || avail.timeSlot === selectedTimeSlot
   );
 
@@ -195,7 +195,7 @@ const ItemDetails: React.FC = () => {
               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(4)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -256,7 +256,7 @@ const ItemDetails: React.FC = () => {
   }
 
   const availabilityArray = getAvailabilityArray();
-  const totalLocations = availabilityArray.length;
+  const totalLocations = availabilityArray?.length;
 
   return (
     <div className="p-4 lg:p-6">
@@ -378,7 +378,7 @@ const ItemDetails: React.FC = () => {
 
             {data.availability !== null && totalLocations > 0 && (
               <div className="flex gap-2 overflow-x-auto">
-                {timeSlots.map((slot) => (
+                {timeSlots?.map((slot) => (
                   <button
                     key={slot}
                     onClick={() => setSelectedTimeSlot(slot)}
@@ -429,7 +429,7 @@ const ItemDetails: React.FC = () => {
             <>
               <div className="flex items-center justify-between mb-6">
                 <span className="text-gray-600">
-                  {filteredAvailability.length} location(s) found
+                  {filteredAvailability?.length} location(s) found
                 </span>
                 {selectedTimeSlot !== "all" && (
                   <button
@@ -441,7 +441,7 @@ const ItemDetails: React.FC = () => {
                 )}
               </div>
 
-              {filteredAvailability.length === 0 ? (
+              {filteredAvailability?.length === 0 ? (
                 <div className="text-center py-8">
                   <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-bold text-black mb-2">
@@ -453,7 +453,7 @@ const ItemDetails: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredAvailability.map((avail) => (
+                  {filteredAvailability?.map((avail) => (
                     <div
                       key={avail.foodCourtId}
                       onClick={() => handleFoodCourtClick(avail.foodCourtId)}

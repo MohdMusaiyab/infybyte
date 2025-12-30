@@ -144,7 +144,7 @@ const Profile: React.FC = () => {
       }
 
       
-      if (Object.keys(updateData).length > 0) {
+      if (Object.keys(updateData)?.length > 0) {
         const response = await axiosInstance.put("/manager/profile", updateData);
         setProfileData({
           ...profileData,

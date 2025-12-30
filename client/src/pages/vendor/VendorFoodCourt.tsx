@@ -89,7 +89,7 @@ const VendorFoodCourts: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded-3xl border-2 border-gray-50 shadow-sm">
           <p className="text-gray-500 text-sm font-medium">Total Locations</p>
-          <p className="text-3xl font-bold mt-1">{foodCourts.length}</p>
+          <p className="text-3xl font-bold mt-1">{foodCourts?.length}</p>
         </div>
         <div className="bg-white p-6 rounded-3xl border-2 border-gray-50 shadow-sm">
           <p className="text-gray-500 text-sm font-medium">Active Menu Items</p>
@@ -100,12 +100,12 @@ const VendorFoodCourts: React.FC = () => {
         <div className="bg-white p-6 rounded-3xl border-2 border-gray-50 shadow-sm">
           <p className="text-gray-500 text-sm font-medium">Open Now</p>
           <p className="text-3xl font-bold mt-1 text-blue-600">
-            {foodCourts?.filter((fc) => fc.isOpen).length}
+            {foodCourts?.filter((fc) => fc.isOpen)?.length}
           </p>
         </div>
       </div>
 
-      {foodCourts.length === 0 ? (
+      {foodCourts?.length === 0 ? (
         <div className="text-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed">
           <LayoutGrid className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-bold text-gray-900">
@@ -117,7 +117,7 @@ const VendorFoodCourts: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {foodCourts.map((fc) => (
+          {foodCourts?.map((fc) => (
             <div
               key={fc.id}
               onClick={() => navigate(`/vendor/foodcourt/${fc.id}/items`)}

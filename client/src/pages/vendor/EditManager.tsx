@@ -67,7 +67,7 @@ const EditManager: React.FC = () => {
       setAvailableFoodCourts(allVendorCourts);
 
       const currentFC =
-        managerData.foodCourts && managerData.foodCourts.length > 0
+        managerData.foodCourts && managerData.foodCourts?.length > 0
           ? managerData.foodCourts[0]
           : null;
 
@@ -248,7 +248,7 @@ const EditManager: React.FC = () => {
                   className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black outline-none transition-all appearance-none bg-white"
                 >
                   <option value="">No food court assigned</option>
-                  {availableFoodCourts.map((fc) => (
+                  {availableFoodCourts?.map((fc) => (
                     <option key={fc.id || fc._id} value={fc.id || fc._id}>
                       {fc.name} - {fc.location}
                     </option>

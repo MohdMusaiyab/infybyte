@@ -51,7 +51,7 @@ const CreateManager: React.FC = () => {
   
   const filteredUsers = useMemo(() => {
     if (!searchEmail.trim()) return availableUsers;
-    return availableUsers.filter(
+    return availableUsers?.filter(
       (user) =>
         user.email.toLowerCase().includes(searchEmail.toLowerCase()) ||
         user.name.toLowerCase().includes(searchEmail.toLowerCase())
@@ -79,15 +79,15 @@ const CreateManager: React.FC = () => {
       
       if (emailSearch) {
         setAvailableUsers(prev => {
-          const existingIds = new Set(prev.map(u => u.id));
-          const uniqueNew = newUsers.filter((u: User) => !existingIds.has(u.id));
+          const existingIds = new Set(prev?.map(u => u.id));
+          const uniqueNew = newUsers?.filter((u: User) => !existingIds.has(u.id));
           return [...prev, ...uniqueNew];
         });
       } else {
         setAvailableUsers(newUsers);
       }
 
-      if (emailSearch && newUsers.length === 0) {
+      if (emailSearch && newUsers?.length === 0) {
         setError("No user found in database with that email.");
       }
     } catch (err: unknown) {
@@ -143,7 +143,7 @@ const CreateManager: React.FC = () => {
         <div className="max-w-2xl mx-auto animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 space-y-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(4)]?.map((_, i) => (
               <div key={i}>
                 <div className="h-4 bg-gray-200 rounded w-1/4 mb-3"></div>
                 <div className="h-12 bg-gray-200 rounded-xl"></div>
@@ -210,8 +210,8 @@ const CreateManager: React.FC = () => {
                     className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black outline-none appearance-none bg-white"
                     required
                   >
-                    <option value="">Choose a user ({filteredUsers.length} matches)</option>
-                    {filteredUsers.map((user) => (
+                    <option value="">Choose a user ({filteredUsers?.length} matches)</option>
+                    {filteredUsers?.map((user) => (
                       <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
                     ))}
                   </select>
@@ -233,7 +233,7 @@ const CreateManager: React.FC = () => {
                     <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <select name="foodCourtId" value={formData.foodCourtId} onChange={handleChange} className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black outline-none appearance-none bg-white" required>
                       <option value="">Select court</option>
-                      {foodCourts.map((fc) => <option key={fc.id} value={fc.id}>{fc.name}</option>)}
+                      {foodCourts?.map((fc) => <option key={fc.id} value={fc.id}>{fc.name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -243,7 +243,7 @@ const CreateManager: React.FC = () => {
               {formData.userId && (
                 <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
                   <h4 className="font-bold text-black mb-3 flex items-center gap-2 text-sm"><Users className="w-4 h-4" /> Selected Manager Detail</h4>
-                  {availableUsers.filter(u => u.id === formData.userId).map(u => (
+                  {availableUsers?.filter(u => u.id === formData.userId)?.map(u => (
                     <div key={u.id} className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
                       <div className="flex items-center gap-2"><User className="w-4 h-4" /> {u.name}</div>
                       <div className="flex items-center gap-2"><Mail className="w-4 h-4" /> {u.email}</div>

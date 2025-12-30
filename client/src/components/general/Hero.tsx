@@ -19,7 +19,7 @@ const InfybiteHero: React.FC = () => {
     setIsVisible(true);
 
     const interval = setInterval(() => {
-      setCurrentFood((prev) => (prev + 1) % foodItems.length);
+      setCurrentFood((prev) => (prev + 1) % foodItems?.length);
     }, 2000);
 
     return () => clearInterval(interval);

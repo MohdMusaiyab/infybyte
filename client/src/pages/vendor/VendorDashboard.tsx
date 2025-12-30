@@ -117,7 +117,7 @@ const VendorDashboard: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(6)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -131,7 +131,7 @@ const VendorDashboard: React.FC = () => {
               <div className="lg:col-span-2 bg-white rounded-2xl p-6 border-2 border-gray-200">
                 <div className="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
                 <div className="space-y-4">
-                  {[...Array(3)].map((_, i) => (
+                  {[...Array(3)]?.map((_, i) => (
                     <div key={i} className="h-12 bg-gray-200 rounded"></div>
                   ))}
                 </div>
@@ -139,7 +139,7 @@ const VendorDashboard: React.FC = () => {
               <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
                 <div className="h-6 bg-gray-200 rounded w-1/3 mb-6"></div>
                 <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => (
+                  {[...Array(5)]?.map((_, i) => (
                     <div key={i} className="h-10 bg-gray-200 rounded"></div>
                   ))}
                 </div>
@@ -312,9 +312,9 @@ const VendorDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {stats?.foodCourts && stats.foodCourts.length > 0 ? (
+              {stats?.foodCourts && stats.foodCourts?.length > 0 ? (
                 <div className="space-y-4">
-                  {stats.foodCourts.map((foodCourt) => (
+                  {stats.foodCourts?.map((foodCourt) => (
                     <div
                       key={foodCourt.id}
                       className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-black transition-colors duration-200 group"
@@ -364,9 +364,9 @@ const VendorDashboard: React.FC = () => {
                 <Clock className="w-5 h-5 text-gray-400" />
               </div>
 
-              {stats?.recentUpdates && stats.recentUpdates.length > 0 ? (
+              {stats?.recentUpdates && stats.recentUpdates?.length > 0 ? (
                 <div className="space-y-4">
-                  {stats.recentUpdates.map((update, index) => (
+                  {stats.recentUpdates?.map((update, index) => (
                     <div
                       key={index}
                       className="p-3 border-2 border-gray-200 rounded-xl"

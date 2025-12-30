@@ -85,20 +85,20 @@ const FoodCourtDetails: React.FC = () => {
 
   const filteredItems =
     data?.items
-      .filter(
+      ?.filter(
         (item) =>
           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
           item.shopName.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      .filter(
+      ?.filter(
         (item) =>
           selectedCategory === "all" || item.category === selectedCategory
       )
-      .filter(
+      ?.filter(
         (item) => selectedVendor === "all" || item.vendorId === selectedVendor
       )
-      .filter(
+      ?.filter(
         (item) =>
           selectedTimeSlot === "all" || item.timeSlot === selectedTimeSlot
       ) || [];
@@ -133,7 +133,7 @@ const FoodCourtDetails: React.FC = () => {
 
         return {
           ...prev,
-          items: prev.items.map((item) =>
+          items: prev.items?.map((item) =>
             item.itemId === update.item_id
               ? {
                   ...item,
@@ -161,7 +161,7 @@ const FoodCourtDetails: React.FC = () => {
               <div className="h-4 bg-gray-200 rounded w-1/2"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(6)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -295,7 +295,7 @@ const FoodCourtDetails: React.FC = () => {
                   <span className="text-sm">Vendors</span>
                 </div>
                 <div className="text-2xl font-bold text-black">
-                  {data.vendors.length}
+                  {data.vendors?.length}
                 </div>
               </div>
               <div className="text-center">
@@ -304,7 +304,7 @@ const FoodCourtDetails: React.FC = () => {
                   <span className="text-sm">Items</span>
                 </div>
                 <div className="text-2xl font-bold text-black">
-                  {data.items.length}
+                  {data.items?.length}
                 </div>
               </div>
             </div>
@@ -330,7 +330,7 @@ const FoodCourtDetails: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option key={category} value={category}>
                     {category === "all"
                       ? "All Categories"
@@ -346,7 +346,7 @@ const FoodCourtDetails: React.FC = () => {
                 onChange={(e) => setSelectedTimeSlot(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {timeSlots.map((slot) => (
+                {timeSlots?.map((slot) => (
                   <option key={slot} value={slot}>
                     {slot === "all"
                       ? "All Times"
@@ -357,7 +357,7 @@ const FoodCourtDetails: React.FC = () => {
             </div>
           </div>
 
-          {data.vendors.length > 0 && (
+          {data.vendors?.length > 0 && (
             <div className="mt-4">
               <div className="flex gap-2 overflow-x-auto">
                 <button
@@ -370,7 +370,7 @@ const FoodCourtDetails: React.FC = () => {
                 >
                   All Vendors
                 </button>
-                {data.vendors.map((vendor) => (
+                {data.vendors?.map((vendor) => (
                   <button
                     key={vendor.id}
                     onClick={() =>
@@ -392,7 +392,7 @@ const FoodCourtDetails: React.FC = () => {
           )}
         </div>
 
-        {filteredItems.length === 0 ? (
+        {filteredItems?.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ChefHat className="w-8 h-8 text-gray-400" />
@@ -413,7 +413,7 @@ const FoodCourtDetails: React.FC = () => {
           <>
             <div className="flex items-center justify-between mb-6">
               <span className="text-gray-600">
-                {filteredItems.length} item(s) found
+                {filteredItems?.length} item(s) found
               </span>
               {(searchTerm ||
                 selectedCategory !== "all" ||
@@ -434,7 +434,7 @@ const FoodCourtDetails: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
+              {filteredItems?.map((item) => (
                 <div
                   key={item.itemId}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"

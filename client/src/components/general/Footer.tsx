@@ -29,7 +29,7 @@ const Footer: React.FC = () => {
                   "Features",
                   "How It Works",
                   "Pricing",
-                ].map((item) => (
+                ]?.map((item) => (
                   <li key={item}>
                     <a
                       href="#"
@@ -45,7 +45,7 @@ const Footer: React.FC = () => {
             <div>
               <h3 className="text-white font-semibold mb-4 text-lg">Company</h3>
               <ul className="space-y-3">
-                {["About", "Blog", "Careers", "Contact", "Help Center"].map(
+                {["About", "Blog", "Careers", "Contact", "Help Center"]?.map(
                   (item) => (
                     <li key={item}>
                       <a
@@ -69,7 +69,7 @@ const Footer: React.FC = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 text-sm">
-              {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
+              {["Privacy Policy", "Terms of Service", "Cookie Policy"]?.map(
                 (item) => (
                   <a
                     key={item}

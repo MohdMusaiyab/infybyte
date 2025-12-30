@@ -176,7 +176,7 @@ const MultipleItemManagement: React.FC = () => {
   });
 
   const categories = [
-    ...new Set(data?.items.map((item) => item.category) || []),
+    ...new Set(data?.items?.map((item) => item.category) || []),
   ];
 
   const getStatusColor = (isInFC: boolean) => {
@@ -269,7 +269,7 @@ const MultipleItemManagement: React.FC = () => {
                 <div className="text-2xl font-bold text-black">
                   {data?.items?.filter((item) =>
                     item.foodCourtStatus.some((status) => status.isInFoodCourt)
-                  ).length || 0}
+                  )?.length || 0}
                 </div>
                 <div className="text-sm text-gray-600">Active in FCs</div>
               </div>
@@ -303,7 +303,7 @@ const MultipleItemManagement: React.FC = () => {
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:ring-0 appearance-none bg-white"
               >
                 <option value="all">All Categories</option>
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option key={category} value={category}>
                     {category.charAt(0).toUpperCase() + category.slice(1)}
                   </option>
@@ -319,7 +319,7 @@ const MultipleItemManagement: React.FC = () => {
                 className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:ring-0 appearance-none bg-white"
               >
                 <option value="all">All Food Courts</option>
-                {data?.foodCourts.map((fc) => (
+                {data?.foodCourts?.map((fc) => (
                   <option key={fc._id} value={fc._id}>
                     {fc.name}
                   </option>
@@ -396,7 +396,7 @@ const MultipleItemManagement: React.FC = () => {
                 </h4>
 
                 <div className="space-y-2">
-                  {item.foodCourtStatus.map((status) => (
+                  {item.foodCourtStatus?.map((status) => (
                     <div
                       key={status.foodCourtId}
                       className="flex items-center justify-between"

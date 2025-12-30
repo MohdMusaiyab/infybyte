@@ -154,12 +154,12 @@ const AllManagers = () => {
               {loading
                 ? Array(5)
                     .fill(0)
-                    .map((_, i) => (
+                    ?.map((_, i) => (
                       <tr key={i} className="animate-pulse">
                         <td colSpan={4} className="h-20 bg-gray-50/50"></td>
                       </tr>
                     ))
-                : managers.map((manager) => (
+                : managers?.map((manager) => (
                     <tr
                       key={manager.id}
                       className="hover:bg-gray-50/80 transition-all"
@@ -198,8 +198,8 @@ const AllManagers = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1">
-                          {manager.vendors && manager.vendors.length > 0 ? (
-                            manager.vendors.map((v, i) => (
+                          {manager.vendors && manager.vendors?.length > 0 ? (
+                            manager.vendors?.map((v, i) => (
                               <Link
                                 key={i}
                                 to={`/admin/vendor/${manager.vendorId}`} 

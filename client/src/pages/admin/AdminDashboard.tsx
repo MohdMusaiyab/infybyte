@@ -104,7 +104,7 @@ const AdminDashboard = () => {
             <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">LIVE</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data?.openFoodCourts.map((fc) => (
+            {data?.openFoodCourts?.map((fc) => (
               <div key={fc._id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 flex items-center justify-between">
                 <div>
                   <Link to={`/admin/food-courts/${fc._id}`}  className="font-bold text-gray-900">{fc.name}</Link>
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data?.recentItems.map((item) => (
+              {data?.recentItems?.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 text-sm font-bold text-gray-900">{item.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{item.foodCourtName}</td>

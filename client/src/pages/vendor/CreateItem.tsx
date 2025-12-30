@@ -208,7 +208,7 @@ const CreateItem: React.FC = () => {
                     required
                   >
                     <option value="">Select a category</option>
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <option
                         key={category}
                         value={category}

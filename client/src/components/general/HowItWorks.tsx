@@ -103,7 +103,7 @@ const HowItWorks: React.FC = () => {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12 mb-20">
-          {steps.map((step, index) => (
+          {steps?.map((step, index) => (
             <div
               key={index}
               className={`group relative transition-all duration-1000 ${
@@ -134,7 +134,7 @@ const HowItWorks: React.FC = () => {
                 </p>
               </div>
 
-              {index < steps.length - 1 && (
+              {index < steps?.length - 1 && (
                 <div className="hidden md:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gray-300 transform -translate-y-1/2">
                   <div className="w-4 h-4 bg-black rounded-full absolute -top-1.5 -right-2 animate-pulse border-2 border-white" />
                 </div>
@@ -172,7 +172,7 @@ const HowItWorks: React.FC = () => {
                   "Multi-food court vendor management",
                   "Real-time status indicators",
                   "Mobile & Web Responsive",
-                ].map((feature, index) => (
+                ]?.map((feature, index) => (
                   <div key={index} className="flex items-center gap-3">
                     <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-black">
                       <CheckCircle className="w-4 h-4 text-black" />

@@ -96,7 +96,7 @@ const ItemFoodCourt: React.FC = () => {
 
       if (action === "update") {
         setFoodCourts((prev) =>
-          prev.map((fc) => {
+          prev?.map((fc) => {
             const isMatch =
               fc.id === update._id || fc.foodCourtId === update.foodcourt_id;
 
@@ -116,7 +116,7 @@ const ItemFoodCourt: React.FC = () => {
         fetchItemFoodCourts();
       } else if (action === "delete") {
         setFoodCourts((prev) =>
-          prev.filter(
+          prev?.filter(
             (fc) =>
               !(fc.id === update._id || fc.foodCourtId === update.foodcourt_id)
           )
@@ -176,12 +176,12 @@ const ItemFoodCourt: React.FC = () => {
 
     const parts = numericValue.split(".");
     const finalValue =
-      parts.length > 2
+      parts?.length > 2
         ? parts[0] + "." + parts.slice(1).join("")
         : numericValue;
 
     setFoodCourts((prev) =>
-      prev.map((fc) =>
+      prev?.map((fc) =>
         fc.id === foodCourtItemId
           ? { ...fc, price: finalValue ? parseFloat(finalValue) : undefined }
           : fc
@@ -381,9 +381,9 @@ const ItemFoodCourt: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h2 className="text-xl font-bold text-black mb-4">
-              Active Food Courts ({foodCourts.length})
+              Active Food Courts ({foodCourts?.length})
             </h2>
-            {foodCourts.length === 0 ? (
+            {foodCourts?.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Store className="w-8 h-8 text-gray-400" />
@@ -394,7 +394,7 @@ const ItemFoodCourt: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {foodCourts.map((fc) => (
+                {foodCourts?.map((fc) => (
                   <div
                     key={fc.id}
                     className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300"
@@ -463,7 +463,7 @@ const ItemFoodCourt: React.FC = () => {
                           className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
                           disabled={updating === fc.id}
                         >
-                          {statusOptions.map((option) => (
+                          {statusOptions?.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -488,7 +488,7 @@ const ItemFoodCourt: React.FC = () => {
                             className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none"
                             disabled={updating === fc.id}
                           >
-                            {timeSlotOptions.map((option) => (
+                            {timeSlotOptions?.map((option) => (
                               <option key={option.value} value={option.value}>
                                 {option.label}
                               </option>
@@ -545,11 +545,11 @@ const ItemFoodCourt: React.FC = () => {
           <div>
             <h2 className="text-xl font-bold text-black mb-4">
               Available Food Courts (
-              {availableFoodCourts.length - foodCourts.length})
+              {availableFoodCourts?.length - foodCourts?.length})
             </h2>
             {availableFoodCourts?.filter(
               (fc) => !foodCourtAssociationMap.has(fc.id)
-            ).length === 0 ? (
+            )?.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-8 h-8 text-gray-400" />

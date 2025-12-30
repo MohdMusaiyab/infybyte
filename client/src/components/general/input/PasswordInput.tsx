@@ -129,7 +129,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
       getThemeStyles(),
       disabledStyle,
       className
-    ].filter(Boolean).join(' ');
+    ]?.filter(Boolean).join(' ');
 
     const togglePasswordVisibility = () => {
       setShowPassword(!showPassword);

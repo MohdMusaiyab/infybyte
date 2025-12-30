@@ -94,7 +94,7 @@ const VendorManagers: React.FC = () => {
     navigate(`/vendor/managers/edit/${managerId}`);
   };
 
-  const filteredManagers = managers.filter(
+  const filteredManagers = managers?.filter(
     (manager) =>
       manager.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       manager.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,7 +108,7 @@ const VendorManagers: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(6)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -125,7 +125,7 @@ const VendorManagers: React.FC = () => {
     );
   }
 
-  if (error && managers.length === 0) {
+  if (error && managers?.length === 0) {
     return (
       <div className="p-4 lg:p-6">
         <div className="max-w-7xl mx-auto">
@@ -163,7 +163,7 @@ const VendorManagers: React.FC = () => {
           </button>
         </div>
 
-        {managers.length > 0 && (
+        {managers?.length > 0 && (
           <div className="bg-white rounded-2xl p-4 border-2 border-gray-200 mb-6">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -185,7 +185,7 @@ const VendorManagers: React.FC = () => {
           </div>
         )}
 
-        {filteredManagers.length === 0 ? (
+        {filteredManagers?.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Users className="w-8 h-8 text-gray-400" />
@@ -206,7 +206,7 @@ const VendorManagers: React.FC = () => {
         ) : (
           <>
             <div className="lg:hidden grid grid-cols-1 gap-4">
-              {filteredManagers.map((manager) => (
+              {filteredManagers?.map((manager) => (
                 <div
                   key={manager._id}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300"
@@ -309,7 +309,7 @@ const VendorManagers: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredManagers.map((manager) => (
+                    {filteredManagers?.map((manager) => (
                       <tr
                         key={manager._id}
                         className="hover:bg-gray-50 transition-colors"

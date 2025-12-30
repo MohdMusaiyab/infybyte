@@ -123,7 +123,7 @@ const VendorProfile: React.FC = () => {
 
         return {
           ...prev,
-          item_foodcourt_details: prev.item_foodcourt_details.map((detail) =>
+          item_foodcourt_details: prev.item_foodcourt_details?.map((detail) =>
             detail.item_id === update.item_id &&
             detail.foodcourt_id === update.foodcourt_id
               ? {
@@ -272,7 +272,7 @@ const VendorProfile: React.FC = () => {
               <div className="h-4 bg-gray-200 rounded w-3/4"></div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(6)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -460,7 +460,7 @@ const VendorProfile: React.FC = () => {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
                   >
-                    {categories.map((category) => (
+                    {categories?.map((category) => (
                       <option key={category} value={category}>
                         {category === "all"
                           ? "All Categories"
@@ -473,7 +473,7 @@ const VendorProfile: React.FC = () => {
               </div>
             </div>
 
-            {filteredItems.length === 0 ? (
+            {filteredItems?.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
                 <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <Tag className="w-8 h-8 text-gray-400" />
@@ -491,7 +491,7 @@ const VendorProfile: React.FC = () => {
               <>
                 <div className="flex items-center justify-between mb-6">
                   <span className="text-gray-600">
-                    {filteredItems.length} item(s) found
+                    {filteredItems?.length} item(s) found
                   </span>
                   {(searchTerm || selectedCategory !== "all") && (
                     <button
@@ -507,7 +507,7 @@ const VendorProfile: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredItems.map((item) => (
+                  {filteredItems?.map((item) => (
                     <div
                       key={item.id}
                       className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:shadow-lg transition-all duration-300 group"
@@ -555,7 +555,7 @@ const VendorProfile: React.FC = () => {
                           </span>
                         </div>
                         <div className="space-y-1">
-                          {item.availability.slice(0, 2).map((avail) => (
+                          {item.availability.slice(0, 2)?.map((avail) => (
                             <div
                               key={avail.id}
                               className="flex items-center justify-between text-xs"
@@ -577,9 +577,9 @@ const VendorProfile: React.FC = () => {
                               </div>
                             </div>
                           ))}
-                          {item.availability.length > 2 && (
+                          {item.availability?.length > 2 && (
                             <div className="text-xs text-gray-500">
-                              +{item.availability.length - 2} more locations
+                              +{item.availability?.length - 2} more locations
                             </div>
                           )}
                         </div>
@@ -591,7 +591,7 @@ const VendorProfile: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-gray-500 mb-1">
-                            Available at {item.availability.length} location(s)
+                            Available at {item.availability?.length} location(s)
                           </div>
                         </div>
                       </div>
@@ -605,7 +605,7 @@ const VendorProfile: React.FC = () => {
 
         {activeTab === "locations" && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {data.foodCourts.map((foodCourt) => (
+            {data.foodCourts?.map((foodCourt) => (
               <div
                 key={foodCourt.id}
                 onClick={() => handleFoodCourtClick(foodCourt.id)}
@@ -658,7 +658,7 @@ const VendorProfile: React.FC = () => {
                     {
                       data.item_foodcourt_details?.filter(
                         (detail) => detail.foodcourt_id === foodCourt.id
-                      ).length
+                      )?.length
                     }{" "}
                     items
                   </div>

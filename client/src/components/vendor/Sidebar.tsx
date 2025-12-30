@@ -188,7 +188,7 @@ const Sidebar: React.FC = () => {
 
         <nav className="flex-1 p-6 overflow-y-auto">
           <div className="space-y-2">
-            {menuItems.map((item) => (
+            {menuItems?.map((item) => (
               <NavItem
                 key={item.path}
                 item={item}

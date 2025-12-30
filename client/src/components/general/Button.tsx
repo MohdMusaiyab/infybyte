@@ -89,7 +89,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       widthStyle,
       className,
     ]
-      .filter(Boolean)
+      ?.filter(Boolean)
       .join(" ");
 
     const LoadingSpinner = () => (

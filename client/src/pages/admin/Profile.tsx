@@ -351,9 +351,9 @@ const Profile = () => {
           </h2>
         </div>
 
-        {profile.foodcourts && profile.foodcourts.length > 0 ? (
+        {profile.foodcourts && profile.foodcourts?.length > 0 ? (
           <div className="space-y-3">
-            {profile.foodcourts.map((foodcourt) => (
+            {profile.foodcourts?.map((foodcourt) => (
               <div
                 key={foodcourt.id}
                 className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"

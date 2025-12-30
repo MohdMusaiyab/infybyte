@@ -86,7 +86,7 @@ const FoodCourtItems: React.FC = () => {
 
       if (update.foodcourt_id === foodCourtId) {
         setItems((prev) =>
-          prev.map((item) => {
+          prev?.map((item) => {
             const isMatch = item.id === update._id || item.id === update.id;
 
             if (isMatch) {
@@ -123,7 +123,7 @@ const FoodCourtItems: React.FC = () => {
       });
 
       setItems((prev) =>
-        prev.map((item) =>
+        prev?.map((item) =>
           item.id === id ? { ...item, [field]: value } : item
         )
       );
@@ -201,7 +201,7 @@ const FoodCourtItems: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredItems.map((item) => (
+        {filteredItems?.map((item) => (
           <div
             key={item.id}
             className="bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-black transition-all group relative"
@@ -266,7 +266,7 @@ const FoodCourtItems: React.FC = () => {
                     const val = e.target.value;
 
                     setItems((prev) =>
-                      prev.map((i) =>
+                      prev?.map((i) =>
                         i.id === item.id ? { ...i, price: parseFloat(val) } : i
                       )
                     );
@@ -291,7 +291,7 @@ const FoodCourtItems: React.FC = () => {
                   }
                   className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm outline-none focus:ring-2 ring-black/5 cursor-pointer"
                 >
-                  {statusOptions.map((opt) => (
+                  {statusOptions?.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>

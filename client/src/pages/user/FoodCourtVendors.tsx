@@ -55,9 +55,9 @@ const FoodCourtVendors: React.FC = () => {
       console.log("🔄 Real-time update in FoodCourtVendors:", update);
 
       setVendorItems((prev) =>
-        prev.map((vendor) => ({
+        prev?.map((vendor) => ({
           ...vendor,
-          items: vendor.items.map((item) =>
+          items: vendor.items?.map((item) =>
             item.itemId === update.item_id
               ? {
                   ...item,
@@ -89,15 +89,15 @@ const FoodCourtVendors: React.FC = () => {
       let itemsData = response.data.data || [];
 
       if (
-        itemsData.length > 0 &&
+        itemsData?.length > 0 &&
         Array.isArray(itemsData[0].items) &&
-        itemsData[0].items.length > 0
+        itemsData[0].items?.length > 0
       ) {
         const isKeyValueFormat =
           Array.isArray(itemsData[0].items[0]) && itemsData[0].items[0][0]?.Key;
 
         if (isKeyValueFormat) {
-          itemsData = (itemsData as Array<unknown>).map((vendor) => {
+          itemsData = (itemsData as Array<unknown>)?.map((vendor) => {
             type KeyValue = { Key: string; Value: unknown };
             const typedVendor = vendor as {
               vendorId: string;
@@ -107,7 +107,7 @@ const FoodCourtVendors: React.FC = () => {
 
             return {
               ...typedVendor,
-              items: typedVendor.items.map((itemArray: KeyValue[]) => {
+              items: typedVendor.items?.map((itemArray: KeyValue[]) => {
                 const itemObj: Record<string, unknown> = {};
                 itemArray.forEach(({ Key, Value }: KeyValue) => {
                   itemObj[Key] = Value;
@@ -122,7 +122,7 @@ const FoodCourtVendors: React.FC = () => {
 
       setVendorItems(itemsData);
 
-      if (itemsData.length > 0) {
+      if (itemsData?.length > 0) {
         setExpandedVendors(new Set([itemsData[0].vendorId]));
       }
     } catch (err: unknown) {
@@ -165,7 +165,7 @@ const FoodCourtVendors: React.FC = () => {
   };
 
   const expandAllVendors = () => {
-    const allVendorIds = new Set(vendorItems.map((v) => v.vendorId));
+    const allVendorIds = new Set(vendorItems?.map((v) => v.vendorId));
     setExpandedVendors(allVendorIds);
   };
 
@@ -174,7 +174,7 @@ const FoodCourtVendors: React.FC = () => {
   };
 
   const filteredVendorItems = vendorItems
-    .map((vendor) => ({
+    ?.map((vendor) => ({
       ...vendor,
       items: vendor.items
         ?.filter(
@@ -194,7 +194,7 @@ const FoodCourtVendors: React.FC = () => {
             selectedTimeSlot === "all" || item.timeSlot === selectedTimeSlot
         ),
     }))
-    ?.filter((vendor) => vendor.items.length > 0);
+    ?.filter((vendor) => vendor.items?.length > 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -222,14 +222,14 @@ const FoodCourtVendors: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(3)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
                 >
                   <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
                   <div className="space-y-3">
-                    {[...Array(2)].map((_, j) => (
+                    {[...Array(2)]?.map((_, j) => (
                       <div
                         key={j}
                         className="h-16 bg-gray-200 rounded-xl"
@@ -349,7 +349,7 @@ const FoodCourtVendors: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option key={category} value={category}>
                     {category === "all"
                       ? "All Categories"
@@ -362,7 +362,7 @@ const FoodCourtVendors: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="flex gap-2 overflow-x-auto">
-              {timeSlots.map((slot) => (
+              {timeSlots?.map((slot) => (
                 <button
                   key={slot}
                   onClick={() => setSelectedTimeSlot(slot)}
@@ -398,9 +398,9 @@ const FoodCourtVendors: React.FC = () => {
 
         <div className="flex items-center justify-between mb-6">
           <span className="text-gray-600">
-            {filteredVendorItems.length} vendor(s) •{" "}
+            {filteredVendorItems?.length} vendor(s) •{" "}
             {filteredVendorItems.reduce(
-              (acc, vendor) => acc + vendor.items.length,
+              (acc, vendor) => acc + vendor.items?.length,
               0
             )}{" "}
             item(s)
@@ -421,7 +421,7 @@ const FoodCourtVendors: React.FC = () => {
           )}
         </div>
 
-        {filteredVendorItems.length === 0 ? (
+        {filteredVendorItems?.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <ChefHat className="w-8 h-8 text-gray-400" />
@@ -439,7 +439,7 @@ const FoodCourtVendors: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredVendorItems.map((vendor) => (
+            {filteredVendorItems?.map((vendor) => (
               <div
                 key={vendor.vendorId}
                 className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden"
@@ -461,7 +461,7 @@ const FoodCourtVendors: React.FC = () => {
                       <div className="flex items-center gap-2 mt-1">
                         <Users className="w-4 h-4 text-gray-400" />
                         <span className="text-sm text-gray-600">
-                          {vendor.items.length} item(s)
+                          {vendor.items?.length} item(s)
                         </span>
                       </div>
                     </div>
@@ -498,7 +498,7 @@ const FoodCourtVendors: React.FC = () => {
                   <div className="border-t border-gray-200">
                     <div className="p-6">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {vendor.items.map((item) => (
+                        {vendor.items?.map((item) => (
                           <div
                             key={item.itemId}
                             className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200 hover:border-black transition-all duration-300"

@@ -57,8 +57,8 @@ const ManagerDashboard: React.FC = () => {
 
         setDashboardData(data);
 
-        const totalFoodCourts = data.foodCourts.length;
-        const totalManagers = data.managers.length;
+        const totalFoodCourts = data.foodCourts?.length;
+        const totalManagers = data.managers?.length;
         const totalItems = data.foodCourts.reduce(
           (sum, fc) => sum + fc.itemCount,
           0
@@ -221,7 +221,7 @@ const ManagerDashboard: React.FC = () => {
               Assigned Food Court
             </h3>
             <div className="space-y-3">
-              {dashboardData?.foodCourts.map((fc, index) => (
+              {dashboardData?.foodCourts?.map((fc, index) => (
                 <div
                   key={index}
                   className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
@@ -267,7 +267,7 @@ const ManagerDashboard: React.FC = () => {
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <h3 className="text-lg font-bold text-black mb-4">Team Members</h3>
             <div className="space-y-3">
-              {dashboardData?.managers.map((manager, index) => (
+              {dashboardData?.managers?.map((manager, index) => (
                 <div
                   key={index}
                   className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
@@ -301,7 +301,7 @@ const ManagerDashboard: React.FC = () => {
                 </div>
               ))}
               {(!dashboardData?.managers ||
-                dashboardData.managers.length === 0) && (
+                dashboardData.managers?.length === 0) && (
                 <div className="text-center py-4 text-gray-500">
                   No other team members found
                 </div>

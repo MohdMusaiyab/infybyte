@@ -86,7 +86,7 @@ const ItemsManagement: React.FC = () => {
   };
 
   // Filter items based on search and category
-  const filteredItems = items.filter((item) => {
+  const filteredItems = items?.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -96,7 +96,7 @@ const ItemsManagement: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const categories = [...new Set(items.map((item) => item.category))];
+  const categories = [...new Set(items?.map((item) => item.category))];
 
   if (loading) {
     return (
@@ -105,7 +105,7 @@ const ItemsManagement: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
+              {[...Array(6)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
@@ -180,7 +180,7 @@ const ItemsManagement: React.FC = () => {
                 className="px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors"
               >
                 <option value="">All Categories</option>
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option
                     key={category}
                     value={category}
@@ -194,7 +194,7 @@ const ItemsManagement: React.FC = () => {
           </div>
         </div>
 
-        {filteredItems.length === 0 ? (
+        {filteredItems?.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Package className="w-8 h-8 text-gray-400" />
@@ -215,7 +215,7 @@ const ItemsManagement: React.FC = () => {
         ) : (
           <>
             <div className="lg:hidden grid grid-cols-1 gap-4">
-              {filteredItems.map((item) => (
+              {filteredItems?.map((item) => (
                 <div
                   key={item.id}
                   className="bg-white rounded-2xl p-4 border-2 border-gray-200 hover:shadow-lg transition-all duration-300"
@@ -307,7 +307,7 @@ const ItemsManagement: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {filteredItems.map((item) => (
+                    {filteredItems?.map((item) => (
                       <tr
                         key={item.id}
                         className="hover:bg-gray-50 transition-colors"

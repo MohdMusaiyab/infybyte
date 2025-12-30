@@ -147,7 +147,7 @@ const EmailInput = React.forwardRef<HTMLInputElement, EmailInputProps>(
       disabledStyle,
       className,
     ]
-      .filter(Boolean)
+      ?.filter(Boolean)
       .join(" ");
 
     return (

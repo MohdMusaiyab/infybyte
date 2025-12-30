@@ -101,7 +101,7 @@ const SingleFoodCourtDetails: React.FC = () => {
     try {
       const res = await axiosInstance.get("/admin/vendor-dropdown");
       const raw: unknown[] = res.data.data || [];
-      const mapped: Vendor[] = raw.map((r) => {
+      const mapped: Vendor[] = raw?.map((r) => {
         const obj = r as {
           _id?: string;
           id?: string;
@@ -418,13 +418,13 @@ const SingleFoodCourtDetails: React.FC = () => {
         <div className="flex items-center gap-2 mb-4 md:mb-6">
           <Users className="w-5 h-5 md:w-6 md:h-6 text-black" />
           <h2 className="text-lg md:text-xl font-bold text-gray-900">
-            Assigned Vendors ({vendors.length})
+            Assigned Vendors ({vendors?.length})
           </h2>
         </div>
 
-        {vendors.length > 0 ? (
+        {vendors?.length > 0 ? (
           <div className="space-y-3 mb-6">
-            {vendors.map((vendor) => (
+            {vendors?.map((vendor) => (
               <div
                 key={vendor._id}
                 className="border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:shadow-md transition-all"
@@ -469,7 +469,7 @@ const SingleFoodCourtDetails: React.FC = () => {
               className="flex-1 px-3 md:px-4 py-2.5 md:py-3 text-sm md:text-base border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
             >
               <option value="">Select a vendor...</option>
-              {availableVendors.map((v) => (
+              {availableVendors?.map((v) => (
                 <option key={v._id} value={v._id}>
                   {v.shopName}
                 </option>

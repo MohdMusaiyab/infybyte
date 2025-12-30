@@ -71,11 +71,11 @@ const VendorItemsAvailability: React.FC = () => {
       console.log("🔄 Real-time update in VendorItemsAvailability:", update);
 
       setItems((prev) =>
-        prev.map((item) =>
+        prev?.map((item) =>
           item.itemId === update.item_id
             ? {
                 ...item,
-                foodCourts: item.foodCourts.map((fc) =>
+                foodCourts: item.foodCourts?.map((fc) =>
                   fc.foodCourtId === update.foodcourt_id
                     ? {
                         ...fc,
@@ -106,7 +106,7 @@ const VendorItemsAvailability: React.FC = () => {
       const response = await axiosInstance.get(`/user/vendors/${id}/items`);
       setItems(response.data.data || []);
 
-      if (response.data.data && response.data.data.length > 0) {
+      if (response.data.data && response.data.data?.length > 0) {
         setExpandedItems(new Set([response.data.data[0].itemId]));
       }
     } catch (err: unknown) {
@@ -136,7 +136,7 @@ const VendorItemsAvailability: React.FC = () => {
   const allFoodCourts = Array.from(
     new Set(
       items.flatMap((item) =>
-        (item.foodCourts || []).map((fc) => ({
+        (item.foodCourts || [])?.map((fc) => ({
           id: fc.foodCourtId,
           name: fc.foodCourtName,
           location: fc.location,
@@ -157,9 +157,9 @@ const VendorItemsAvailability: React.FC = () => {
 
       return matchesSearch && matchesCategory;
     })
-    .map((item) => ({
+    ?.map((item) => ({
       ...item,
-      foodCourts: (item.foodCourts || []).filter((fc) => {
+      foodCourts: (item.foodCourts || [])?.filter((fc) => {
         const matchesFoodCourt =
           selectedFoodCourt === "all" || fc.foodCourtId === selectedFoodCourt;
 
@@ -172,7 +172,7 @@ const VendorItemsAvailability: React.FC = () => {
         return matchesFoodCourt && matchesTimeSlot && isActive;
       }),
     }))
-    .filter((item) => (item.foodCourts || []).length > 0);
+    ?.filter((item) => (item.foodCourts || [])?.length > 0);
 
   const toggleItem = (itemId: string) => {
     setExpandedItems((prev) => {
@@ -187,7 +187,7 @@ const VendorItemsAvailability: React.FC = () => {
   };
 
   const expandAllItems = () => {
-    const allItemIds = new Set(filteredItems.map((item) => item.itemId));
+    const allItemIds = new Set(filteredItems?.map((item) => item.itemId));
     setExpandedItems(allItemIds);
   };
 
@@ -225,14 +225,14 @@ const VendorItemsAvailability: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
+              {[...Array(3)]?.map((_, i) => (
                 <div
                   key={i}
                   className="bg-white rounded-2xl p-6 border-2 border-gray-200"
                 >
                   <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
                   <div className="space-y-3">
-                    {[...Array(2)].map((_, j) => (
+                    {[...Array(2)]?.map((_, j) => (
                       <div
                         key={j}
                         className="h-16 bg-gray-200 rounded-xl"
@@ -333,7 +333,7 @@ const VendorItemsAvailability: React.FC = () => {
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
-                {categories.map((category) => (
+                {categories?.map((category) => (
                   <option key={category} value={category}>
                     {category === "all"
                       ? "All Categories"
@@ -350,7 +350,7 @@ const VendorItemsAvailability: React.FC = () => {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-black focus:outline-none transition-colors appearance-none bg-white"
               >
                 <option value="all">All Food Courts</option>
-                {allFoodCourts.map((fc) => (
+                {allFoodCourts?.map((fc) => (
                   <option key={fc.id} value={fc.id}>
                     {<Link to={`/user/foodcourt/${fc.id}`}>{fc.name}</Link>}
                   </option>
@@ -361,7 +361,7 @@ const VendorItemsAvailability: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="flex gap-2 overflow-x-auto">
-              {timeSlots.map((slot) => (
+              {timeSlots?.map((slot) => (
                 <button
                   key={slot}
                   onClick={() => setSelectedTimeSlot(slot)}
@@ -397,7 +397,7 @@ const VendorItemsAvailability: React.FC = () => {
 
         <div className="flex items-center justify-between mb-6">
           <span className="text-gray-600">
-            {filteredItems.length} item(s) •{" "}
+            {filteredItems?.length} item(s) •{" "}
             {filteredItems.reduce(
               (acc, item) => acc + (item.foodCourts?.length || 0),
               0
@@ -422,7 +422,7 @@ const VendorItemsAvailability: React.FC = () => {
           )}
         </div>
 
-        {filteredItems.length === 0 ? (
+        {filteredItems?.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border-2 border-gray-200">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Store className="w-8 h-8 text-gray-400" />
@@ -441,7 +441,7 @@ const VendorItemsAvailability: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredItems.map((item) => (
+            {filteredItems?.map((item) => (
               <div
                 key={item.itemId}
                 className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden"
@@ -504,11 +504,11 @@ const VendorItemsAvailability: React.FC = () => {
 
                 {expandedItems.has(item.itemId) &&
                   item.foodCourts &&
-                  item.foodCourts.length > 0 && (
+                  item.foodCourts?.length > 0 && (
                     <div className="border-t border-gray-200">
                       <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {item.foodCourts.map((fc, index) => (
+                          {item.foodCourts?.map((fc, index) => (
                             <div
                               key={`${fc.foodCourtId}-${index}`}
                               onClick={() =>

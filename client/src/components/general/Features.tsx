@@ -160,7 +160,7 @@ const Features: React.FC = () => {
             { id: "vendors", label: "For Vendors", icon: Store },
             { id: "customers", label: "For Customers", icon: Users },
             { id: "admins", label: "For Food Courts", icon: Shield },
-          ].map((tab) => (
+          ]?.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -198,7 +198,7 @@ const Features: React.FC = () => {
             const typedFeatures = features as FeaturesByTab;
             const tabKey = activeTab as keyof FeaturesByTab;
 
-            return typedFeatures[tabKey].map(
+            return typedFeatures[tabKey]?.map(
               (feature: Feature, index: number) => (
                 <div
                   key={index}
@@ -217,7 +217,7 @@ const Features: React.FC = () => {
                   </p>
 
                   <div className="space-y-3">
-                    {feature.benefits.map(
+                    {feature.benefits?.map(
                       (benefit: string, benefitIndex: number) => (
                         <div
                           key={benefitIndex}
@@ -246,7 +246,7 @@ const Features: React.FC = () => {
               { number: "15+", label: "Minutes Saved per Customer Visit" },
               { number: "100%", label: "Real-time Menu Accuracy" },
               { number: "0", label: "Wasted Trips" },
-            ].map((stat, index) => (
+            ]?.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-white mb-2">
                   {stat.number}
@@ -269,7 +269,7 @@ const Features: React.FC = () => {
               { spec: "Mobile First", detail: "PWA & Responsive" },
               { spec: "Secure", detail: "SSL Encryption" },
               { spec: "Fast", detail: "< 2s Load Time" },
-            ].map((tech, index) => (
+            ]?.map((tech, index) => (
               <div
                 key={index}
                 className="bg-gray-50 rounded-2xl p-6 border-2 border-gray-200"

@@ -54,7 +54,7 @@ const SingleFoodCourt: React.FC = () => {
 
       if (action === "update") {
         setItems((prev) =>
-          prev.map((item) => {
+          prev?.map((item) => {
             const isMatch =
               item._id === update.id ||
               (item.item_id === update.item_id &&
@@ -107,7 +107,7 @@ const SingleFoodCourt: React.FC = () => {
 
         setFoodCourt(data.foodCourt);
 
-        const formattedItems: FoodCourtItem[] = (data.items || []).map(
+        const formattedItems: FoodCourtItem[] = (data.items || [])?.map(
           (arr: KeyValuePair[]) => {
             const obj: Record<
               string,
@@ -228,7 +228,7 @@ const SingleFoodCourt: React.FC = () => {
       });
 
       setItems((prevItems) =>
-        prevItems.map((item) =>
+        prevItems?.map((item) =>
           item._id === itemId ? { ...item, status: newStatus } : item
         )
       );
@@ -261,7 +261,7 @@ const SingleFoodCourt: React.FC = () => {
   };
 
   const formatItems = (itemsData: KeyValuePair[][]): FoodCourtItem[] => {
-    return itemsData.map((arr: KeyValuePair[]) => {
+    return itemsData?.map((arr: KeyValuePair[]) => {
       const obj: Record<string, string | number | boolean | null | undefined> =
         {};
       arr.forEach((item) => {
@@ -484,17 +484,17 @@ const SingleFoodCourt: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-black">Menu Items</h2>
-            <span className="text-gray-600">{items.length} items</span>
+            <span className="text-gray-600">{items?.length} items</span>
           </div>
 
-          {items.length === 0 ? (
+          {items?.length === 0 ? (
             <div className="text-center py-12">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <p className="text-gray-600">No items found in this food court</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {items.map((item) => (
+              {items?.map((item) => (
                 <div
                   key={item._id}
                   className="border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300"
@@ -561,7 +561,7 @@ const SingleFoodCourt: React.FC = () => {
                         "notavailable",
                         "sellingfast",
                         "finishingsoon",
-                      ].map((status) => (
+                      ]?.map((status) => (
                         <button
                           key={status}
                           disabled={updatingItem === item._id}

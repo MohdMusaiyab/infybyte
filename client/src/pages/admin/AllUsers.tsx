@@ -110,7 +110,7 @@ const AllUsers = () => {
       }
 
       setUsers((prevUsers) =>
-        prevUsers.map((u) =>
+        prevUsers?.map((u) =>
           u.id === userId ? { ...u, role: newRole as User["role"] } : u
         )
       );
@@ -172,7 +172,7 @@ const AllUsers = () => {
     fetchUsers(newPage, meta.limit, searchEmail);
   };
 
-  if (loading && users.length === 0) {
+  if (loading && users?.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
@@ -258,7 +258,7 @@ const AllUsers = () => {
             <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-3"></div>
             <p className="text-sm text-gray-500">Loading users...</p>
           </div>
-        ) : users.length === 0 ? (
+        ) : users?.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <UsersIcon className="w-8 h-8 text-gray-400" />
@@ -276,7 +276,7 @@ const AllUsers = () => {
             )}
           </div>
         ) : (
-          users.map((user) => (
+          users?.map((user) => (
             <div key={user.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
@@ -347,7 +347,7 @@ const AllUsers = () => {
                     </div>
                   </td>
                 </tr>
-              ) : users.length === 0 ? (
+              ) : users?.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
@@ -369,7 +369,7 @@ const AllUsers = () => {
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                users?.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">

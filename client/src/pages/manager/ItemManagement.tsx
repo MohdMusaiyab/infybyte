@@ -469,7 +469,7 @@ const ItemManagement: React.FC = () => {
           {activeTab === "current" && (
             <div className="space-y-4">
               {!data.currentAssignments ||
-              data.currentAssignments.length === 0 ? (
+              data.currentAssignments?.length === 0 ? (
                 <div className="text-center py-12">
                   <Store className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-600 mb-2">
@@ -480,7 +480,7 @@ const ItemManagement: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                data.currentAssignments.map((assignment) => (
+                data.currentAssignments?.map((assignment) => (
                   <div
                     key={assignment.foodCourtId}
                     className="border-2 border-gray-200 rounded-xl p-4"
@@ -695,7 +695,7 @@ const ItemManagement: React.FC = () => {
           {activeTab === "available" && (
             <div className="space-y-4">
               {!data.availableForAssignment ||
-              data.availableForAssignment.length === 0 ? (
+              data.availableForAssignment?.length === 0 ? (
                 <div className="text-center py-12">
                   <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-600">No available food courts</p>
@@ -704,7 +704,7 @@ const ItemManagement: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                data.availableForAssignment.map((foodCourt) => (
+                data.availableForAssignment?.map((foodCourt) => (
                   <div
                     key={foodCourt.foodCourtId}
                     className="border-2 border-gray-200 rounded-xl p-4"
@@ -841,7 +841,7 @@ const ItemManagement: React.FC = () => {
             </div>
           )}
         </div>
-        {data.notAccessible && data.notAccessible.length > 0 && (
+        {data.notAccessible && data.notAccessible?.length > 0 && (
           <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
             <h2 className="text-xl font-bold text-black mb-4">
               Other Food Courts
@@ -852,7 +852,7 @@ const ItemManagement: React.FC = () => {
             </p>
 
             <div className="space-y-3">
-              {data.notAccessible.map((fc) => (
+              {data.notAccessible?.map((fc) => (
                 <div
                   key={fc.foodCourtId}
                   className="flex items-center justify-between p-3 border-2 border-gray-200 rounded-lg"

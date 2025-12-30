@@ -85,7 +85,7 @@ const Profile: React.FC = () => {
       return;
     }
 
-    if (editData.name.length < 2 || editData.name.length > 50) {
+    if (editData.name?.length < 2 || editData.name?.length > 50) {
       setError("Name must be between 2 and 50 characters");
       return;
     }
@@ -109,7 +109,7 @@ const Profile: React.FC = () => {
         updateData.email = editData.email;
       }
 
-      if (Object.keys(updateData).length === 0) {
+      if (Object.keys(updateData)?.length === 0) {
         setError("No changes made");
         return;
       }
@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 space-y-4">
-              {[...Array(4)].map((_, i) => (
+              {[...Array(4)]?.map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
                   <div className="flex-1">

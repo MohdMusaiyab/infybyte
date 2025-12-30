@@ -194,7 +194,7 @@ const SingleItemDetail: React.FC = () => {
     const numericValue = price.replace(/[^0-9.]/g, "");
     const parts = numericValue.split(".");
     const finalValue =
-      parts.length > 2
+      parts?.length > 2
         ? parts[0] + "." + parts.slice(1).join("")
         : numericValue;
     setFormData((prev) => ({ ...prev, price: finalValue }));
@@ -233,7 +233,7 @@ const SingleItemDetail: React.FC = () => {
         updateData.timeSlot = formData.timeSlot;
       }
 
-      if (Object.keys(updateData).length > 0) {
+      if (Object.keys(updateData)?.length > 0) {
         await axiosInstance.put(
           `/manager/foodcourt/item/${itemId}`,
           updateData
@@ -505,7 +505,7 @@ const SingleItemDetail: React.FC = () => {
                       "notavailable",
                       "sellingfast",
                       "finishingsoon",
-                    ].map((status) => (
+                    ]?.map((status) => (
                       <button
                         key={status}
                         type="button"
@@ -546,7 +546,7 @@ const SingleItemDetail: React.FC = () => {
                     Time Slot
                   </label>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    {["breakfast", "lunch", "snacks", "dinner"].map((slot) => (
+                    {["breakfast", "lunch", "snacks", "dinner"]?.map((slot) => (
                       <button
                         key={slot}
                         type="button"
