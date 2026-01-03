@@ -2,8 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
-import { Package, Store, Plus, Search, Filter, Eye, Check } from "lucide-react";
-import { useWebSocketContext } from "../../context/WebSocketContext"; // ✅ ADDED
+import { Package, Store, Plus, Search, Filter, Eye, Check, X, AlertCircle } from "lucide-react";
+import { useWebSocketContext } from "../../context/WebSocketContext";
 
 interface FoodCourt {
   _id: string;
@@ -53,6 +53,41 @@ interface WebSocketUpdatePayload {
   updatedAt: string;
 }
 
+interface ErrorModalProps {
+  message: string;
+  onClose: () => void;
+}
+
+const ErrorModal: React.FC<ErrorModalProps> = ({ message, onClose }) => {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full border-2 border-red-200 animate-in fade-in zoom-in duration-200">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-6 h-6 text-red-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-black mb-2">Error</h3>
+            <p className="text-gray-600">{message}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <button
+          onClick={onClose}
+          className="w-full bg-black text-white px-4 py-3 rounded-xl hover:bg-gray-800 transition-all duration-300 font-medium"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const MultipleItemManagement: React.FC = () => {
   const navigate = useNavigate();
   const { lastMessage, isConnected } = useWebSocketContext();
@@ -64,6 +99,7 @@ const MultipleItemManagement: React.FC = () => {
   const [selectedFoodCourt, setSelectedFoodCourt] = useState<string>("all");
   const [addingItems, setAddingItems] = useState<{ [key: string]: string }>({}); 
   const [successMessage, setSuccessMessage] = useState<string>("");
+  const [errorModal, setErrorModal] = useState<string>("");
 
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
@@ -145,9 +181,9 @@ const MultipleItemManagement: React.FC = () => {
         const responseData = err.response?.data as
           | { message?: string }
           | undefined;
-        alert(responseData?.message ?? "Failed to add item to food court");
+        setErrorModal(responseData?.message ?? "Failed to add item to food court");
       } else {
-        alert("Failed to add item to food court");
+        setErrorModal("Failed to add item to food court");
       }
     } finally {
       setAddingItems((prev) => {
@@ -216,6 +252,13 @@ const MultipleItemManagement: React.FC = () => {
 
   return (
     <div className="p-4 lg:p-6">
+      {errorModal && (
+        <ErrorModal
+          message={errorModal}
+          onClose={() => setErrorModal("")}
+        />
+      )}
+
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">

@@ -4,6 +4,8 @@ import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
 import { ArrowLeft, Store, Package, Clock, MapPin, Edit } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
+import { useModal } from "../../hooks/useModal";
+import Modal from "../../components/general/Modal";
 
 interface FoodCourt {
   id: string;
@@ -32,10 +34,25 @@ interface KeyValuePair {
   Value: string | number | boolean | null | undefined;
 }
 
+interface WebSocketUpdatePayload {
+  id: string;
+  item_id: string;
+  foodcourt_id: string;
+  status: "available" | "notavailable" | "sellingfast" | "finishingsoon";
+  price?: number;
+  isActive: boolean;
+  timeSlot: "breakfast" | "lunch" | "snacks" | "dinner";
+  createdAt: string;
+  updatedAt: string;
+}
+
 const SingleFoodCourt: React.FC = () => {
   const { foodCourtId } = useParams<{ foodCourtId: string }>();
   const navigate = useNavigate();
-  const { lastMessage, isConnected } = useWebSocketContext(); 
+  const { lastMessage, isConnected } = useWebSocketContext();
+
+  const { isOpen, modalConfig, showAlert, hideModal } = useModal();
+
   const [foodCourt, setFoodCourt] = useState<FoodCourt | null>(null);
   const [items, setItems] = useState<FoodCourtItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,7 +61,7 @@ const SingleFoodCourt: React.FC = () => {
 
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-      const update = lastMessage.payload as any;
+      const update = lastMessage.payload as WebSocketUpdatePayload;
       const action = lastMessage.action;
 
       console.log("🔄 Real-time update received in SingleFoodCourt:", {
@@ -92,6 +109,7 @@ const SingleFoodCourt: React.FC = () => {
       }
     }
   }, [lastMessage, foodCourtId]);
+
   useEffect(() => {
     const fetchFoodCourtData = async () => {
       if (!foodCourtId) return;
@@ -232,28 +250,31 @@ const SingleFoodCourt: React.FC = () => {
           item._id === itemId ? { ...item, status: newStatus } : item
         )
       );
+
+      showAlert("Item status updated successfully!", "success");
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as
           | { message?: string }
           | undefined;
-        alert(responseData?.message ?? "Failed to update item status");
+        showAlert(
+          responseData?.message ?? "Failed to update item status",
+          "error"
+        );
 
-        const fetchFoodCourtData = async () => {
-          try {
-            const response = await axiosInstance.get(
-              `/manager/foodcourts/${foodCourtId}`
-            );
-            const data = response.data.data;
-            const formattedItems = formatItems(data.items || []);
-            setItems(formattedItems);
-          } catch (fetchErr) {
-            console.error("Failed to revert update:", fetchErr);
-          }
-        };
-        fetchFoodCourtData();
+        try {
+          const response = await axiosInstance.get(
+            `/manager/foodcourts/${foodCourtId}`
+          );
+          const data = response.data.data;
+          const formattedItems = formatItems(data.items || []);
+          setItems(formattedItems);
+        } catch (fetchErr) {
+          console.error("Failed to revert update:", fetchErr);
+          showAlert("Failed to revert changes", "error");
+        }
       } else {
-        alert("Failed to update item status");
+        showAlert("Failed to update item status", "error");
       }
     } finally {
       setUpdatingItem(null);
@@ -418,6 +439,19 @@ const SingleFoodCourt: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-7xl mx-auto">
+        {}
+        <Modal
+          isOpen={isOpen}
+          onClose={hideModal}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          type={modalConfig.type}
+          onConfirm={modalConfig.onConfirm}
+          onCancel={modalConfig.onCancel}
+          confirmText={modalConfig.confirmText}
+          cancelText={modalConfig.cancelText}
+        />
+
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -589,23 +623,6 @@ const SingleFoodCourt: React.FC = () => {
                           )}
                         </button>
                       ))}
-                    </div>
-
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
-                      <span className="text-sm font-medium text-gray-700">
-                        Active:
-                      </span>
-                      <div
-                        className={`w-12 h-6 rounded-full transition-all duration-300 ${
-                          item.isActive ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 transform ${
-                            item.isActive ? "translate-x-7" : "translate-x-1"
-                          } mt-1`}
-                        />
-                      </div>
                     </div>
                   </div>
 

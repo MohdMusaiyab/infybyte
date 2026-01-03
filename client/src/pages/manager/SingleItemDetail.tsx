@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
-import { ArrowLeft, Save, RotateCcw, DollarSign } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw, IndianRupeeIcon } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
+import { useModal } from "../../hooks/useModal";
+
+import Modal from "../../components/general/Modal";
 
 interface FoodCourt {
   id: string;
@@ -54,6 +57,9 @@ const SingleItemDetail: React.FC = () => {
   }>();
   const navigate = useNavigate();
   const { lastMessage, isConnected } = useWebSocketContext();
+
+  const { isOpen, modalConfig, showAlert, hideModal } = useModal();
+
   const [foodCourt, setFoodCourt] = useState<FoodCourt | null>(null);
   const [item, setItem] = useState<ItemDetails | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -245,16 +251,17 @@ const SingleItemDetail: React.FC = () => {
         };
         setItem(updatedItem);
 
-        alert("Item updated successfully!");
+        showAlert("Item updated successfully!", "success");
       } else {
-        alert("No changes to save.");
+        showAlert("No changes to save.", "info");
       }
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as
           | { message?: string }
           | undefined;
-        alert(responseData?.message ?? "Failed to update item");
+
+        showAlert(responseData?.message ?? "Failed to update item", "error");
 
         if (item) {
           setFormData({
@@ -265,7 +272,7 @@ const SingleItemDetail: React.FC = () => {
           });
         }
       } else {
-        alert("Failed to update item");
+        showAlert("Failed to update item", "error");
       }
     } finally {
       setSaving(false);
@@ -280,6 +287,7 @@ const SingleItemDetail: React.FC = () => {
         isActive: item.isActive,
         timeSlot: item.timeSlot,
       });
+      showAlert("Form reset to original values", "info");
     }
   };
 
@@ -370,6 +378,19 @@ const SingleItemDetail: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-4xl mx-auto">
+        {}
+        <Modal
+          isOpen={isOpen}
+          onClose={hideModal}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          type={modalConfig.type}
+          onConfirm={modalConfig.onConfirm}
+          onCancel={modalConfig.onCancel}
+          confirmText={modalConfig.confirmText}
+          cancelText={modalConfig.cancelText}
+        />
+
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -437,6 +458,7 @@ const SingleItemDetail: React.FC = () => {
             </div>
           </div>
         </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
@@ -488,6 +510,7 @@ const SingleItemDetail: React.FC = () => {
               </div>
             </div>
           </div>
+
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 border-2 border-gray-200">
               <h2 className="text-xl font-bold text-black mb-6">
@@ -523,12 +546,13 @@ const SingleItemDetail: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Food Court Specific Price
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <IndianRupeeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <input
                       type="text"
                       value={formData.price}
@@ -541,6 +565,7 @@ const SingleItemDetail: React.FC = () => {
                     Leave empty to use base price (₹{item?.basePrice})
                   </p>
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-3">
                     Time Slot
@@ -564,6 +589,7 @@ const SingleItemDetail: React.FC = () => {
                     ))}
                   </div>
                 </div>
+
                 <div className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl">
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
@@ -587,6 +613,7 @@ const SingleItemDetail: React.FC = () => {
                     />
                   </button>
                 </div>
+
                 <div className="flex gap-4 pt-6 border-t border-gray-200">
                   <button
                     onClick={handleSave}

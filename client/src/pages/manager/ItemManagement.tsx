@@ -17,6 +17,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { useWebSocketContext } from "../../context/WebSocketContext";
+import Modal from "../../components/general/Modal";
+import { useModal } from "../../hooks/useModal";
 
 interface FoodCourt {
   foodCourtId: string;
@@ -81,6 +83,7 @@ const ItemManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"current" | "available">(
     "current"
   );
+  const [removingFC, setRemovingFC] = useState<string | null>(null);
   const [editingFC, setEditingFC] = useState<string | null>(null);
   const [addingToFC, setAddingToFC] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -89,6 +92,7 @@ const ItemManagement: React.FC = () => {
     timeSlot: "lunch" as FoodCourtAssignment["timeSlot"],
     isActive: true,
   });
+  const { isOpen, modalConfig, showAlert, showConfirm, hideModal } = useModal();
 
   useEffect(() => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update" && data) {
@@ -166,21 +170,24 @@ const ItemManagement: React.FC = () => {
         isActive: true,
       });
 
-      alert("Item added to food court successfully!");
+      
+      showAlert("Item added to food court successfully!", "success");
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as
           | { message?: string }
           | undefined;
-        alert(responseData?.message ?? "Failed to add item to food court");
+        showAlert(
+          responseData?.message ?? "Failed to add item to food court",
+          "error"
+        );
       } else {
-        alert("Failed to add item to food court");
+        showAlert("Failed to add item to food court", "error");
       }
     } finally {
       setSaving(false);
     }
   };
-
   const handleUpdateFoodCourt = async (foodCourtId: string) => {
     if (!itemId) return;
 
@@ -209,15 +216,19 @@ const ItemManagement: React.FC = () => {
       setData(response.data.data);
       setEditingFC(null);
 
-      alert("Food court item updated successfully!");
+
+      showAlert("Food court item updated successfully!", "success");
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         const responseData = err.response?.data as
           | { message?: string }
           | undefined;
-        alert(responseData?.message ?? "Failed to update food court item");
+        showAlert(
+          responseData?.message ?? "Failed to update food court item",
+          "error"
+        );
       } else {
-        alert("Failed to update food court item");
+        showAlert("Failed to update food court item", "error");
       }
     } finally {
       setSaving(false);
@@ -228,36 +239,39 @@ const ItemManagement: React.FC = () => {
     foodCourtId: string,
     foodCourtName: string
   ) => {
-    if (
-      !itemId ||
-      !confirm(
-        `Are you sure you want to remove this item from ${foodCourtName}?`
-      )
-    )
-      return;
+    if (!itemId) return;
 
-    try {
-      setSaving(true);
+    showConfirm(
+      `Are you sure you want to remove this item from ${foodCourtName}?`,
+      async () => {
+        try {
+          setRemovingFC(foodCourtId); 
 
-      await axiosInstance.delete(`/manager/items/${itemId}/foodcourt`, {
-        data: { foodCourtId },
-      });
-      const response = await axiosInstance.get(`/manager/items/${itemId}`);
-      setData(response.data.data);
+          await axiosInstance.delete(`/manager/items/${itemId}/foodcourt`, {
+            data: { foodCourtId },
+          });
+          const response = await axiosInstance.get(`/manager/items/${itemId}`);
+          setData(response.data.data);
 
-      alert("Item removed from food court successfully!");
-    } catch (err: unknown) {
-      if (err instanceof AxiosError) {
-        const responseData = err.response?.data as
-          | { message?: string }
-          | undefined;
-        alert(responseData?.message ?? "Failed to remove item from food court");
-      } else {
-        alert("Failed to remove item from food court");
-      }
-    } finally {
-      setSaving(false);
-    }
+          showAlert("Item removed from food court successfully!", "success");
+        } catch (err: unknown) {
+          if (err instanceof AxiosError) {
+            const responseData = err.response?.data as
+              | { message?: string }
+              | undefined;
+            showAlert(
+              responseData?.message ?? "Failed to remove item from food court",
+              "error"
+            );
+          } else {
+            showAlert("Failed to remove item from food court", "error");
+          }
+        } finally {
+          setRemovingFC(null); 
+        }
+      },
+      "Confirm Removal"
+    );
   };
 
   const startEditing = (assignment: FoodCourtAssignment) => {
@@ -372,7 +386,17 @@ const ItemManagement: React.FC = () => {
   return (
     <div className="p-4 lg:p-6">
       <div className="max-w-6xl mx-auto">
-        
+        <Modal
+          isOpen={isOpen}
+          onClose={hideModal}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          type={modalConfig.type}
+          onConfirm={modalConfig.onConfirm}
+          onCancel={modalConfig.onCancel}
+          confirmText={modalConfig.confirmText}
+          cancelText={modalConfig.cancelText}
+        />
         <div className="mb-8">
           <button
             onClick={() => navigate(-1)}
@@ -679,10 +703,26 @@ const ItemManagement: React.FC = () => {
                                 assignment.foodCourtName
                               )
                             }
-                            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                            disabled={
+                              removingFC === assignment.foodCourtId || saving
+                            }
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                              removingFC === assignment.foodCourtId
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-red-600 hover:bg-red-700"
+                            } text-white`}
                           >
-                            <Trash2 className="w-4 h-4" />
-                            Remove
+                            {removingFC === assignment.foodCourtId ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Removing...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="w-4 h-4" />
+                                Remove
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

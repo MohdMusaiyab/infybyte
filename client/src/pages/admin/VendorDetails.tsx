@@ -9,11 +9,11 @@ import {
   Calendar,
   Hash,
   Package,
-  Shield,
   Eye,
   X,
   AlertTriangle,
   UserMinus,
+  AlertCircle,
 } from "lucide-react";
 
 interface VendorDetails {
@@ -28,6 +28,76 @@ interface VendorDetails {
   updatedAt: string;
 }
 
+const ConfirmModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  isProcessing,
+  variant = "danger",
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: React.ReactNode;
+  isProcessing: boolean;
+  variant?: "danger" | "info";
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div
+        className="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6">
+          <div
+            className={`w-12 h-12 rounded-full mb-4 flex items-center justify-center ${
+              variant === "danger" ? "bg-red-100" : "bg-blue-100"
+            }`}
+          >
+            {variant === "danger" ? (
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            ) : (
+              <AlertCircle className="w-6 h-6 text-blue-600" />
+            )}
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
+          <div className="text-gray-600 text-sm leading-relaxed mb-6">
+            {message}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              disabled={isProcessing}
+              onClick={onClose}
+              className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors order-2 sm:order-1"
+            >
+              Cancel
+            </button>
+            <button
+              disabled={isProcessing}
+              onClick={onConfirm}
+              className={`flex-1 px-4 py-3 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 order-1 sm:order-2 ${
+                variant === "danger"
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-black hover:bg-gray-800"
+              } disabled:opacity-50`}
+            >
+              {isProcessing && (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              )}
+              {isProcessing ? "Processing..." : "Confirm"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const VendorDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -35,6 +105,9 @@ const VendorDetails = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
+
+  const [showDemoteModal, setShowDemoteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     const fetchVendorDetails = async () => {
@@ -50,7 +123,7 @@ const VendorDetails = () => {
         const response = await axiosInstance.get<ApiResponse<VendorDetails>>(
           `/admin/vendors/${id}`
         );
-        setVendor(response.data.data);
+        setVendor(response?.data?.data);
       } catch (err: unknown) {
         if (axios.isAxiosError(err)) {
           const responseData = err.response?.data as
@@ -84,11 +157,28 @@ const VendorDetails = () => {
     });
   };
 
+  const handleDemoteToUser = async () => {
+    if (!vendor) return;
+    try {
+      setIsUpdating(true);
+      await axiosInstance.patch(`/admin/vendors/${vendor.id}/status`, {
+        role: "user",
+      });
+      setShowDemoteModal(false);
+      setShowSuccessModal(true);
+      setTimeout(() => navigate("/admin/all-vendors"), 2000);
+    } catch (err: unknown) {
+      console.error(err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 md:w-16 md:h-16 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 font-medium">Loading vendor details...</p>
         </div>
       </div>
@@ -97,229 +187,163 @@ const VendorDetails = () => {
 
   if (error || !vendor) {
     return (
-      <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
+      <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0 p-4">
         <button
           onClick={() => navigate("/admin/all-vendors")}
           className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-black transition-colors font-medium"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Vendors
+          <ArrowLeft className="w-4 h-4" /> Back to Vendors
         </button>
-
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 md:p-6 flex items-start gap-3">
-          <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <X className="w-3 h-3 text-white" />
-          </div>
-          <p className="text-red-700 text-sm md:text-base break-words">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <p className="text-red-700 text-sm break-words">
             {error || "Vendor not found"}
           </p>
         </div>
       </div>
     );
   }
-  const handleDemoteToUser = async () => {
-    if (!vendor) return;
 
-    const confirmMessage = `Are you sure you want to demote "${vendor.shopName}" to a regular User?\n\nThis will PERMANENTLY delete:\n- The Vendor Profile\n- All Menu Items\n- All Food Court Assignments\n- All Manager Links`;
-
-    if (window.confirm(confirmMessage)) {
-      try {
-        setIsUpdating(true);
-
-        await axiosInstance.patch(`/admin/vendors/${vendor.id}/status`, {
-          role: "user",
-        });
-
-        alert("Vendor demoted successfully. Redirecting...");
-        navigate("/admin/all-vendors");
-      } catch (err: unknown) {
-        console.error(err);
-        alert("Failed to update vendor status");
-      } finally {
-        setIsUpdating(false);
-      }
-    }
-  };
   return (
-    <div className="space-y-4 md:space-y-6 pb-20 lg:pb-0">
+    <div className="max-w-5xl mx-auto space-y-6 p-4 md:p-6 pb-24 lg:pb-6">
+      <ConfirmModal
+        isOpen={showDemoteModal}
+        isProcessing={isUpdating}
+        onClose={() => setShowDemoteModal(false)}
+        onConfirm={handleDemoteToUser}
+        title="Confirm Demotion"
+        message={
+          <>
+            Are you sure you want to demote{" "}
+            <span className="font-bold text-gray-900">"{vendor.shopName}"</span>
+            ?
+            <br />
+            <br />
+            This will{" "}
+            <span className="text-red-600 font-bold">
+              PERMANENTLY delete
+            </span>{" "}
+            all menu items, shop data, and manager links.
+          </>
+        }
+      />
+
+      <ConfirmModal
+        isOpen={showSuccessModal}
+        isProcessing={false}
+        onClose={() => {}}
+        onConfirm={() => {}}
+        variant="info"
+        title="Success!"
+        message="Vendor has been demoted. Redirecting to list..."
+      />
+
       <button
         onClick={() => navigate("/admin/all-vendors")}
-        className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-black hover:bg-gray-100 rounded-xl transition-all font-medium"
+        className="inline-flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-black hover:bg-gray-100 rounded-lg transition-all font-medium text-sm"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span className="hidden sm:inline">Back to Vendors</span>
-        <span className="sm:hidden">Back</span>
+        <span>Back to Vendors</span>
       </button>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <div className="w-12 h-12 md:w-16 md:h-16 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
-            <Store className="w-6 h-6 md:w-8 md:h-8 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 break-words">
-              {vendor.name}
-            </h1>
-            <p className="text-sm md:text-base text-gray-500 mt-1 break-all">
-              {vendor.email}
-            </p>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-black rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+          <Store className="w-8 h-8 md:w-10 md:h-10 text-white" />
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 break-words leading-tight">
+            {vendor.name}
+          </h1>
+          <p className="text-sm md:text-base text-gray-500 break-all">
+            {vendor.email}
+          </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 md:p-6">
-        <h2 className="text-lg md:text-xl font-bold text-gray-900 mb-4 md:mb-6">
-          Vendor Information
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Store className="w-4 h-4" />
-              Shop Name
-            </label>
-            <p className="text-base md:text-lg font-semibold text-gray-900 break-words">
-              {vendor.shopName}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Package className="w-4 h-4" />
-              Total Items
-            </label>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl md:text-3xl font-bold text-black">
-                {vendor.itemCount}
-              </span>
-              <span className="text-sm md:text-base text-gray-600">
-                items listed
-              </span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Hash className="w-4 h-4" />
-              Vendor ID
-            </label>
-            <p className="text-xs md:text-sm text-gray-700 font-mono bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 break-all">
-              {vendor.vendorId}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Hash className="w-4 h-4" />
-              User ID
-            </label>
-            <p className="text-xs md:text-sm text-gray-700 font-mono bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 break-all">
-              {vendor.id}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Calendar className="w-4 h-4" />
-              Account Created
-            </label>
-            <p className="text-sm md:text-base text-gray-700 break-words">
-              {formatDate(vendor.createdAt)}
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">
-              <Calendar className="w-4 h-4" />
-              Last Updated
-            </label>
-            <p className="text-sm md:text-base text-gray-700 break-words">
-              {formatDate(vendor.updatedAt)}
-            </p>
-          </div>
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+          <h2 className="text-lg font-bold text-gray-900">
+            Vendor Information
+          </h2>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-        <div className="bg-gradient-to-br from-black to-gray-800 rounded-xl p-4 md:p-6 text-white shadow-lg">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-              <Package className="w-5 h-5 md:w-6 md:h-6" />
+        <div className="p-5 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+          {[
+            { label: "Shop Name", val: vendor.shopName, icon: Store },
+            {
+              label: "Total Items",
+              val: `${vendor.itemCount} items listed`,
+              icon: Package,
+            },
+            {
+              label: "Vendor ID",
+              val: vendor.vendorId,
+              icon: Hash,
+              mono: true,
+            },
+            { label: "User ID", val: vendor.id, icon: Hash, mono: true },
+            {
+              label: "Created At",
+              val: formatDate(vendor.createdAt),
+              icon: Calendar,
+            },
+            {
+              label: "Last Updated",
+              val: formatDate(vendor.updatedAt),
+              icon: Calendar,
+            },
+          ].map((item, i) => (
+            <div key={i} className="space-y-1.5">
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <item.icon className="w-3.5 h-3.5" />
+                {item.label}
+              </label>
+              <p
+                className={`text-base font-semibold text-gray-900 break-all ${
+                  item.mono
+                    ? "font-mono text-sm bg-gray-50 px-2 py-1 rounded"
+                    : ""
+                }`}
+              >
+                {item.val}
+              </p>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs md:text-sm text-gray-300 font-medium mb-1">
-                Total Items Listed
-              </div>
-              <div className="text-2xl md:text-3xl font-bold break-words">
-                {vendor.itemCount}
-              </div>
-            </div>
-          </div>
-          <div className="text-xs md:text-sm text-gray-300">
-            Active products in store
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-4 md:p-6 text-white shadow-lg">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
-              <Shield className="w-5 h-5 md:w-6 md:h-6" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs md:text-sm text-purple-200 font-medium mb-1">
-                Account Role
-              </div>
-              <div className="text-2xl md:text-3xl font-bold uppercase break-words">
-                Vendor
-              </div>
-            </div>
-          </div>
-          <div className="text-xs md:text-sm text-purple-200">
-            Vendor and Manager Level Access
-          </div>
+          ))}
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <button
           onClick={() => navigate(`/admin/vendors/${vendor.id}/items`)}
-          className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-medium shadow-sm hover:shadow-md text-sm md:text-base"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 bg-black text-white rounded-xl hover:bg-gray-800 transition-all font-bold shadow-lg text-base"
         >
-          <Eye className="w-4 h-4 md:w-5 md:h-5" />
-          View Items
+          <Eye className="w-5 h-5" />
+          View All Items
         </button>
       </div>
 
-      <div className="mt-12 pt-6 border-t border-red-100">
+      <div className="mt-8">
         <div className="bg-red-50 rounded-2xl p-6 border border-red-100">
           <div className="flex items-center gap-3 mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
             <h3 className="text-lg font-bold text-red-900">Danger Zone</h3>
           </div>
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-red-800">
-                Demote to Regular User
-              </p>
-              <p className="text-sm text-red-600 mt-1">
-                Removing vendor status will clear all shop data, menu items, and
-                managers associated with this account. This action cannot be
-                undone.
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="max-w-xl">
+              <p className="font-bold text-red-800">Demote to Regular User</p>
+              <p className="text-sm text-red-600/80 mt-1 leading-relaxed">
+                This removes all vendor-specific data. This action is
+                irreversible. Please ensure you have confirmed this with the
+                store owner.
               </p>
             </div>
-
             <button
-              onClick={handleDemoteToUser}
-              disabled={isUpdating}
-              className={`inline-flex items-center justify-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-bold transition-all shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={() => setShowDemoteModal(true)}
+              className="w-full lg:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-all shadow-md active:scale-[0.98]"
             >
-              {isUpdating ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <UserMinus className="w-5 h-5" />
-              )}
-              {isUpdating ? "Processing..." : "Demote to User"}
+              <UserMinus className="w-5 h-5" />
+              Demote Account
             </button>
           </div>
         </div>
