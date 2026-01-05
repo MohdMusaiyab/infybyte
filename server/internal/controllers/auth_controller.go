@@ -15,16 +15,15 @@ import (
 )
 
 func setRefreshCookie(c *gin.Context, token string, maxAge int) {
-	secure := false
-	c.SetCookie(
-		"refresh_token",
-		token,
-		maxAge,
-		"/",
-		"localhost",
-		secure,
-		true,
-	)
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		Secure:   true,                     
+		SameSite: http.SameSiteNoneMode,    
+	})
 }
 
 func Register(c *gin.Context, db *mongo.Database) {
@@ -135,7 +134,7 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
-
+	
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "Missing refresh token")
