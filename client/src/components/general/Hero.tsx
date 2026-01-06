@@ -7,9 +7,11 @@ import {
   ChefHat,
   Clock,
   MapPin,
+  LayoutDashboard,
 } from "lucide-react";
-
+import { useAuth } from "../../hooks/useAuth";
 const InfybiteHero: React.FC = () => {
+  const { user ,isAuthenticated} = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [currentFood, setCurrentFood] = useState(0);
 
@@ -63,12 +65,22 @@ const InfybiteHero: React.FC = () => {
             </span>
           </div>
 
-          <a
-            href="/login"
-            className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
-          >
-            Login
-          </a>
+          {isAuthenticated ? (
+            <a
+              href={`/${user?.role}/dashboard`}
+              className="flex items-center gap-2 px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </a>
+          ) : (
+            <a
+              href="/login"
+              className="px-6 py-2.5 bg-black text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-all duration-300 hover:scale-105"
+            >
+              Login
+            </a>
+          )}
         </nav>
         <div className="grid lg:grid-cols-2 gap-12 items-center mt-12">
           <div>
