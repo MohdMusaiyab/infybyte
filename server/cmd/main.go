@@ -66,9 +66,18 @@ func main() {
 	routes.InitRoutes(router, db, wsHandler)
 
 	router.GET("/health", func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		dbStatus := "connected"
+		if err := db.Client().Ping(ctx, nil); err != nil {
+			dbStatus = "disconnected"
+		}
+
 		utils.RespondSuccess(c, 200, "Server is running", map[string]interface{}{
 			"websocket_clients": wsHub.GetConnectedClientsCount(),
 			"status":            "healthy",
+			"database":          dbStatus,
 		})
 	})
 

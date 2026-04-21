@@ -65,7 +65,7 @@ const Footer: React.FC = () => {
         <div className="pt-8 border-t border-gray-800">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-gray-400 text-sm text-center sm:text-left">
-              © 2025 Infybite. All rights reserved.
+              © 2026 Infybite. All rights reserved.
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 text-sm">
