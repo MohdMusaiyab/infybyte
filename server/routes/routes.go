@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/MohdMusaiyab/infybyte/server/internal/controllers"
 	"github.com/MohdMusaiyab/infybyte/server/internal/handlers"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -9,6 +10,9 @@ import (
 func InitRoutes(router *gin.Engine, db *mongo.Database, wsHandler *handlers.WebSocketHandler) {
 	v1 := router.Group("/api/v1")
 	{
+		// Health route
+		v1.GET("/health", func(c *gin.Context) { controllers.HealthCheck(c, db) })
+
 		// Auth routes
 		AuthRoutes(v1, db)
 		// Admin Routes

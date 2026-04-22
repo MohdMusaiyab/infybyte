@@ -66,18 +66,3 @@ The system is strictly partitioned into four distinct authority levels to ensure
    cd client
    npm install
    npm run dev
-
----
-
-## 🛠️ Maintenance & Keep-Alive
-
-If you are hosting the backend on a free-tier service (like Render) that goes to sleep after inactivity, you can use the included keep-alive script.
-
-### Running the Keep-Alive Script
-1. Ensure `SERVER_URL` is set in `server/.env` to your production backend URL.
-2. Run the script from the `server` directory:
-   ```bash
-   cd server
-   go run scripts/keep_alive.go
-   ```
-The script will ping the `/health` endpoint every 10 minutes to keep the instance and database connection active.
