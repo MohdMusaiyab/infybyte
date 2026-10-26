@@ -7,14 +7,14 @@ interface PrivateRouteProps {
 }
 
 export const PrivateRoute: React.FC<PrivateRouteProps> = ({ allowedRoles }) => {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
   if (!allowedRoles.includes(user.role)) {
-    return <Navigate to={`/unauthorized`} replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return <Outlet />;

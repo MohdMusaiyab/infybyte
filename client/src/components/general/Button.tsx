@@ -15,7 +15,6 @@ export interface ButtonProps
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   children: React.ReactNode;
-  asChild?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -31,7 +30,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       children,
       className = "",
-      asChild = false,
       ...props
     },
     ref

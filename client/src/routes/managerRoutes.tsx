@@ -1,13 +1,15 @@
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 import { PrivateRoute } from "../components/auth/ProtectedRoute";
-import ManagerDashboard from "../pages/manager/ManagerDashboard";
 import ManagerLayout from "../layout/ManagerLayout";
-import SingleFoodCourt from "../pages/manager/SingleFoodCourt";
-import SingleItemDetail from "../pages/manager/SingleItemDetail";
-import ItemManagement from "../pages/manager/ItemManagement";
-import MultipleItemManagement from "../pages/manager/MultipleItemManagement";
-import Profile from "../pages/manager/Profile";
-import ManagerFoodCourts from "../pages/manager/ManagerFoodCourts";
+
+const ManagerDashboard = lazy(() => import("../pages/manager/ManagerDashboard"));
+const ManagerFoodCourts = lazy(() => import("../pages/manager/ManagerFoodCourts"));
+const SingleFoodCourt = lazy(() => import("../pages/manager/SingleFoodCourt"));
+const SingleItemDetail = lazy(() => import("../pages/manager/SingleItemDetail"));
+const ItemManagement = lazy(() => import("../pages/manager/ItemManagement"));
+const MultipleItemManagement = lazy(() => import("../pages/manager/MultipleItemManagement"));
+const Profile = lazy(() => import("../pages/manager/Profile"));
 
 const ManagerRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["manager"]} />}>
@@ -18,8 +20,7 @@ const ManagerRoutes = () => (
       <Route path="/manager/food-courts/:foodCourtId/items/:itemId" element={<SingleItemDetail />} /> 
        <Route path="/manager/item-management/:itemId" element={<ItemManagement />} /> 
        <Route path="/manager/item-management" element={<MultipleItemManagement />} /> 
-       <Route path="/manager/profile" element={<Profile></Profile>}></Route>
-       
+       <Route path="/manager/profile" element={<Profile />} />
     </Route>
   </Route>
 );

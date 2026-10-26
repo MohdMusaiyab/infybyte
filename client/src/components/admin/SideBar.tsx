@@ -99,7 +99,7 @@ const SideBar: React.FC = () => {
 
           {isUsersOpen && (
             <div className="ml-4 mt-2 space-y-1">
-              {item.children!?.map((child) => (
+              {item.children?.map((child) => (
                 <Link
                   key={child.path}
                   to={child.path}
@@ -219,6 +219,7 @@ const SideBar: React.FC = () => {
         message="Are you sure you want to exit the Admin Panel? Session data will be cleared."
         confirmText="Yes, Logout"
         cancelText="Cancel"
+        loadingText="Logging out..."
         isLoading={isLoading}
         onConfirm={handleConfirmLogout}
         onCancel={() => setShowLogoutModal(false)}

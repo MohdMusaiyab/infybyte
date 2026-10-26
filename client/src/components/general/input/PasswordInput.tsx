@@ -13,7 +13,6 @@ export interface PasswordInputProps extends Omit<React.InputHTMLAttributes<HTMLI
   error?: string;
   success?: boolean;
   leftIcon?: React.ReactNode;
-  showStrength?: boolean;
   fullWidth?: boolean;
   required?: boolean;
   disabled?: boolean;
@@ -33,7 +32,6 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
       error,
       success = false,
       leftIcon,
-      showStrength = false,
       fullWidth = false,
       required = false,
       disabled = false,

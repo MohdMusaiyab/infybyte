@@ -202,6 +202,7 @@ const Sidebar: React.FC = () => {
         message="Are you sure you want to log out? You'll need to sign in again to access your dashboard."
         confirmText="Logout"
         cancelText="Stay Logged In"
+        loadingText="Logging out..."
         isLoading={isLoading}
         onConfirm={handleConfirmLogout}
         onCancel={handleCancelLogout}

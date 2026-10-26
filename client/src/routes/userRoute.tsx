@@ -1,13 +1,15 @@
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 import UserLayout from "../layout/UserLayout";
-import UserDashboard from "../pages/user/UserDashboard";
 import { PrivateRoute } from "../components/auth/ProtectedRoute";
-import FoodCourtDetails from "../pages/user/FoodCourtDetails";
-import FoodCourtVendors from "../pages/user/FoodCourtVendors";
-import VendorProfile from "../pages/user/VendorProfile";
-import VendorItemsAvailability from "../pages/user/VendorItemsAvailability";
-import Profile from "../pages/user/Profile";
-import ItemDetails from "../pages/user/ItemDetails";
+
+const UserDashboard = lazy(() => import("../pages/user/UserDashboard"));
+const FoodCourtDetails = lazy(() => import("../pages/user/FoodCourtDetails"));
+const FoodCourtVendors = lazy(() => import("../pages/user/FoodCourtVendors"));
+const VendorProfile = lazy(() => import("../pages/user/VendorProfile"));
+const VendorItemsAvailability = lazy(() => import("../pages/user/VendorItemsAvailability"));
+const Profile = lazy(() => import("../pages/user/Profile"));
+const ItemDetails = lazy(() => import("../pages/user/ItemDetails"));
 
 const UserRoutes = () => (
   <Route element={<PrivateRoute allowedRoles={["user", "admin"]} />}>

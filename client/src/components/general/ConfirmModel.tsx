@@ -7,6 +7,7 @@ interface ConfirmModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  loadingText?: string;
   isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -18,6 +19,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message,
   confirmText = "Confirm",
   cancelText = "Cancel",
+  loadingText = "Processing...",
   isLoading = false,
   onConfirm,
   onCancel,
@@ -27,7 +29,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   return (
     <Fragment>
       <div
-        className="fixed inset-0  bg-opacity-50 z-40 transition-opacity duration-300"
+        className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
         onClick={onCancel}
       />
 
@@ -69,7 +71,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Logging out...
+                  {loadingText}
                 </>
               ) : (
                 confirmText

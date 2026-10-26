@@ -9,26 +9,57 @@ import type { ItemFoodCourtUpdatePayload } from "./types/websocket";
 function App() {
   const setAuth = useAuthStore((state) => state.setAuth);
   const logout = useAuthStore((state) => state.logout);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => useAuthStore.getState().isAuthenticated);
 
   useEffect(() => {
-    const initAuth = async () => {
+    if (!useAuthStore.getState().isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const initAuth = async (retries = 1) => {
       try {
         const res = await axios.post(
           `${import.meta.env.VITE_API_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
+        if (!isMounted) return;
         const { access_token, user } = res.data.data;
         setAuth(user, access_token);
-      } catch  {
-        logout();
-      } finally {
+        setLoading(false);
+      } catch (err: unknown) {
+        if (!isMounted) return;
+
+        if (axios.isAxiosError(err)) {
+          const status = err.response?.status;
+          if (status === 401 || status === 403) {
+            logout();
+            setLoading(false);
+            return;
+          }
+
+          if (retries > 0 && (!status || status >= 500)) {
+            setTimeout(() => {
+              if (isMounted) {
+                initAuth(retries - 1);
+              }
+            }, 1000);
+            return;
+          }
+        }
+
         setLoading(false);
       }
     };
 
     initAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, [setAuth, logout]);
 
 
