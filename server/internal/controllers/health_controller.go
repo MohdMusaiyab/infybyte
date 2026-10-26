@@ -9,9 +9,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// HealthCheck handles the health check request and pings the database
 func HealthCheck(c *gin.Context, db *mongo.Database) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
 
 	// Ping the database to ensure the connection is active

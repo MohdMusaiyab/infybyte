@@ -39,6 +39,10 @@ func main() {
 	}
 	db := client.Database(dbName)
 
+	if err := config.EnsureIndexes(db); err != nil {
+		log.Printf("⚠️  Error ensuring database indexes: %v\n", err)
+	}
+
 	wsHub := websocket.NewHub()
 	go wsHub.Run()
 	utils.SetWebSocketHub(wsHub)

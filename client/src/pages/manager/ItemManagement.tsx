@@ -95,28 +95,93 @@ const ItemManagement: React.FC = () => {
   const { isOpen, modalConfig, showAlert, showConfirm, hideModal } = useModal();
 
   useEffect(() => {
-    if (lastMessage && lastMessage.type === "item_foodcourt_update" && data) {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
       const update = lastMessage.payload as WebSocketUpdatePayload;
       const action = lastMessage.action;
 
-      console.log("🔄 Real-time update in ItemManagement:", { update, action });
+      if (update.item_id !== itemId) return;
 
-      if (action === "update" || action === "create" || action === "delete") {
-        const refreshData = async () => {
-          try {
-            const response = await axiosInstance.get(
-              `/manager/items/${itemId}`
-            );
-            setData(response.data.data);
-          } catch (err) {
-            console.error("Failed to refresh data:", err);
-          }
-        };
+      setData((prev) => {
+        if (!prev) return prev;
 
-        refreshData();
-      }
+        if (action === "update") {
+          const updatedAssignments = prev.currentAssignments.map((assignment) => {
+            if (assignment.foodCourtId !== update.foodcourt_id) return assignment;
+            return {
+              ...assignment,
+              status: update.status,
+              price: update.price,
+              timeSlot: update.timeSlot,
+              isActive: update.isActive,
+              updatedAt: update.updatedAt,
+            };
+          });
+
+          return {
+            ...prev,
+            currentAssignments: updatedAssignments,
+          };
+        }
+
+        if (action === "delete") {
+          const removed = prev.currentAssignments.find(
+            (a) => a.foodCourtId === update.foodcourt_id
+          );
+          const remainingAssignments = prev.currentAssignments.filter(
+            (a) => a.foodCourtId !== update.foodcourt_id
+          );
+          const updatedAvailable = removed
+            ? [
+                ...prev.availableForAssignment,
+                {
+                  foodCourtId: removed.foodCourtId,
+                  foodCourtName: removed.foodCourtName,
+                  location: removed.location,
+                },
+              ]
+            : prev.availableForAssignment;
+
+          return {
+            ...prev,
+            currentAssignments: remainingAssignments,
+            availableForAssignment: updatedAvailable,
+          };
+        }
+
+        if (action === "create") {
+          const newlyAdded = prev.availableForAssignment.find(
+            (fc) => fc.foodCourtId === update.foodcourt_id
+          );
+          const remainingAvailable = prev.availableForAssignment.filter(
+            (fc) => fc.foodCourtId !== update.foodcourt_id
+          );
+          const updatedAssignments = newlyAdded
+            ? [
+                ...prev.currentAssignments,
+                {
+                  foodCourtId: newlyAdded.foodCourtId,
+                  foodCourtName: newlyAdded.foodCourtName,
+                  location: newlyAdded.location,
+                  status: update.status,
+                  price: update.price,
+                  timeSlot: update.timeSlot,
+                  isActive: update.isActive,
+                  updatedAt: update.updatedAt,
+                },
+              ]
+            : prev.currentAssignments;
+
+          return {
+            ...prev,
+            currentAssignments: updatedAssignments,
+            availableForAssignment: remainingAvailable,
+          };
+        }
+
+        return prev;
+      });
     }
-  }, [lastMessage]);
+  }, [lastMessage, itemId]);
 
   useEffect(() => {
     const fetchItemData = async () => {

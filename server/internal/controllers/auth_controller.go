@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -46,7 +45,7 @@ func Register(c *gin.Context, db *mongo.Database) {
 	}
 
 	collection := db.Collection("users")
-	count, err := collection.CountDocuments(context.TODO(), bson.M{"email": user.Email})
+	count, err := collection.CountDocuments(c.Request.Context(), bson.M{"email": user.Email})
 	if err != nil {
 		utils.RespondError(c, 500, "Database error")
 		return
@@ -67,7 +66,7 @@ func Register(c *gin.Context, db *mongo.Database) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	res, err := collection.InsertOne(context.TODO(), user)
+	res, err := collection.InsertOne(c.Request.Context(), user)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to create user")
 		return
@@ -94,7 +93,7 @@ func Login(c *gin.Context, db *mongo.Database) {
 
 	collection := db.Collection("users")
 	var user models.User
-	if err := collection.FindOne(context.TODO(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
+	if err := collection.FindOne(c.Request.Context(), bson.M{"email": creds.Email}).Decode(&user); err != nil {
 		utils.RespondError(c, 400, "Invalid email or password")
 		return
 	}
@@ -159,7 +158,7 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusUnauthorized, "Invalid user ID in token")
 		return
 	}
-	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&user)
+	err = db.Collection("users").FindOne(c.Request.Context(), bson.M{"_id": oid}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "User not found")
 

@@ -40,7 +40,7 @@ func GetManagerDashboard(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		users          *mongo.Collection
 		vendors        *mongo.Collection
@@ -197,7 +197,7 @@ func GetManagerFoodCourtWithItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		foodCourts     *mongo.Collection
 		managers       *mongo.Collection
@@ -335,7 +335,7 @@ func GetManagerFoodCourtItem(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		foodCourts     *mongo.Collection
 		managers       *mongo.Collection
@@ -449,6 +449,10 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request data")
 		return
 	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	itemFoodCourtObjID, err := primitive.ObjectIDFromHex(itemID)
 	if err != nil {
@@ -462,7 +466,7 @@ func UpdateFoodCourtItemStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		itemFoodCourts *mongo.Collection
@@ -550,12 +554,16 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 
 	var request struct {
 		Status   string   `json:"status" validate:"omitempty,oneof=available notavailable sellingfast finishingsoon"`
-		Price    *float64 `json:"price,omitempty"`
+		Price    *float64 `json:"price,omitempty" validate:"omitempty,gt=0"`
 		IsActive *bool    `json:"isActive,omitempty"`
 		TimeSlot string   `json:"timeSlot" validate:"omitempty,oneof=breakfast lunch snacks dinner"`
 	}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request data")
+		return
+	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -571,7 +579,7 @@ func UpdateFoodCourtItemByManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		itemFoodCourts *mongo.Collection
@@ -669,7 +677,7 @@ func GetManagerItemWithFCAssignments(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		items          *mongo.Collection
@@ -854,12 +862,16 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	var request struct {
 		FoodCourtID primitive.ObjectID `json:"foodCourtId" validate:"required"`
 		Status      string             `json:"status" validate:"required,oneof=available notavailable sellingfast finishingsoon"`
-		Price       *float64           `json:"price,omitempty"`
+		Price       *float64           `json:"price,omitempty" validate:"omitempty,gt=0"`
 		TimeSlot    string             `json:"timeSlot" validate:"required,oneof=breakfast lunch snacks dinner"`
 	}
 
-	if err := c.BindJSON(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -875,7 +887,7 @@ func AddItemToManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		items          *mongo.Collection
@@ -960,13 +972,17 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 	var request struct {
 		FoodCourtID primitive.ObjectID `json:"foodCourtId" validate:"required"`
 		Status      *string            `json:"status,omitempty" validate:"omitempty,oneof=available notavailable sellingfast finishingsoon"`
-		Price       *float64           `json:"price,omitempty"`
+		Price       *float64           `json:"price,omitempty" validate:"omitempty,gt=0"`
 		TimeSlot    *string            `json:"timeSlot,omitempty" validate:"omitempty,oneof=breakfast lunch snacks dinner"`
 		IsActive    *bool              `json:"isActive,omitempty"`
 	}
 
-	if err := c.BindJSON(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -982,7 +998,7 @@ func UpdateItemInManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		items          *mongo.Collection
@@ -1086,8 +1102,12 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		FoodCourtID primitive.ObjectID `json:"foodCourtId" validate:"required"`
 	}
 
-	if err := c.BindJSON(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -1103,7 +1123,7 @@ func RemoveItemFromManagerFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		items          *mongo.Collection
@@ -1183,7 +1203,7 @@ func GetVendorItemsForManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		managers       *mongo.Collection
 		items          *mongo.Collection
@@ -1331,7 +1351,7 @@ func GetManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		users      *mongo.Collection
 		managers   *mongo.Collection
@@ -1468,15 +1488,18 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 	}
 
 	var request struct {
-		Name  *string `json:"name,omitempty" validate:"omitempty,min=2,max=50"`
-		Email *string `json:"email,omitempty" validate:"omitempty,email"`
-
-		ContactNo *string `json:"contactNo,omitempty" validate:"omitempty,e164"`
+		Name      *string `json:"name,omitempty" validate:"omitempty,min=2,max=50"`
+		Email     *string `json:"email,omitempty" validate:"omitempty,email"`
+		ContactNo *string `json:"contactNo,omitempty" validate:"omitempty,min=10,max=15"`
 		IsActive  *bool   `json:"isActive,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request data")
+		return
+	}
+	if err := utils.Validate.Struct(&request); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -1485,7 +1508,7 @@ func UpdateManagerProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		users    *mongo.Collection
 		managers *mongo.Collection
@@ -1642,7 +1665,7 @@ func GetManagerFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	pipeline := []bson.M{

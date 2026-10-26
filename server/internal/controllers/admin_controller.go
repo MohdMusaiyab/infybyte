@@ -32,7 +32,7 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 	}
 
 	skip := (page - 1) * limit
-
+	ctx := c.Request.Context()
 	collection := db.Collection("users")
 
 	filter := bson.M{}
@@ -51,20 +51,20 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 		SetLimit(int64(limit)).
 		SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to fetch users")
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
 	var users []models.User
-	if err := cursor.All(context.TODO(), &users); err != nil {
+	if err := cursor.All(ctx, &users); err != nil {
 		utils.RespondError(c, 500, "Error decoding users")
 		return
 	}
 
-	total, err := collection.CountDocuments(context.TODO(), filter)
+	total, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to count users")
 		return
@@ -90,11 +90,12 @@ func MakeVendor(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	usersCol := db.Collection("users")
 	vendorsCol := db.Collection("vendors")
 
 	var user models.User
-	err = usersCol.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+	err = usersCol.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "User not found")
 		return
@@ -106,7 +107,7 @@ func MakeVendor(c *gin.Context, db *mongo.Database) {
 	}
 
 	_, err = usersCol.UpdateOne(
-		context.TODO(),
+		ctx,
 		bson.M{"_id": objID},
 		bson.M{"$set": bson.M{"role": "vendor", "updatedAt": time.Now()}},
 	)
@@ -123,7 +124,7 @@ func MakeVendor(c *gin.Context, db *mongo.Database) {
 		UpdatedAt: time.Now(),
 	}
 
-	_, err = vendorsCol.InsertOne(context.TODO(), newVendor)
+	_, err = vendorsCol.InsertOne(ctx, newVendor)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to create vendor profile")
 		return
@@ -144,11 +145,12 @@ func MakeUser(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	usersCol := db.Collection("users")
 	vendorsCol := db.Collection("vendors")
 
 	var user models.User
-	err = usersCol.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&user)
+	err = usersCol.FindOne(ctx, bson.M{"_id": objID}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "User not found")
 		return
@@ -160,7 +162,7 @@ func MakeUser(c *gin.Context, db *mongo.Database) {
 	}
 
 	_, err = usersCol.UpdateOne(
-		context.TODO(),
+		ctx,
 		bson.M{"_id": objID},
 		bson.M{"$set": bson.M{"role": "user", "updatedAt": time.Now()}},
 	)
@@ -169,7 +171,7 @@ func MakeUser(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	_, err = vendorsCol.DeleteOne(context.TODO(), bson.M{"userId": objID})
+	_, err = vendorsCol.DeleteOne(ctx, bson.M{"user_id": objID})
 	if err != nil && err != mongo.ErrNoDocuments {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to remove vendor profile")
 		return
@@ -189,8 +191,9 @@ func DeleteUser(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	var user models.User
-	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": userID}).Decode(&user)
+	err = db.Collection("users").FindOne(ctx, bson.M{"_id": userID}).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		utils.RespondError(c, 404, "User not found")
 		return
@@ -201,46 +204,40 @@ func DeleteUser(c *gin.Context, db *mongo.Database) {
 
 	switch user.Role {
 	case "vendor":
+		db.Collection("vendors").DeleteOne(ctx, bson.M{"user_id": user.ID})
 
-		db.Collection("vendors").DeleteOne(context.TODO(), bson.M{"user_id": user.ID})
-
-		itemCursor, _ := db.Collection("items").Find(context.TODO(), bson.M{"vendor_id": user.ID})
+		itemCursor, _ := db.Collection("items").Find(ctx, bson.M{"vendor_id": user.ID})
 		var items []models.Item
-		_ = itemCursor.All(context.TODO(), &items)
+		_ = itemCursor.All(ctx, &items)
 
 		for _, item := range items {
-			db.Collection("itemfoodcourts").DeleteMany(context.TODO(), bson.M{"item_id": item.ID})
-			db.Collection("items").DeleteOne(context.TODO(), bson.M{"_id": item.ID})
+			db.Collection("itemfoodcourts").DeleteMany(ctx, bson.M{"item_id": item.ID})
+			db.Collection("items").DeleteOne(ctx, bson.M{"_id": item.ID})
 		}
 
 		db.Collection("foodcourts").UpdateMany(
-			context.TODO(),
+			ctx,
 			bson.M{"vendor_ids": user.ID},
 			bson.M{"$pull": bson.M{"vendor_ids": user.ID}},
 		)
 
-		db.Collection("managers").DeleteMany(context.TODO(), bson.M{"vendor_id": user.ID})
+		db.Collection("managers").DeleteMany(ctx, bson.M{"vendor_id": user.ID})
 
 	case "admin":
-
-		fcCursor, _ := db.Collection("foodcourts").Find(context.TODO(), bson.M{"admin_id": user.ID})
+		fcCursor, _ := db.Collection("foodcourts").Find(ctx, bson.M{"admin_id": user.ID})
 		var foodcourts []models.FoodCourt
-		_ = fcCursor.All(context.TODO(), &foodcourts)
+		_ = fcCursor.All(ctx, &foodcourts)
 
 		for _, fc := range foodcourts {
-
-			db.Collection("itemfoodcourts").DeleteMany(context.TODO(), bson.M{"foodcourt_id": fc.ID})
-
-			db.Collection("managers").DeleteMany(context.TODO(), bson.M{"foodcourt_id": fc.ID})
-
-			db.Collection("foodcourts").DeleteOne(context.TODO(), bson.M{"_id": fc.ID})
+			db.Collection("itemfoodcourts").DeleteMany(ctx, bson.M{"foodcourt_id": fc.ID})
+			db.Collection("managers").DeleteMany(ctx, bson.M{"foodcourt_id": fc.ID})
+			db.Collection("foodcourts").DeleteOne(ctx, bson.M{"_id": fc.ID})
 		}
 
 	case "user":
-
 	}
 
-	_, err = db.Collection("users").DeleteOne(context.TODO(), bson.M{"_id": user.ID})
+	_, err = db.Collection("users").DeleteOne(ctx, bson.M{"_id": user.ID})
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to delete user")
 		return
@@ -267,8 +264,9 @@ func GetAdminProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	var admin models.User
-	err = db.Collection("users").FindOne(context.TODO(), bson.M{"_id": adminID, "role": "admin"}).Decode(&admin)
+	err = db.Collection("users").FindOne(ctx, bson.M{"_id": adminID, "role": "admin"}).Decode(&admin)
 	if err == mongo.ErrNoDocuments {
 		utils.RespondError(c, 404, "Admin not found")
 		return
@@ -277,9 +275,9 @@ func GetAdminProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	cursor, _ := db.Collection("foodcourts").Find(context.TODO(), bson.M{"admin_id": admin.ID})
+	cursor, _ := db.Collection("foodcourts").Find(ctx, bson.M{"admin_id": admin.ID})
 	var foodcourts []models.FoodCourt
-	_ = cursor.All(context.TODO(), &foodcourts)
+	_ = cursor.All(ctx, &foodcourts)
 
 	var fcSummaries []gin.H
 	for _, fc := range foodcourts {
@@ -330,13 +328,13 @@ func UpdateAdminProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	updateData := bson.M{"updatedAt": time.Now()}
 	if input.Name != "" {
 		updateData["name"] = input.Name
 	}
 	if input.Email != "" {
-
-		count, _ := db.Collection("users").CountDocuments(context.TODO(), bson.M{
+		count, _ := db.Collection("users").CountDocuments(ctx, bson.M{
 			"email": input.Email,
 			"_id":   bson.M{"$ne": adminID},
 		})
@@ -348,7 +346,7 @@ func UpdateAdminProfile(c *gin.Context, db *mongo.Database) {
 	}
 
 	_, err = db.Collection("users").UpdateOne(
-		context.TODO(),
+		ctx,
 		bson.M{"_id": adminID, "role": "admin"},
 		bson.M{"$set": updateData},
 	)
@@ -416,15 +414,16 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 		SetLimit(int64(limit)).
 		SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := usersCollection.Find(context.TODO(), userFilter, findOptions)
+	ctx := c.Request.Context()
+	cursor, err := usersCollection.Find(ctx, userFilter, findOptions)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendors")
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
 	var vendorUsers []models.User
-	if err := cursor.All(context.TODO(), &vendorUsers); err != nil {
+	if err := cursor.All(ctx, &vendorUsers); err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Error decoding vendors")
 		return
 	}
@@ -453,7 +452,7 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 		}
 
 		var vendor models.Vendor
-		err := vendorsCollection.FindOne(context.TODO(), bson.M{"userId": user.ID}).Decode(&vendor)
+		err := vendorsCollection.FindOne(ctx, bson.M{"user_id": user.ID}).Decode(&vendor)
 		if err == nil {
 			vendorData.ShopName = vendor.ShopName
 			vendorData.VendorID = vendor.ID.Hex()
@@ -462,7 +461,7 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 		vendorsWithProfiles = append(vendorsWithProfiles, vendorData)
 	}
 
-	total, err := usersCollection.CountDocuments(context.TODO(), userFilter)
+	total, err := usersCollection.CountDocuments(ctx, userFilter)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to count vendors")
 		return
@@ -489,7 +488,7 @@ func GetVendorDetails(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	var user models.User
@@ -567,6 +566,7 @@ func GetAllFoodCourtsAdmin(c *gin.Context, db *mongo.Database) {
 	}
 	skip := (page - 1) * limit
 
+	ctx := c.Request.Context()
 	collection := db.Collection("foodcourts")
 
 	filter := bson.M{
@@ -585,20 +585,20 @@ func GetAllFoodCourtsAdmin(c *gin.Context, db *mongo.Database) {
 		SetLimit(int64(limit)).
 		SetSort(bson.M{"createdAt": -1})
 
-	cursor, err := collection.Find(context.TODO(), filter, findOptions)
+	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to fetch food courts")
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
 	var foodCourts []models.FoodCourt
-	if err := cursor.All(context.TODO(), &foodCourts); err != nil {
+	if err := cursor.All(ctx, &foodCourts); err != nil {
 		utils.RespondError(c, 500, "Error decoding food courts")
 		return
 	}
 
-	total, err := collection.CountDocuments(context.TODO(), filter)
+	total, err := collection.CountDocuments(ctx, filter)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to count food courts")
 		return
@@ -642,9 +642,16 @@ func CreateFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	foodCourt.AdminID = adminObjID
+	if err := utils.Validate.Struct(&foodCourt); err != nil {
+		utils.RespondError(c, 400, err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
 	collection := db.Collection("foodcourts")
 
-	count, err := collection.CountDocuments(context.TODO(), bson.M{
+	count, err := collection.CountDocuments(ctx, bson.M{
 		"name":     foodCourt.Name,
 		"admin_id": adminObjID,
 	})
@@ -658,7 +665,6 @@ func CreateFoodCourt(c *gin.Context, db *mongo.Database) {
 	}
 
 	foodCourt.ID = primitive.NewObjectID()
-	foodCourt.AdminID = adminObjID
 	foodCourt.CreatedAt = time.Now()
 	foodCourt.UpdatedAt = time.Now()
 
@@ -667,7 +673,7 @@ func CreateFoodCourt(c *gin.Context, db *mongo.Database) {
 		foodCourt.Weekends = true
 	}
 
-	_, err = collection.InsertOne(context.TODO(), foodCourt)
+	_, err = collection.InsertOne(ctx, foodCourt)
 	if err != nil {
 		utils.RespondError(c, 500, "Failed to create food court")
 		return
@@ -691,19 +697,20 @@ func AddVendorToFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	usersCol := db.Collection("users")
 	vendorsCol := db.Collection("vendors")
 	foodCourtsCol := db.Collection("foodcourts")
 
 	var vendor models.Vendor
-	err = vendorsCol.FindOne(context.TODO(), bson.M{"_id": vendorID}).Decode(&vendor)
+	err = vendorsCol.FindOne(ctx, bson.M{"_id": vendorID}).Decode(&vendor)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Vendor not found")
 		return
 	}
 
 	var user models.User
-	err = usersCol.FindOne(context.TODO(), bson.M{"_id": vendor.UserID}).Decode(&user)
+	err = usersCol.FindOne(ctx, bson.M{"_id": vendor.UserID}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Associated user not found")
 		return
@@ -713,7 +720,7 @@ func AddVendorToFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	count, err := foodCourtsCol.CountDocuments(context.TODO(), bson.M{
+	count, err := foodCourtsCol.CountDocuments(ctx, bson.M{
 		"_id":        foodCourtID,
 		"vendor_ids": vendorID,
 	})
@@ -727,7 +734,7 @@ func AddVendorToFoodCourt(c *gin.Context, db *mongo.Database) {
 	}
 
 	_, err = foodCourtsCol.UpdateOne(
-		context.TODO(),
+		ctx,
 		bson.M{"_id": foodCourtID},
 		bson.M{
 			"$push": bson.M{"vendor_ids": vendorID},
@@ -777,10 +784,11 @@ func RemoveVendorFromFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	foodCourtsCol := db.Collection("foodcourts")
 
 	var foodCourt models.FoodCourt
-	err = foodCourtsCol.FindOne(context.TODO(), bson.M{
+	err = foodCourtsCol.FindOne(ctx, bson.M{
 		"_id":        foodCourtID,
 		"admin_id":   adminObjID,
 		"vendor_ids": vendorID,
@@ -791,7 +799,7 @@ func RemoveVendorFromFoodCourt(c *gin.Context, db *mongo.Database) {
 	}
 
 	_, err = foodCourtsCol.UpdateOne(
-		context.TODO(),
+		ctx,
 		bson.M{"_id": foodCourtID},
 		bson.M{
 			"$pull": bson.M{"vendor_ids": vendorID},
@@ -834,21 +842,27 @@ func UpdateFoodCourt(c *gin.Context, db *mongo.Database) {
 	}
 
 	var updateData struct {
-		Name     *string `json:"name,omitempty"`
-		Location *string `json:"location,omitempty"`
-		Timings  *string `json:"timings,omitempty"`
+		Name     *string `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
+		Location *string `json:"location,omitempty" validate:"omitempty,min=2"`
+		Timings  *string `json:"timings,omitempty" validate:"omitempty,max=100"`
 		Weekdays *bool   `json:"weekdays,omitempty"`
 		Weekends *bool   `json:"weekends,omitempty"`
+		IsOpen   *bool   `json:"isOpen,omitempty"`
 	}
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
+	if err := utils.Validate.Struct(&updateData); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	ctx := c.Request.Context()
 	collection := db.Collection("foodcourts")
 
 	var foodCourt models.FoodCourt
-	err = collection.FindOne(context.TODO(), bson.M{"_id": foodCourtID, "admin_id": adminObjID}).Decode(&foodCourt)
+	err = collection.FindOne(ctx, bson.M{"_id": foodCourtID, "admin_id": adminObjID}).Decode(&foodCourt)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Food court not found or you are not the admin")
 		return
@@ -870,14 +884,17 @@ func UpdateFoodCourt(c *gin.Context, db *mongo.Database) {
 	if updateData.Weekends != nil {
 		update["weekends"] = *updateData.Weekends
 	}
+	if updateData.IsOpen != nil {
+		update["isOpen"] = *updateData.IsOpen
+	}
 
-	_, err = collection.UpdateOne(context.TODO(), bson.M{"_id": foodCourtID}, bson.M{"$set": update})
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": foodCourtID}, bson.M{"$set": update})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to update food court")
 		return
 	}
 
-	err = collection.FindOne(context.TODO(), bson.M{"_id": foodCourtID}).Decode(&foodCourt)
+	err = collection.FindOne(ctx, bson.M{"_id": foodCourtID}).Decode(&foodCourt)
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch updated food court")
 		return
@@ -910,40 +927,41 @@ func DeleteFoodCourt(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	foodCourtsCol := db.Collection("foodcourts")
-	itemFoodCourtCol := db.Collection("item_foodcourts")
+	itemFoodCourtCol := db.Collection("itemfoodcourts")
 	managersCol := db.Collection("managers")
 
 	var fc models.FoodCourt
-	err = foodCourtsCol.FindOne(context.TODO(), bson.M{"_id": foodCourtID, "admin_id": adminObjID}).Decode(&fc)
+	err = foodCourtsCol.FindOne(ctx, bson.M{"_id": foodCourtID, "admin_id": adminObjID}).Decode(&fc)
 	if err != nil {
 		utils.RespondError(c, http.StatusNotFound, "Food court not found or you are not the admin")
 		return
 	}
 
-	_, err = foodCourtsCol.DeleteOne(context.TODO(), bson.M{"_id": foodCourtID})
+	_, err = foodCourtsCol.DeleteOne(ctx, bson.M{"_id": foodCourtID})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to delete food court")
 		return
 	}
 
-	_, _ = itemFoodCourtCol.DeleteMany(context.TODO(), bson.M{"foodcourt_id": foodCourtID})
-
-	_, _ = managersCol.DeleteMany(context.TODO(), bson.M{"foodcourt_id": foodCourtID})
+	_, _ = itemFoodCourtCol.DeleteMany(ctx, bson.M{"foodcourt_id": foodCourtID})
+	_, _ = managersCol.DeleteMany(ctx, bson.M{"foodcourt_id": foodCourtID})
 
 	utils.RespondSuccess(c, http.StatusOK, "Food court and all related references deleted successfully", nil)
 }
 
 func GetVendorDropdown(c *gin.Context, db *mongo.Database) {
+	ctx := c.Request.Context()
 	vendorsCol := db.Collection("vendors")
 	usersCol := db.Collection("users")
 
-	cursor, err := vendorsCol.Find(context.TODO(), bson.M{})
+	cursor, err := vendorsCol.Find(ctx, bson.M{})
 	if err != nil {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendors")
 		return
 	}
-	defer cursor.Close(context.TODO())
+	defer cursor.Close(ctx)
 
 	type VendorDropdown struct {
 		ID       primitive.ObjectID `json:"id"`
@@ -952,14 +970,14 @@ func GetVendorDropdown(c *gin.Context, db *mongo.Database) {
 	}
 
 	var vendors []VendorDropdown
-	for cursor.Next(context.TODO()) {
+	for cursor.Next(ctx) {
 		var v models.Vendor
 		if err := cursor.Decode(&v); err != nil {
 			continue
 		}
 
 		var user models.User
-		err := usersCol.FindOne(context.TODO(), bson.M{"_id": v.UserID}).Decode(&user)
+		err := usersCol.FindOne(ctx, bson.M{"_id": v.UserID}).Decode(&user)
 		if err != nil || user.Role != "vendor" {
 			continue
 		}
@@ -998,11 +1016,12 @@ func GetFoodCourtDetailsAdmin(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	ctx := c.Request.Context()
 	foodCourtsCol := db.Collection("foodcourts")
 	vendorsCol := db.Collection("vendors")
 
 	var fc models.FoodCourt
-	err = foodCourtsCol.FindOne(context.TODO(), bson.M{
+	err = foodCourtsCol.FindOne(ctx, bson.M{
 		"_id":      foodCourtID,
 		"admin_id": adminObjID,
 	}).Decode(&fc)
@@ -1014,7 +1033,7 @@ func GetFoodCourtDetailsAdmin(c *gin.Context, db *mongo.Database) {
 	var vendorList []bson.M
 	if len(fc.VendorIDs) > 0 {
 		cursor, err := vendorsCol.Find(
-			context.TODO(),
+			ctx,
 			bson.M{"_id": bson.M{"$in": fc.VendorIDs}},
 			options.Find().SetProjection(bson.M{
 				"_id":      1,
@@ -1025,8 +1044,8 @@ func GetFoodCourtDetailsAdmin(c *gin.Context, db *mongo.Database) {
 			utils.RespondError(c, http.StatusInternalServerError, "Failed to fetch vendor details")
 			return
 		}
-		defer cursor.Close(context.TODO())
-		if err := cursor.All(context.TODO(), &vendorList); err != nil {
+		defer cursor.Close(ctx)
+		if err := cursor.All(ctx, &vendorList); err != nil {
 			utils.RespondError(c, http.StatusInternalServerError, "Error decoding vendor details")
 			return
 		}
@@ -1051,7 +1070,7 @@ func GetAllManagers(c *gin.Context, db *mongo.Database) {
 	}
 	skip := (page - 1) * limit
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	pipeline := []bson.M{
@@ -1139,7 +1158,7 @@ func GetAllManagers(c *gin.Context, db *mongo.Database) {
 }
 
 func GetAdminDashboardStats(c *gin.Context, db *mongo.Database) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	fcCollection := db.Collection("foodcourts")
@@ -1225,7 +1244,7 @@ func UpdateVendorStatus(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 20*time.Second)
 	defer cancel()
 
 	var vendor models.Vendor

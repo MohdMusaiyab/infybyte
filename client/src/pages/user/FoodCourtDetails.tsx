@@ -126,7 +126,7 @@ const FoodCourtDetails: React.FC = () => {
     if (lastMessage && lastMessage.type === "item_foodcourt_update") {
       const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
 
-      console.log("🔄 Real-time update received in FoodCourtDetails:", update);
+      if (id && update.foodcourt_id !== id) return;
 
       setData((prev) => {
         if (!prev) return prev;
@@ -147,7 +147,7 @@ const FoodCourtDetails: React.FC = () => {
         };
       });
     }
-  }, [lastMessage]);
+  }, [lastMessage, id]);
 
   if (loading) {
     return (

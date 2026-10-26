@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -90,7 +89,7 @@ func ActiveManagerMiddleware(db *mongo.Database) gin.HandlerFunc {
 			IsActive bool `bson:"isActive"`
 		}
 
-		err = db.Collection("managers").FindOne(context.Background(), bson.M{
+		err = db.Collection("managers").FindOne(c.Request.Context(), bson.M{
 			"user_id": userObjID,
 		}).Decode(&manager)
 

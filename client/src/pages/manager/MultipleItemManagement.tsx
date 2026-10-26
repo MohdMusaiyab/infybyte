@@ -106,24 +106,32 @@ const MultipleItemManagement: React.FC = () => {
       const update = lastMessage.payload as WebSocketUpdatePayload;
       const action = lastMessage.action;
 
-      console.log("🔄 Real-time update in MultipleItemManagement:", {
-        update,
-        action,
-      });
+      setData((prev) => {
+        if (!prev) return prev;
 
-      if (action === "create" || action === "update" || action === "delete") {
-        const refreshData = async () => {
-          try {
-            const response = await axiosInstance.get("/manager/vendor-items");
-            setData(response.data.data);
-            console.log("✅ Data refreshed via WebSocket");
-          } catch (err) {
-            console.error("Failed to refresh data:", err);
-          }
+        const updatedItems = prev.items.map((item) => {
+          if (item.id !== update.item_id) return item;
+
+          const updatedStatuses = item.foodCourtStatus.map((status) => {
+            if (status.foodCourtId !== update.foodcourt_id) return status;
+
+            return {
+              ...status,
+              isInFoodCourt: action !== "delete",
+            };
+          });
+
+          return {
+            ...item,
+            foodCourtStatus: updatedStatuses,
+          };
+        });
+
+        return {
+          ...prev,
+          items: updatedItems,
         };
-
-        refreshData();
-      }
+      });
     }
   }, [lastMessage]);
 

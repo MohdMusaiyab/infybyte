@@ -26,7 +26,7 @@ func GetUserProfile(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	usersCollection := db.Collection("users")
 
 	var user struct {
@@ -65,12 +65,17 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 		Email *string `json:"email,omitempty" validate:"omitempty,email"`
 	}
 
-	if err := c.BindJSON(&updateData); err != nil {
+	if err := c.ShouldBindJSON(&updateData); err != nil {
 		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	ctx := context.Background()
+	if err := utils.Validate.Struct(&updateData); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx := c.Request.Context()
 	usersCollection := db.Collection("users")
 
 	if updateData.Email != nil {
@@ -124,7 +129,7 @@ func UpdateUserProfile(c *gin.Context, db *mongo.Database) {
 }
 
 func GetAllFoodCourts(c *gin.Context, db *mongo.Database) {
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	foodCourtsCollection := db.Collection("foodcourts")
 
 	cursor, err := foodCourtsCollection.Find(ctx, bson.M{})
@@ -160,7 +165,7 @@ func GetFoodCourtByID(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		foodCourts     *mongo.Collection
 		vendors        *mongo.Collection
@@ -280,7 +285,7 @@ func GetFoodCourtItems(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		foodCourtItems *mongo.Collection
 	}{
@@ -356,7 +361,7 @@ func GetVendorItemsWithFoodCourts(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		foodCourtItems *mongo.Collection
 		foodCourts     *mongo.Collection
@@ -477,7 +482,7 @@ func GetItemDetails(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		items          *mongo.Collection
 		vendors        *mongo.Collection

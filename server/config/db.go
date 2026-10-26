@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -42,4 +43,54 @@ func ConnectDB() *mongo.Client {
 
 func GetCollection(databaseName, collectionName string) *mongo.Collection {
 	return MongoClient.Database(databaseName).Collection(collectionName)
+}
+
+func EnsureIndexes(db *mongo.Database) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	if _, err := db.Collection("users").Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "email", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		log.Printf("Warning: users.email index: %v", err)
+	}
+
+	if _, err := db.Collection("vendors").Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{Key: "user_id", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}); err != nil {
+		log.Printf("Warning: vendors.user_id index: %v", err)
+	}
+
+	if _, err := db.Collection("itemfoodcourts").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "foodcourt_id", Value: 1}, {Key: "item_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys: bson.D{{Key: "item_id", Value: 1}},
+		},
+	}); err != nil {
+		log.Printf("Warning: itemfoodcourts indexes: %v", err)
+	}
+
+	if _, err := db.Collection("managers").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{
+			Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "foodcourt_id", Value: 1}},
+		},
+		{
+			Keys: bson.D{{Key: "vendor_id", Value: 1}},
+		},
+	}); err != nil {
+		log.Printf("Warning: managers indexes: %v", err)
+	}
+
+	if _, err := db.Collection("items").Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys: bson.D{{Key: "vendor_id", Value: 1}},
+	}); err != nil {
+		log.Printf("Warning: items.vendor_id index: %v", err)
+	}
+
+	return nil
 }
