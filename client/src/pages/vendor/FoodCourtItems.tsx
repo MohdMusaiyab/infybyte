@@ -7,7 +7,7 @@ import {
   Plus,
   LayoutGrid,
   Clock,
-  DollarSign,
+  IndianRupee,
   Zap,
   CheckCircle,
   XCircle,
@@ -257,7 +257,7 @@ const FoodCourtItems: React.FC = () => {
 
             <div className="space-y-4">
               <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl border border-transparent focus-within:border-gray-200">
-                <DollarSign className="w-4 h-4 text-gray-400" />
+                <IndianRupee className="w-4 h-4 text-gray-400" />
                 <input
                   type="number"
                   step="0.01"

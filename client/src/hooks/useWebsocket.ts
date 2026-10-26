@@ -1,6 +1,10 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuthStore } from "../store/authStore";
-import type { WebSocketMessage, WebSocketConfig } from "../types/websocket";
+import type {
+  WebSocketMessage,
+  WebSocketConfig,
+  WebSocketListener,
+} from "../types/websocket";
 
 export const useWebSocket = (config?: WebSocketConfig) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -11,6 +15,8 @@ export const useWebSocket = (config?: WebSocketConfig) => {
   const reconnectTimeoutRef = useRef<number | null>(null);
   const configRef = useRef(config);
   const isInternalCloseRef = useRef(false);
+  const listenersRef = useRef<Map<string, Set<WebSocketListener<unknown>>>>(new Map());
+  const subscribedRoomsRef = useRef<Set<string>>(new Set());
   const { accessToken } = useAuthStore();
 
   useEffect(() => {
@@ -37,6 +43,47 @@ export const useWebSocket = (config?: WebSocketConfig) => {
     setIsConnected(false);
     setReconnectAttempts(0);
   }, [clearReconnectTimeout]);
+
+  const subscribe = useCallback(
+    <T = unknown>(
+      eventType: string,
+      callback: WebSocketListener<T>
+    ): (() => void) => {
+      if (!listenersRef.current.has(eventType)) {
+        listenersRef.current.set(eventType, new Set());
+      }
+      const handlers = listenersRef.current.get(eventType)!;
+      const genericCallback = callback as WebSocketListener<unknown>;
+      handlers.add(genericCallback);
+
+      return () => {
+        const currentHandlers = listenersRef.current.get(eventType);
+        if (currentHandlers) {
+          currentHandlers.delete(genericCallback);
+          if (currentHandlers.size === 0) {
+            listenersRef.current.delete(eventType);
+          }
+        }
+      };
+    },
+    []
+  );
+
+  const subscribeToRoom = useCallback((topic: string): (() => void) => {
+    if (!topic) return () => {};
+    subscribedRoomsRef.current.add(topic);
+
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(JSON.stringify({ action: "subscribe", topic }));
+    }
+
+    return () => {
+      subscribedRoomsRef.current.delete(topic);
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.send(JSON.stringify({ action: "unsubscribe", topic }));
+      }
+    };
+  }, []);
 
   const connect = useCallback(() => {
     clearReconnectTimeout();
@@ -67,6 +114,13 @@ export const useWebSocket = (config?: WebSocketConfig) => {
         setIsConnected(true);
         setReconnectAttempts(0);
         console.log("✅ WebSocket connected successfully");
+
+        if (subscribedRoomsRef.current.size > 0) {
+          subscribedRoomsRef.current.forEach((topic) => {
+            newWs.send(JSON.stringify({ action: "subscribe", topic }));
+          });
+        }
+
         configRef.current?.onOpen?.();
       };
 
@@ -75,6 +129,28 @@ export const useWebSocket = (config?: WebSocketConfig) => {
           const message: WebSocketMessage = JSON.parse(event.data);
           setLastMessage(message);
           configRef.current?.onMessage?.(message);
+
+          const handlers = listenersRef.current.get(message.type);
+          if (handlers && handlers.size > 0) {
+            handlers.forEach((callback) => {
+              try {
+                callback(message.payload, message.action, message);
+              } catch (err) {
+                console.error(`Error in WebSocket event listener for ${message.type}:`, err);
+              }
+            });
+          }
+
+          const wildcardHandlers = listenersRef.current.get("*");
+          if (wildcardHandlers && wildcardHandlers.size > 0) {
+            wildcardHandlers.forEach((callback) => {
+              try {
+                callback(message.payload, message.action, message);
+              } catch (err) {
+                console.error("Error in wildcard WebSocket event listener:", err);
+              }
+            });
+          }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
         }
@@ -149,6 +225,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
     if (accessToken) {
       connect();
     } else {
+      subscribedRoomsRef.current.clear();
       disconnect();
     }
 
@@ -164,5 +241,7 @@ export const useWebSocket = (config?: WebSocketConfig) => {
     disconnect,
     reconnect: connect,
     reconnectAttempts,
+    subscribe,
+    subscribeToRoom,
   };
 };

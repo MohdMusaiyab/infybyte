@@ -130,6 +130,8 @@ func MakeVendor(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	utils.BroadcastUserRoleUpdate(user.ID.Hex(), "vendor")
+
 	utils.RespondSuccess(c, http.StatusOK, "User upgraded to vendor successfully", gin.H{
 		"user_id":   user.ID,
 		"new_role":  "vendor",
@@ -176,6 +178,8 @@ func MakeUser(c *gin.Context, db *mongo.Database) {
 		utils.RespondError(c, http.StatusInternalServerError, "Failed to remove vendor profile")
 		return
 	}
+
+	utils.BroadcastUserRoleUpdate(user.ID.Hex(), "user")
 
 	utils.RespondSuccess(c, http.StatusOK, "User downgraded to normal user successfully", gin.H{
 		"user_id":  user.ID,

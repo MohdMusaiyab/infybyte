@@ -8,7 +8,7 @@ import {
   Store,
   MapPin,
   Clock,
-  DollarSign,
+  IndianRupee,
   Zap,
   CheckCircle,
   XCircle,
@@ -46,7 +46,7 @@ interface FoodCourt {
 const ItemFoodCourt: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { lastMessage, isConnected } = useWebSocketContext();
+  const { lastMessage, isConnected, subscribe } = useWebSocketContext();
   const [, setLoading] = useState<boolean>(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
@@ -87,43 +87,6 @@ const ItemFoodCourt: React.FC = () => {
     { value: "dinner", label: "Dinner" },
   ];
 
-  useEffect(() => {
-    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
-      const action = lastMessage.action;
-
-      console.log("🔄 Real-time update received:", { update, action });
-
-      if (action === "update") {
-        setFoodCourts((prev) =>
-          prev?.map((fc) => {
-            const isMatch =
-              fc.id === update._id || fc.foodCourtId === update.foodcourt_id;
-
-            return isMatch
-              ? {
-                  ...fc,
-                  status: update.status,
-                  price: update.price,
-                  timeSlot: update.timeSlot,
-                  isActive: update.isActive,
-                  updatedAt: update.updatedAt,
-                }
-              : fc;
-          })
-        );
-      } else if (action === "create") {
-        fetchItemFoodCourts();
-      } else if (action === "delete") {
-        setFoodCourts((prev) =>
-          prev?.filter(
-            (fc) =>
-              !(fc.id === update._id || fc.foodCourtId === update.foodcourt_id)
-          )
-        );
-      }
-    }
-  }, [lastMessage]);
   const fetchItemFoodCourts = useCallback(async () => {
     if (!id) return;
 
@@ -162,6 +125,73 @@ const ItemFoodCourt: React.FC = () => {
       fetchItemFoodCourts();
     }
   }, [id, fetchItemFoodCourts]);
+
+  const processItemFoodCourtUpdate = useCallback(
+    (update: ItemFoodCourtUpdatePayload, action: string) => {
+      const payload = update as ItemFoodCourtUpdatePayload & {
+        id?: string;
+        foodCourtId?: string;
+      };
+      const updateId = payload.id || payload._id;
+      const updateFCId = payload.foodcourt_id || payload.foodCourtId;
+
+      if (action === "update") {
+        setFoodCourts((prev) =>
+          prev?.map((fc) => {
+            const isMatch =
+              (updateId && fc.id === updateId) ||
+              (updateFCId && fc.foodCourtId === updateFCId);
+
+            return isMatch
+              ? {
+                  ...fc,
+                  status: payload.status || fc.status,
+                  price:
+                    payload.price !== undefined ? payload.price : fc.price,
+                  timeSlot: payload.timeSlot || fc.timeSlot,
+                  isActive:
+                    payload.isActive !== undefined
+                      ? payload.isActive
+                      : fc.isActive,
+                  updatedAt: payload.updatedAt || fc.updatedAt,
+                }
+              : fc;
+          })
+        );
+      } else if (action === "create") {
+        fetchItemFoodCourts();
+      } else if (action === "delete") {
+        setFoodCourts((prev) =>
+          prev?.filter((fc) => {
+            const isMatch =
+              (updateId && fc.id === updateId) ||
+              (updateFCId && fc.foodCourtId === updateFCId);
+            return !isMatch;
+          })
+        );
+      }
+    },
+    [fetchItemFoodCourts]
+  );
+
+  useEffect(() => {
+    const unsub = subscribe<ItemFoodCourtUpdatePayload>(
+      "item_foodcourt_update",
+      (payload, action) => {
+        processItemFoodCourtUpdate(payload, action);
+      }
+    );
+    return unsub;
+  }, [subscribe, processItemFoodCourtUpdate]);
+
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      processItemFoodCourtUpdate(
+        lastMessage.payload as ItemFoodCourtUpdatePayload,
+        lastMessage.action
+      );
+    }
+  }, [lastMessage, processItemFoodCourtUpdate]);
 
   const getFoodCourtAssociationMap = () => {
     const map = new Map<string, FoodCourtAssociation>();
@@ -428,7 +458,7 @@ const ItemFoodCourt: React.FC = () => {
                           Price (₹)
                         </label>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                           <input
                             type="text"
                             value={fc.price || item?.basePrice || ""}

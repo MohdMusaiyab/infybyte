@@ -1,7 +1,11 @@
-import { ChefHat, Shield, ArrowRight, Home } from "lucide-react";
+import { ChefHat, Shield, ArrowRight, Home, LayoutDashboard } from "lucide-react";
 import Button from "../../components/general/Button";
+import { useAuthStore } from "../../store/authStore";
+import { useNavigate } from "react-router-dom";
 
 const Unauthorized = () => {
+  const { user, isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-white relative overflow-hidden">
       
@@ -46,16 +50,28 @@ const Unauthorized = () => {
               </code>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {isAuthenticated && user?.role && (
+                <Button
+                  variant="solid"
+                  theme="black"
+                  size="lg"
+                  leftIcon={<LayoutDashboard className="w-5 h-5" />}
+                  onClick={() => navigate(`/${user.role}/dashboard`)}
+                  className="group hover:scale-105 transition-transform duration-200"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              )}
               <Button
-                variant="solid"
+                variant={isAuthenticated ? "outline" : "solid"}
                 theme="black"
                 size="lg"
                 leftIcon={<Home className="w-5 h-5" />}
-                onClick={() => window.location.href = "/"}
+                onClick={() => navigate("/")}
                 className="group hover:scale-105 transition-transform duration-200"
               >
                 Go Home
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               
               <Button

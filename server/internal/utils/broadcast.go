@@ -38,6 +38,32 @@ func BroadcastItemFoodCourtUpdate(itemFoodCourt models.ItemFoodCourt, action str
 		return
 	}
 
-	websocketHub.Broadcast <- messageBytes
-	log.Printf("Broadcasted ItemFoodCourt update: %s (ID: %s)", action, itemFoodCourt.ID.Hex())
+	foodCourtTopic := "foodcourt:" + itemFoodCourt.FoodCourtID.Hex()
+	websocketHub.BroadcastToTopic(foodCourtTopic, messageBytes)
+	log.Printf("Broadcasted ItemFoodCourt update: %s (Topic: %s, ID: %s)", action, foodCourtTopic, itemFoodCourt.ID.Hex())
+}
+
+func BroadcastUserRoleUpdate(userID string, newRole string) {
+	if websocketHub == nil {
+		log.Println("WebSocket hub not initialized")
+		return
+	}
+
+	message := BroadcastMessage{
+		Type: "role_change",
+		Payload: map[string]string{
+			"role": newRole,
+		},
+		Action: "update",
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling role_change message: %v", err)
+		return
+	}
+
+	topic := "user:" + userID
+	websocketHub.BroadcastToTopic(topic, messageBytes)
+	log.Printf("Broadcasted user role update: %s -> %s", userID, newRole)
 }

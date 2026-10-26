@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { WebSocketMessage } from '../types/websocket';
+import type { WebSocketMessage, WebSocketListener } from '../types/websocket';
 
 export interface WebSocketContextType {
   isConnected: boolean;
@@ -8,9 +8,15 @@ export interface WebSocketContextType {
   disconnect: () => void;
   reconnect: () => void;
   reconnectAttempts: number;
+  subscribe: <T = unknown>(
+    eventType: string,
+    callback: WebSocketListener<T>
+  ) => () => void;
+  subscribeToRoom: (topic: string) => () => void;
 }
 
 export const WebSocketContext = createContext<WebSocketContextType | undefined>(undefined);
+
 export const useWebSocketContext = (): WebSocketContextType => {
   const context = useContext(WebSocketContext);
   if (context === undefined) {

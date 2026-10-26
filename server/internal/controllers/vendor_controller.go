@@ -1625,6 +1625,8 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
+	utils.BroadcastUserRoleUpdate(managerData.UserID.Hex(), "manager")
+
 	utils.RespondSuccess(c, http.StatusCreated, "Manager added successfully", bson.M{"id": result.InsertedID})
 }
 func UpdateManager(c *gin.Context, db *mongo.Database) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { AxiosError } from "axios";
@@ -52,7 +52,7 @@ const FoodCourtDetails: React.FC = () => {
     "combo",
   ];
   const timeSlots = ["all", "breakfast", "lunch", "snacks", "dinner"];
-  const { lastMessage } = useWebSocketContext();
+  const { lastMessage, subscribe, subscribeToRoom } = useWebSocketContext();
   useEffect(() => {
     if (id) {
       fetchFoodCourtDetails();
@@ -123,31 +123,67 @@ const FoodCourtDetails: React.FC = () => {
   };
 
   useEffect(() => {
-    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
-      const update = lastMessage.payload as ItemFoodCourtUpdatePayload;
+    if (id) {
+      const unsubRoom = subscribeToRoom(`foodcourt:${id}`);
+      return unsubRoom;
+    }
+  }, [id, subscribeToRoom]);
 
-      if (id && update.foodcourt_id !== id) return;
+  const processItemUpdate = useCallback(
+    (update: ItemFoodCourtUpdatePayload) => {
+      const payload = update as ItemFoodCourtUpdatePayload & {
+        foodCourtId?: string;
+        itemId?: string;
+      };
+      const updateFoodCourtId = payload.foodcourt_id || payload.foodCourtId;
+      const updateItemId = payload.item_id || payload.itemId;
+
+      if (id && updateFoodCourtId && updateFoodCourtId !== id) return;
 
       setData((prev) => {
         if (!prev) return prev;
 
+        if (payload.isActive === false) {
+          return {
+            ...prev,
+            items: prev.items?.filter((item) => item.itemId !== updateItemId),
+          };
+        }
+
         return {
           ...prev,
           items: prev.items?.map((item) =>
-            item.itemId === update.item_id
+            item.itemId === updateItemId
               ? {
                   ...item,
-                  status: update.status,
-                  price: update.price,
-                  timeSlot: update.timeSlot,
-                  isActive: update.isActive,
+                  status: payload.status || item.status,
+                  price:
+                    payload.price !== undefined ? payload.price : item.price,
+                  timeSlot: payload.timeSlot || item.timeSlot,
                 }
               : item
           ),
         };
       });
+    },
+    [id]
+  );
+
+  useEffect(() => {
+    const unsub = subscribe<ItemFoodCourtUpdatePayload>(
+      "item_foodcourt_update",
+      (payload) => {
+        processItemUpdate(payload);
+      }
+    );
+    return unsub;
+  }, [subscribe, processItemUpdate]);
+
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === "item_foodcourt_update") {
+      processItemUpdate(lastMessage.payload as ItemFoodCourtUpdatePayload);
     }
-  }, [lastMessage, id]);
+  }, [lastMessage, processItemUpdate]);
 
   if (loading) {
     return (

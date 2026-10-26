@@ -7,12 +7,13 @@ import (
 )
 
 type Client struct {
-	ID     string
-	UserID string
-	Role   string
-	Send   chan []byte
-
+	ID        string
+	UserID    string
+	Role      string
+	Send      chan []byte
 	closeOnce sync.Once
+	isClosed  bool
+	closeMu   sync.RWMutex
 }
 
 func generateClientID() string {
@@ -32,6 +33,15 @@ func NewClient(userID, role string) *Client {
 
 func (c *Client) SafeClose() {
 	c.closeOnce.Do(func() {
+		c.closeMu.Lock()
+		c.isClosed = true
+		c.closeMu.Unlock()
 		close(c.Send)
 	})
+}
+
+func (c *Client) IsClosed() bool {
+	c.closeMu.RLock()
+	defer c.closeMu.RUnlock()
+	return c.isClosed
 }

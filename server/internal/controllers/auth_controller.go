@@ -146,23 +146,30 @@ func Refresh(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	accessToken, err := utils.GenerateAccessToken(claims.UserID, claims.Role)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Could not generate token")
-		return
-	}
-
-	var user models.User
 	oid, err := primitive.ObjectIDFromHex(claims.UserID)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "Invalid user ID in token")
 		return
 	}
+
+	var user models.User
 	err = db.Collection("users").FindOne(c.Request.Context(), bson.M{"_id": oid}).Decode(&user)
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "User not found")
-
 		return
+	}
+
+	accessToken, err := utils.GenerateAccessToken(user.ID.Hex(), user.Role)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Could not generate token")
+		return
+	}
+
+	if user.Role != claims.Role {
+		newRefreshToken, err := utils.GenerateRefreshToken(user.ID.Hex(), user.Role)
+		if err == nil {
+			setRefreshCookie(c, newRefreshToken, 7*24*3600)
+		}
 	}
 	utils.RespondSuccess(c, http.StatusOK, "Token refreshed successfully", gin.H{
 		"access_token": accessToken,

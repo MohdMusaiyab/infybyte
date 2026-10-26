@@ -14,7 +14,14 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ allowedRoles }) => {
   }
 
   if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+    const dashboardRoutes: Record<string, string> = {
+      admin: "/admin/dashboard",
+      vendor: "/vendor/dashboard",
+      manager: "/manager/dashboard",
+      user: "/user/dashboard",
+    };
+    const targetDashboard = dashboardRoutes[user.role] || "/unauthorized";
+    return <Navigate to={targetDashboard} replace />;
   }
 
   return <Outlet />;

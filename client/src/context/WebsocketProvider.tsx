@@ -1,5 +1,7 @@
 import React, { useCallback, type ReactNode } from 'react';
+import axios from 'axios';
 import { useWebSocket } from '../hooks/useWebsocket';
+import { useAuthStore } from '../store/authStore';
 import type { WebSocketMessage, ItemFoodCourtUpdatePayload } from '../types/websocket';
 import { WebSocketContext } from './WebSocketContext';
 
@@ -13,16 +15,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   onItemFoodCourtUpdate 
 }) => {
   const handleMessage = useCallback((message: WebSocketMessage) => {
-    console.log('WebSocket message received:', message);
-    
     switch (message.type) {
       case 'item_foodcourt_update':
         if (onItemFoodCourtUpdate && message.payload) {
           onItemFoodCourtUpdate(message.payload as ItemFoodCourtUpdatePayload, message.action);
         }
         break;
+      case 'role_change':
+        axios
+          .post(`${import.meta.env.VITE_API_URL}/auth/refresh`, {}, { withCredentials: true })
+          .then((res) => {
+            const { access_token, user } = res.data.data;
+            useAuthStore.getState().setAuth(user, access_token);
+          })
+          .catch(() => {});
+        break;
       default:
-        console.log('Unknown message type:', message.type);
+        break;
     }
   }, [onItemFoodCourtUpdate]);
 

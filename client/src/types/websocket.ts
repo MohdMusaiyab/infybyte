@@ -4,6 +4,12 @@ export interface WebSocketMessage {
   action: 'create' | 'update' | 'delete';
 }
 
+export type WebSocketListener<T = unknown> = (
+  payload: T,
+  action: string,
+  raw: WebSocketMessage
+) => void;
+
 export interface ItemFoodCourtUpdatePayload {
   _id: string;
   item_id: string;

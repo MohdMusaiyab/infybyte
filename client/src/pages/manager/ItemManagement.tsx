@@ -11,7 +11,7 @@ import {
   Check,
   Package,
   Store,
-  DollarSign,
+  IndianRupee,
   Clock,
   Zap,
   MapPin,
@@ -637,7 +637,7 @@ const ItemManagement: React.FC = () => {
                               Price
                             </label>
                             <div className="relative">
-                              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                               <input
                                 type="number"
                                 step="0.01"
@@ -730,7 +730,7 @@ const ItemManagement: React.FC = () => {
                               {getStatusDisplay(assignment.status)}
                             </div>
                             <div className="flex items-center gap-1 text-gray-600">
-                              <DollarSign className="w-4 h-4" />
+                              <IndianRupee className="w-4 h-4" />
                               <span className="text-sm">
                                 ₹{assignment.price || data.item.basePrice}
                               </span>
@@ -877,7 +877,7 @@ const ItemManagement: React.FC = () => {
                               Price
                             </label>
                             <div className="relative">
-                              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                              <IndianRupee className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                               <input
                                 type="number"
                                 step="0.01"
