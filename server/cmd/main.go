@@ -21,11 +21,11 @@ import (
 
 func main() {
 
-	utils.InitValidator()
-
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️  No .env file found, relying on system environment variables")
 	}
+
+	utils.InitValidator()
 
 	if os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)

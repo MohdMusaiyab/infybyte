@@ -1,16 +1,29 @@
 package utils
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var (
-	accessSecret  = []byte(os.Getenv("ACCESS_SECRET"))
-	refreshSecret = []byte(os.Getenv("REFRESH_SECRET"))
-)
+func getAccessSecret() []byte {
+	secret := os.Getenv("ACCESS_SECRET")
+	if secret == "" {
+		log.Println("⚠️  WARNING: ACCESS_SECRET is not set in environment or .env file")
+	}
+	return []byte(secret)
+}
+
+func getRefreshSecret() []byte {
+	secret := os.Getenv("REFRESH_SECRET")
+	if secret == "" {
+		log.Println("⚠️  WARNING: REFRESH_SECRET is not set in environment or .env file")
+	}
+	return []byte(secret)
+}
 
 type JWTClaims struct {
 	UserID string `json:"user_id"`
@@ -29,7 +42,7 @@ func GenerateAccessToken(userID, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(accessSecret)
+	return token.SignedString(getAccessSecret())
 }
 
 func GenerateRefreshToken(userID, role string) (string, error) {
@@ -43,18 +56,21 @@ func GenerateRefreshToken(userID, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(refreshSecret)
+	return token.SignedString(getRefreshSecret())
 }
 
 func ValidateToken(tokenStr string, isRefresh bool) (*JWTClaims, error) {
 	var secret []byte
 	if isRefresh {
-		secret = refreshSecret
+		secret = getRefreshSecret()
 	} else {
-		secret = accessSecret
+		secret = getAccessSecret()
 	}
 
 	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return secret, nil
 	})
 	if err != nil {
@@ -70,8 +86,12 @@ func ValidateToken(tokenStr string, isRefresh bool) (*JWTClaims, error) {
 }
 
 func ValidateRefreshToken(tokenStr string) (*JWTClaims, error) {
+	secret := getRefreshSecret()
 	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return refreshSecret, nil
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
 	})
 	if err != nil {
 		return nil, err

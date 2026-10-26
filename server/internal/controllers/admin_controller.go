@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -36,9 +37,8 @@ func GetAllUsers(c *gin.Context, db *mongo.Database) {
 
 	filter := bson.M{}
 	if searchEmail != "" {
-
 		filter["email"] = bson.M{
-			"$regex":   searchEmail,
+			"$regex":   regexp.QuoteMeta(searchEmail),
 			"$options": "i",
 		}
 	}
@@ -390,7 +390,7 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 		if searchEmail != "" {
 			andConditions = append(andConditions, bson.M{
 				"email": bson.M{
-					"$regex":   searchEmail,
+					"$regex":   regexp.QuoteMeta(searchEmail),
 					"$options": "i",
 				},
 			})
@@ -399,7 +399,7 @@ func GetAllVendors(c *gin.Context, db *mongo.Database) {
 		if searchName != "" {
 			andConditions = append(andConditions, bson.M{
 				"name": bson.M{
-					"$regex":   searchName,
+					"$regex":   regexp.QuoteMeta(searchName),
 					"$options": "i",
 				},
 			})
@@ -575,7 +575,7 @@ func GetAllFoodCourtsAdmin(c *gin.Context, db *mongo.Database) {
 
 	if searchName != "" {
 		filter["name"] = bson.M{
-			"$regex":   searchName,
+			"$regex":   regexp.QuoteMeta(searchName),
 			"$options": "i",
 		}
 	}
@@ -1065,7 +1065,7 @@ func GetAllManagers(c *gin.Context, db *mongo.Database) {
 		{"$unwind": "$user_info"},
 
 		{"$match": bson.M{
-			"user_info.name": bson.M{"$regex": searchName, "$options": "i"},
+			"user_info.name": bson.M{"$regex": regexp.QuoteMeta(searchName), "$options": "i"},
 		}},
 
 		{"$lookup": bson.M{

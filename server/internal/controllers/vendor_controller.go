@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1493,17 +1495,17 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 	}
 
 	var managerData struct {
-		UserID      primitive.ObjectID `json:"userId" validate:"required"`
-		ContactNo   string             `json:"contactNo" validate:"required,e164"`
-		FoodCourtID primitive.ObjectID `json:"foodCourtId" validate:"required"`
+		UserID      primitive.ObjectID `json:"userId" binding:"required"`
+		ContactNo   string             `json:"contactNo" binding:"required,min=10,max=15"`
+		FoodCourtID primitive.ObjectID `json:"foodCourtId" binding:"required"`
 	}
 
-	if err := c.BindJSON(&managerData); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload")
+	if err := c.ShouldBindJSON(&managerData); err != nil {
+		utils.RespondError(c, http.StatusBadRequest, "Invalid request payload: "+err.Error())
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		vendors    *mongo.Collection
 		managers   *mongo.Collection
@@ -1525,12 +1527,28 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	var user struct {
-		ID primitive.ObjectID `bson:"_id"`
+	// SECURITY CHECK: Verify target user exists and currently has the 'user' role
+	var targetUser struct {
+		ID   primitive.ObjectID `bson:"_id"`
+		Role string             `bson:"role"`
 	}
-	err = collections.users.FindOne(ctx, bson.M{"_id": managerData.UserID}).Decode(&user)
+	err = collections.users.FindOne(ctx, bson.M{"_id": managerData.UserID}).Decode(&targetUser)
 	if err != nil {
-		utils.RespondError(c, http.StatusNotFound, "User not found")
+		utils.RespondError(c, http.StatusNotFound, "Target user not found")
+		return
+	}
+
+	if targetUser.Role != "user" {
+		utils.RespondError(c, http.StatusBadRequest, fmt.Sprintf("Cannot assign user with role '%s' as manager. Target user must currently have the 'user' role.", targetUser.Role))
+		return
+	}
+
+	// Verify target user is not already assigned as a manager
+	existingManagerCount, err := collections.managers.CountDocuments(ctx, bson.M{
+		"user_id": managerData.UserID,
+	})
+	if err == nil && existingManagerCount > 0 {
+		utils.RespondError(c, http.StatusConflict, "User is already assigned as a manager")
 		return
 	}
 
@@ -1555,15 +1573,6 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	existing, err := collections.managers.CountDocuments(ctx, bson.M{
-		"user_id":   managerData.UserID,
-		"vendor_id": vendor.ID,
-	})
-	if err == nil && existing > 0 {
-		utils.RespondError(c, http.StatusConflict, "Manager already exists for this vendor")
-		return
-	}
-
 	manager := bson.M{
 		"user_id":      managerData.UserID,
 		"vendor_id":    vendor.ID,
@@ -1580,18 +1589,22 @@ func AddManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	_, err = collections.users.UpdateOne(
+	// Atomic update: only update if role is still "user"
+	updateResult, err := collections.users.UpdateOne(
 		ctx,
-		bson.M{"_id": managerData.UserID},
+		bson.M{"_id": managerData.UserID, "role": "user"},
 		bson.M{"$set": bson.M{
 			"role":      "manager",
 			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
 		}},
 	)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to update user role")
+	if err != nil || updateResult.MatchedCount == 0 {
+		// Roll back the inserted manager record if the role update failed/raced
+		_, _ = collections.managers.DeleteOne(ctx, bson.M{"_id": result.InsertedID})
+		utils.RespondError(c, http.StatusBadRequest, "Failed to update user role to manager. User role may have changed.")
 		return
 	}
+
 	utils.RespondSuccess(c, http.StatusCreated, "Manager added successfully", bson.M{"id": result.InsertedID})
 }
 func UpdateManager(c *gin.Context, db *mongo.Database) {
@@ -1710,13 +1723,15 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := c.Request.Context()
 	collections := struct {
 		vendors  *mongo.Collection
 		managers *mongo.Collection
+		users    *mongo.Collection
 	}{
 		vendors:  db.Collection("vendors"),
 		managers: db.Collection("managers"),
+		users:    db.Collection("users"),
 	}
 
 	var vendor struct {
@@ -1728,38 +1743,35 @@ func RemoveManager(c *gin.Context, db *mongo.Database) {
 		return
 	}
 
-	result, err := collections.managers.DeleteOne(
-		ctx,
-		bson.M{"_id": managerObjID, "vendor_id": vendor.ID},
-	)
-	if err != nil {
-		utils.RespondError(c, http.StatusInternalServerError, "Failed to remove manager")
-		return
-	}
-
-	if result.DeletedCount == 0 {
-		utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
-		return
-	}
-
-	var manager struct {
+	// Atomically find and delete the manager record to capture their user_id
+	var deletedManager struct {
 		UserID primitive.ObjectID `bson:"user_id"`
 	}
-	err = collections.managers.FindOne(ctx, bson.M{"_id": managerObjID}).Decode(&manager)
-	if err == nil {
-
-		_, err = db.Collection("users").UpdateOne(
-			ctx,
-			bson.M{"_id": manager.UserID},
-			bson.M{"$set": bson.M{
-				"role":      "user",
-				"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
-			}},
-		)
-		if err != nil {
-			utils.RespondError(c, http.StatusInternalServerError, "Failed to update user role")
-			return
+	err = collections.managers.FindOneAndDelete(
+		ctx,
+		bson.M{"_id": managerObjID, "vendor_id": vendor.ID},
+	).Decode(&deletedManager)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			utils.RespondError(c, http.StatusNotFound, "Manager not found or access denied")
+		} else {
+			utils.RespondError(c, http.StatusInternalServerError, "Failed to remove manager")
 		}
+		return
+	}
+
+	// Revert the user's role back to "user"
+	_, err = collections.users.UpdateOne(
+		ctx,
+		bson.M{"_id": deletedManager.UserID, "role": "manager"},
+		bson.M{"$set": bson.M{
+			"role":      "user",
+			"updatedAt": primitive.NewDateTimeFromTime(time.Now()),
+		}},
+	)
+	if err != nil {
+		utils.RespondError(c, http.StatusInternalServerError, "Failed to update user role")
+		return
 	}
 
 	utils.RespondSuccess(c, http.StatusOK, "Manager removed successfully", nil)
@@ -1769,19 +1781,19 @@ func GetAllUsersForManager(c *gin.Context, db *mongo.Database) {
 	userID, _ := c.Get("userID")
 	userObjID, _ := primitive.ObjectIDFromHex(userID.(string))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Second)
 	defer cancel()
 
 	searchEmail := c.Query("email")
 
 	filter := bson.M{
 		"_id":  bson.M{"$ne": userObjID},
-		"role": bson.M{"$nin": []string{"admin", "vendor"}},
+		"role": "user",
 	}
 
 	if searchEmail != "" {
 		filter["email"] = bson.M{
-			"$regex": primitive.Regex{Pattern: searchEmail, Options: "i"},
+			"$regex": primitive.Regex{Pattern: regexp.QuoteMeta(searchEmail), Options: "i"},
 		}
 	}
 
