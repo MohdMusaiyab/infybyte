@@ -150,10 +150,18 @@ func (h *WebSocketHandler) readPump(conn *gorillaws.Conn, client *myws.Client) {
 			switch cmd.Action {
 			case "subscribe":
 				if cmd.Topic != "" {
+					// Security check: Clients can only subscribe to their own user:* channel, never another user's
+					if strings.HasPrefix(cmd.Topic, "user:") && cmd.Topic != "user:"+client.UserID {
+						log.Printf("⚠️ Blocked unauthorized subscription to topic %s by user %s", cmd.Topic, client.UserID)
+						continue
+					}
 					h.Hub.SubscribeClient(client, cmd.Topic)
 				}
 			case "unsubscribe":
 				if cmd.Topic != "" {
+					if strings.HasPrefix(cmd.Topic, "user:") && cmd.Topic != "user:"+client.UserID {
+						continue
+					}
 					h.Hub.UnsubscribeClient(client, cmd.Topic)
 				}
 			case "ping":

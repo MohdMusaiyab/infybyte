@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/MohdMusaiyab/infybyte/server/internal/models"
@@ -14,14 +15,22 @@ import (
 )
 
 func setRefreshCookie(c *gin.Context, token string, maxAge int) {
+	isRelease := c.GetString("GIN_MODE") == "release" || os.Getenv("GIN_MODE") == "release"
+	sameSite := http.SameSiteLaxMode
+	secure := false
+	if isRelease || c.Request.TLS != nil {
+		secure = true
+		sameSite = http.SameSiteNoneMode
+	}
+
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     "refresh_token",
 		Value:    token,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   true,                     
-		SameSite: http.SameSiteNoneMode,    
+		Secure:   secure,
+		SameSite: sameSite,
 	})
 }
 
@@ -128,12 +137,6 @@ func Login(c *gin.Context, db *mongo.Database) {
 }
 
 func Refresh(c *gin.Context, db *mongo.Database) {
-	var req struct{}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.RespondError(c, http.StatusBadRequest, "Invalid request body")
-		return
-	}
-	
 	cookie, err := c.Cookie("refresh_token")
 	if err != nil {
 		utils.RespondError(c, http.StatusUnauthorized, "Missing refresh token")

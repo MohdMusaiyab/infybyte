@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -29,7 +30,10 @@ func main() {
 
 	if os.Getenv("GIN_MODE") == "release" {
 		gin.SetMode(gin.ReleaseMode)
-		log.Println("Settng Gin to Release Mode")
+		log.Println("Setting Gin to Release Mode")
+		if os.Getenv("ACCESS_SECRET") == "" || os.Getenv("REFRESH_SECRET") == "" {
+			log.Fatal("CRITICAL: ACCESS_SECRET and REFRESH_SECRET must be configured in release mode")
+		}
 	}
 
 	client := config.ConnectDB()
@@ -53,12 +57,32 @@ func main() {
 	router.Use(gin.Recovery())
 
 	frontendURL := os.Getenv("FRONTEND_URL")
-	if frontendURL == "" {
-		log.Println("⚠️  FRONTEND_URL not set! CORS might fail in production.")
+	allowedOrigins := []string{}
+	if frontendURL != "" {
+		for _, o := range strings.Split(frontendURL, ",") {
+			if trimmed := strings.TrimSpace(o); trimmed != "" {
+				allowedOrigins = append(allowedOrigins, trimmed)
+			}
+		}
+	}
+	if os.Getenv("GIN_MODE") != "release" {
+		devOrigins := []string{"http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"}
+		for _, dev := range devOrigins {
+			found := false
+			for _, ao := range allowedOrigins {
+				if ao == dev {
+					found = true
+					break
+				}
+			}
+			if !found {
+				allowedOrigins = append(allowedOrigins, dev)
+			}
+		}
 	}
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{frontendURL},
+		AllowOrigins:     allowedOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowHeaders:     []string{"Origin", "Authorization", "Content-Type", "Upgrade", "Connection", "Sec-WebSocket-Key", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions"},
 		ExposeHeaders:    []string{"Content-Length"},
